@@ -158,4 +158,15 @@ T["fold sections distinguish file headers from removed content"] = function()
   })
   MiniTest.expect.equality(sections, { { first = 2, last = 6 }, { first = 8, last = 11 } })
 end
+T["reading a diff URI inserts output without configuring the destination as a diff"] = function()
+  vim.cmd("GinDiff --cached -- sub/file")
+  local name = vim.api.nvim_buf_get_name(0)
+  local expected = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  vim.cmd.enew()
+  vim.bo.filetype = "text"
+  vim.api.nvim_cmd({ cmd = "read", range = { 0 }, args = { vim.fn.fnameescape(name) } }, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), expected)
+  MiniTest.expect.equality(vim.bo.filetype, "text")
+  MiniTest.expect.equality(vim.bo.modifiable, true)
+end
 return T

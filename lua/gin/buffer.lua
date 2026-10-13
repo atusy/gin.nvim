@@ -39,6 +39,36 @@ function M.read(buf, name)
   M.replace(buf, M.lines(result.stdout), uri.root, uri.params.filetype or "gin-buffer")
 end
 
+function M.insert_output(buf, name, output)
+  local options = require("gin.command").parse(
+    vim.split(vim.v.cmdarg, " ", { trimempty = true }),
+    { "enc", "encoding", "ff", "fileformat" }
+  )
+  if output ~= "" then
+    local lines = require("gin.edit").decode(output:gsub("\27%[[%d;]*m", ""), options)
+    local after = vim.fn.line("'[")
+    local empty = vim.api.nvim_buf_line_count(buf) == 1
+      and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
+    if empty then
+      after = 0
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    else
+      vim.api.nvim_buf_set_lines(buf, after, after, false, lines)
+    end
+    vim.api.nvim_buf_set_mark(buf, "[", after + 1, 0, {})
+    vim.api.nvim_buf_set_mark(buf, "]", after + #lines, 0, {})
+  end
+  vim.api.nvim_exec_autocmds("FileReadPost", { pattern = name, modeline = false })
+end
+
+function M.insert(buf, name)
+  local parsed = require("gin.uri").parse(name)
+  assert(parsed.fragment, "Gin buffer requires command arguments")
+  local result =
+    require("gin.git").run(require("gin.uri").split(parsed.fragment), { cwd = parsed.root })
+  M.insert_output(buf, name, result.stdout)
+end
+
 function M.command(opts)
   local options, args =
     require("gin.command").parse(opts.fargs, { "worktree", "opener", "filetype", "monochrome" })

@@ -37,4 +37,64 @@ T["GinBuffer respects a split modifier"] = function()
   MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), windows + 1)
   vim.cmd.close()
 end
+T["reading a GinBuffer URI inserts at the address and preserves buffer options"] = function()
+  vim.fn.writefile({ "hello" }, root .. "/file")
+  vim.cmd("GinBuffer ls-files --others")
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.enew()
+  vim.bo.filetype = "lua"
+  vim.bo.fileformat = "dos"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "first", "last" })
+  local events = 0
+  local id = vim.api.nvim_create_autocmd("FileReadPost", {
+    pattern = "gin://*",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  vim.api.nvim_cmd({ cmd = "read", range = { 1 }, args = { vim.fn.fnameescape(name) } }, {})
+  vim.api.nvim_del_autocmd(id)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "first", "file", "last" })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_mark(0, "["), { 2, 0 })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_mark(0, "]"), { 2, 0 })
+  MiniTest.expect.equality(
+    { vim.bo.filetype, vim.bo.fileformat, vim.bo.buftype, vim.bo.modified },
+    { "lua", "dos", "", true }
+  )
+  MiniTest.expect.equality(events, 1)
+end
+T["reading empty Git output inserts no blank line"] = function()
+  local name = require("gin.uri").format("gin", vim.uv.fs_realpath(root), {}, "status --short")
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "keep" })
+  vim.api.nvim_cmd({ cmd = "read", args = { vim.fn.fnameescape(name) } }, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "keep" })
+end
+T["read honors encoding without changing the destination encoding"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) }, root .. "/latin1")
+  H.git(root, "add", "latin1")
+  local name = require("gin.uri").format("gin", vim.uv.fs_realpath(root), {}, "show :latin1")
+  vim.cmd.enew()
+  vim.bo.fileencoding = "utf-8"
+  vim.cmd("read ++enc=latin1 " .. vim.fn.fnameescape(name))
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "café" })
+  MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+end
+T["failed reads preserve content and do not emit FileReadPost"] = function()
+  local name = require("gin.uri").format("gin", vim.uv.fs_realpath(root), {}, "show :missing")
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "keep" })
+  local events = 0
+  local id = vim.api.nvim_create_autocmd("FileReadPost", {
+    pattern = "gin://*",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  local ok = pcall(vim.cmd, "read " .. vim.fn.fnameescape(name))
+  vim.api.nvim_del_autocmd(id)
+  MiniTest.expect.equality(ok, false)
+  MiniTest.expect.equality(events, 0)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "keep" })
+end
 return T

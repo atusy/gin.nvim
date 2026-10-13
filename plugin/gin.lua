@@ -73,3 +73,21 @@ end, { nargs = "*", bar = true, bang = true })
 vim.api.nvim_create_user_command("GinChaperon", function(opts)
   require("gin.chaperon").command(opts)
 end, { nargs = "*", bar = true, bang = true })
+
+for scheme, module in pairs({ gin = "buffer", gindiff = "diff" }) do
+  vim.api.nvim_create_autocmd("FileReadCmd", {
+    group = vim.api.nvim_create_augroup("gin_" .. module, { clear = false }),
+    pattern = scheme .. "://*",
+    callback = function(event)
+      if module == "diff" then
+        require("gin.buffer").insert_output(
+          event.buf,
+          event.match,
+          require("gin.diff").output(event.match)
+        )
+      else
+        require("gin.buffer").insert(event.buf, event.match)
+      end
+    end,
+  })
+end
