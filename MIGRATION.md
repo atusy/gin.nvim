@@ -597,3 +597,10 @@ matching the pinned bare-command executor. Restoring eventignore while Git is
 running no longer causes an unintended GinCommandPost. A real asynchronous Git
 config command verifies successful mutation and completion without the event;
 existing ordinary-command fixtures still require successful event delivery.
+
+Status display now quotes control-bearing paths before ANSI decoration parsing.
+An ESC sequence in a filename previously disappeared as if it were a Git color
+code. A real filename fixture verifies escaped display, staging through the
+selected action with the original path bytes, and unchanged working content.
+This retains the current JSON-style display quoting; complete upstream quoting
+and Git-config display compatibility remain under audit.

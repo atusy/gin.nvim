@@ -350,4 +350,15 @@ T["status refresh preserves cursor positions in every window showing the view"] 
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "A  a" })
   vim.cmd.close()
 end
+T["status quotes control bytes without changing the staged path"] = function()
+  local path = "escape" .. string.char(27) .. "[31mname"
+  vim.fn.writefile({ "literal" }, root .. "/" .. path)
+  vim.cmd.GinStatus()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), {
+    [[?? "escape\u001b[31mname"]],
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), path .. "\0")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path), { "literal" })
+end
 return T

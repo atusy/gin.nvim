@@ -28,7 +28,7 @@ function M.parse(output)
 end
 
 local function quote(path)
-  if path:find('[%s"\\]') then
+  if path:find('[%s%c"\\]') then
     return (vim.json.encode(path):gsub("\\/", "/"))
   end
   return path
