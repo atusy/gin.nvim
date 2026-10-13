@@ -91,6 +91,19 @@ local function emojify(text, params)
   return params.emojify ~= nil and require("gin.emoji").emojify(text) or text
 end
 
+local function detail_lines(output, params)
+  local lines = buffer.lines(output)
+  for i, line in ipairs(lines) do
+    if vim.trim(line) == "" then
+      if lines[i + 1] then
+        lines[i + 1] = emojify(lines[i + 1], params)
+      end
+      break
+    end
+  end
+  return lines
+end
+
 function M.update_detail(buf, lnum)
   local detail = vim.b[buf].gin_blame_detail_bufnr
   if not detail or not vim.api.nvim_buf_is_loaded(detail) then
@@ -105,7 +118,7 @@ function M.update_detail(buf, lnum)
   end
   local output =
     git.run({ "show", "--no-patch", "--format=fuller", commit, "--" }, { cwd = parsed.root }).stdout
-  buffer.replace(detail, buffer.lines(emojify(output, parsed.params)), parsed.root, "git")
+  buffer.replace(detail, detail_lines(output, parsed.params), parsed.root, "git")
   vim.bo[detail].buftype = "nowrite"
   vim.b[detail].gin_blame_detail_last_commit = commit
 end
@@ -172,14 +185,12 @@ function M.read(buf, name, output)
   vim.b[detail].gin_blame_detail_last_commit = nil
   buffer.replace(
     detail,
-    buffer.lines(
-      emojify(
-        git.run(
-          { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
-          { cwd = parsed.root }
-        ).stdout,
-        parsed.params
-      )
+    detail_lines(
+      git.run(
+        { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
+        { cwd = parsed.root }
+      ).stdout,
+      parsed.params
     ),
     parsed.root,
     "git"

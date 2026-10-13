@@ -129,7 +129,8 @@ Currently implemented:
   key bindings. `<C-O>` and `<C-I>` move backward and forward through visited
   revisions, restoring filenames and cursor positions. `++enc`/`++encoding` and
   `++ff`/`++fileformat` select file decoding and persist through navigation.
-  `++emojify` renders emoji names in metadata while preserving source text.
+  `++emojify` renders emoji names in commit summaries, preserving authors,
+  message bodies, and source text.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
@@ -161,7 +162,8 @@ and `GinCommandPost`. Listen for `User GinComponentPost` to redraw your statusli
 GinBuffer renders ANSI Git colors as Neovim highlights. Use `++monochrome` to
 skip forced Git coloring, especially with processors that transform raw text.
 GinBuffer supports `++emojify` across reloads and `:read` insertion. GinBlame
-also accepts it for commit summaries and details, preserving literal source text.
+also accepts it for commit summaries in attribution and details, preserving
+authors, message bodies, and literal source text.
 GinDiff, GinLog and GinReflog also render Git colors by default; use `--no-color`
 for plain output.
 

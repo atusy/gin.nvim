@@ -343,4 +343,32 @@ T["blame emojifies metadata while preserving literal source through history"] = 
   require("gin.blame").navigate_history("older")
   check()
 end
+T["blame detail emojifies only the summary and preserves author and body"] = function()
+  vim.fn.writefile({ "latest" }, root .. "/sub/file.lua")
+  H.git(
+    root,
+    "commit",
+    "-am",
+    ":sparkles: summary\n\nLiteral :smile: body\n:sparkles: another line",
+    "--author=Literal :smile: Author <literal@example.invalid>"
+  )
+  local raw =
+    require("gin.buffer").lines(H.git(root, "show", "--no-patch", "--format=fuller", "HEAD", "--"))
+  local expected = vim.deepcopy(raw)
+  for i, line in ipairs(expected) do
+    if line == "    :sparkles: summary" then
+      expected[i] = "    ✨ summary"
+    end
+  end
+  vim.cmd("GinBlame ++emojify file.lua")
+  local nav, detail = vim.api.nvim_get_current_buf(), vim.b.gin_blame_detail_bufnr
+  local function check()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, -1, false), expected)
+  end
+  check()
+  require("gin.blame").update_detail(nav, 2)
+  check()
+  vim.cmd.edit()
+  check()
+end
 return T

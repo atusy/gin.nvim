@@ -97,7 +97,8 @@ COMMANDS                                                        *gin-commands*
     that commit again visits its parent. <C-O>/<C-I> traverse visited revisions.
     Reloading source or attribution refreshes the panes. Closing a pane closes
     its companions. Supports ++worktree, ++opener, ++enc, ++ff and ++emojify.
-    Emoji rendering affects metadata, preserving literal source text.
+    Emoji rendering affects commit summaries in attribution and details,
+    preserving authors, message bodies and literal source text.
 
 :GinCd                                                            *:GinCd*
 :GinLcd                                                          *:GinLcd*

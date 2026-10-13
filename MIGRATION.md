@@ -515,3 +515,8 @@ were opened successfully with isolated runtimes on Neovim 0.10.0 and the current
 development build. This is a guide to the implemented subset, not a claim of
 complete upstream help/API compatibility. README statements about colors,
 Blame emoji rendering and minimum-version validation were brought up to date.
+
+Blame detail emoji conversion now follows the pinned detail.ts behavior: only
+the first message line is converted. Author metadata and later message lines
+remain literal. A real commit fixture checks full detail output on initial
+open, cursor-driven update and reload, alongside the existing history fixture.
