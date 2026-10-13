@@ -132,13 +132,18 @@ function M.read(buf, name)
           if not row then
             return
           end
-          local args = { command }
+          local args = { "++worktree=" .. parsed.root, command }
           if mainline ~= "" then
             vim.list_extend(args, { "--mainline", mainline })
           end
           args[#args + 1] = row.commit
-          local result = require("gin.git").run(args, { cwd = parsed.root })
-          require("gin.command").finish(result, {}, {})
+          return require("gin.command").execute({
+            fargs = args,
+            smods = {},
+            on_exit = function()
+              vim.cmd("silent checktime")
+            end,
+          })
         end
       )
     end

@@ -70,14 +70,29 @@ end
 T["cherry-pick applies the selected commit to the current branch"] = function()
   H.git(root, "checkout", "-b", "target", first)
   vim.cmd("GinLog --oneline main")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "cherry-pick", { 1, 1 })
+  local process =
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "cherry-pick", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), first .. "\n")
   MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
 end
 T["revert creates an inverse commit while preserving history"] = function()
   vim.cmd("GinLog --oneline")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "revert", { 1, 1 })
+  local process = require("gin.action").call(vim.api.nvim_get_current_buf(), "revert", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/two"), 0)
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), second .. "\n")
   MiniTest.expect.equality(
@@ -93,7 +108,14 @@ T["revert mainline one removes the merged branch changes"] = function()
   H.git(root, "checkout", "main")
   H.git(root, "merge", "--no-ff", "--no-edit", "side")
   vim.cmd("GinLog --oneline")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "revert:1", { 1, 1 })
+  local process = require("gin.action").call(vim.api.nvim_get_current_buf(), "revert:1", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/side"), 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end
@@ -506,5 +528,53 @@ T["cancelled instant amend leaves history and staged content intact"] = function
   end)
   vim.notify = notify
   assert(ok, err)
+end
+
+for _, command in ipairs({ "cherry-pick", "revert" }) do
+  T[command .. " supports hook credential prompts"] = function()
+    if command == "cherry-pick" then
+      H.git(root, "checkout", "-b", "target", first)
+    end
+    local hook = root .. "/.git/hooks/prepare-commit-msg"
+    vim.fn.writefile({
+      "#!/bin/sh",
+      [[printf 'protocol=https\nhost=example.invalid\n\n' | GIT_TERMINAL_PROMPT=0 git -c credential.helper= credential fill > /dev/null]],
+    }, hook)
+    assert(vim.uv.fs_chmod(hook, 448))
+    vim.cmd("GinLog --oneline main")
+    local inputsecret = vim.fn.inputsecret
+    local askpass = vim.env.GIT_ASKPASS
+    vim.env.GIT_ASKPASS = "false"
+    local prompts = {}
+    vim.fn.inputsecret = function(prompt)
+      prompts[#prompts + 1] = prompt
+      return "fixture-value"
+    end
+    local ok, err = pcall(function()
+      local process = require("gin.action").call(vim.api.nvim_get_current_buf(), command, { 1, 1 })
+      MiniTest.expect.equality(
+        vim.wait(5000, function()
+          return process:is_closing()
+        end, 10),
+        true
+      )
+      MiniTest.expect.equality(process:wait(5000).code, 0)
+      MiniTest.expect.equality(#prompts, 2)
+      MiniTest.expect.equality(prompts[1]:find("Username", 1, true) ~= nil, true)
+      MiniTest.expect.equality(prompts[2]:find("Password", 1, true) ~= nil, true)
+      MiniTest.expect.equality(
+        H.git(root, "rev-parse", "HEAD^"),
+        (command == "cherry-pick" and first or second) .. "\n"
+      )
+      MiniTest.expect.equality(
+        H.git(root, "rev-parse", "HEAD^{tree}"),
+        H.git(root, "rev-parse", (command == "cherry-pick" and second or first) .. "^{tree}")
+      )
+      MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+    end)
+    vim.fn.inputsecret = inputsecret
+    vim.env.GIT_ASKPASS = askpass
+    assert(ok, err)
+  end
 end
 return T

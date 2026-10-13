@@ -292,3 +292,10 @@ staged merge content, and conflicts preserve the base/ours/theirs index stages.
 Both paths finish through Gin commit and the proxy editor, with checks for the
 message, both parents, final content, clean status and removed MERGE_HEAD.
 Failed merges emit no success event; the completed recovery emits one.
+
+History cherry-pick and revert actions now dispatch through the asynchronous
+command proxy, including their mainline variants. Hook fixtures request both
+credential fields through Git credential fill with terminal prompting disabled,
+use isolated dummy responses, and check the resulting parent, tree and status.
+They make no network requests. Ordinary pick/revert and mainline-one revert
+fixtures also wait for the returned process and check its exit status.
