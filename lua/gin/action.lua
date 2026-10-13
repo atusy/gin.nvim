@@ -37,21 +37,37 @@ function M.alias(buf, name, target)
 end
 
 function M.help(buf, reduced)
-  local keys = {}
-  for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(buf, "n")) do
-    local name = (mapping.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$")
-    if name then
-      keys[name] = mapping.lhs
+  local records = {}
+  local function action_name(value)
+    return (value or ""):match("^<Plug>%(gin%-action%-(.*)%)$")
+  end
+  for _, mode in ipairs({ "n", "x", "s", "o", "i", "c", "t", "l" }) do
+    local effective = {}
+    for _, mapping in ipairs(vim.api.nvim_get_keymap(mode)) do
+      effective[mapping.lhs] = mapping
+    end
+    for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
+      effective[mapping.lhs] = mapping
+    end
+    for _, lhs in ipairs(vim.fn.sort(vim.tbl_keys(effective))) do
+      local mapping = effective[lhs]
+      local defined, mapped = action_name(lhs), action_name(mapping.rhs)
+      local name = defined or mapped
+      if name and not (reduced and defined and defined:find("[:=]")) then
+        local row = records[name] or { "", name, "<Plug>(gin-action-" .. name .. ")" }
+        if not defined then
+          row[1] = lhs
+        end
+        records[name] = row
+      end
     end
   end
   local rows, widths = {}, { 0, 0, 0 }
-  for _, name in ipairs(M.list(buf)) do
-    if not reduced or not name:find("[:=]") then
-      local row = { keys[name] or "", name, "<Plug>(gin-action-" .. name .. ")" }
-      rows[#rows + 1] = row
-      for col, value in ipairs(row) do
-        widths[col] = math.max(widths[col], vim.fn.strdisplaywidth(value))
-      end
+  for _, name in ipairs(vim.fn.sort(vim.tbl_keys(records))) do
+    local row = records[name]
+    rows[#rows + 1] = row
+    for col, value in ipairs(row) do
+      widths[col] = math.max(widths[col], vim.fn.strdisplaywidth(value))
     end
   end
   local lines = {}
@@ -61,8 +77,12 @@ function M.help(buf, reduced)
     end
     lines[#lines + 1] = table.concat(row, "  ")
   end
-  if reduced then
-    table.insert(lines, 1, "Use 'help:all' action to see complete help.")
+  if reduced and #lines > 0 then
+    local hint = "Use 'help:all' action to see complete help."
+    local width = math.max(vim.fn.strdisplaywidth(lines[1]), #hint)
+    table.insert(lines, 1, string.rep("~", width))
+    table.insert(lines, 1, string.rep(" ", math.floor((width - #hint) / 2)) .. hint)
+    table.insert(lines, 1, string.rep("~", width))
   end
   return table.concat(lines, "\n")
 end

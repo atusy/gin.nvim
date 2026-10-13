@@ -464,3 +464,9 @@ audit.
 Expression action mappings run through Neovim's mapping engine so their returned
 key sequences execute with the captured action range. A callback-expression
 fixture resolves another action and verifies the propagated selection.
+
+Action help now reads effective mappings across modes, including global keys
+and their buffer-local overrides. Reduced help retains explicitly bound detailed
+actions, and aliases are listed as actions rather than mistaken for user keys.
+The reduced-help hint uses the pinned bordered layout. Tests cover visual-only
+shortcuts, global/local shadowing and alias presentation.

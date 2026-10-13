@@ -130,4 +130,49 @@ T["expression action mappings execute their returned keys"] = function()
   action.call(buf, "custom", { 2, 4 })
   MiniTest.expect.equality(captured, { 2, 4 })
 end
+T["reduced help includes explicitly mapped detailed actions"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "capture:detail", function() end)
+  vim.keymap.set("x", "gc", "<Plug>(gin-action-capture:detail)", { buffer = buf, remap = true })
+  local help = action.help(buf, true)
+  MiniTest.expect.equality(
+    help:find("gc%s+capture:detail%s+<Plug>%(gin%-action%-capture:detail%)") ~= nil,
+    true
+  )
+end
+T["help respects local shadows of global shortcuts"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "capture:global", function() end)
+  action.define(buf, "capture:local", function() end)
+  vim.keymap.set("n", "zX", "<Plug>(gin-action-capture:global)", { remap = true })
+  vim.keymap.set("n", "zX", "<Plug>(gin-action-capture:local)", { buffer = buf, remap = true })
+  local ok, help = pcall(action.help, buf, true)
+  vim.keymap.del("n", "zX", { buffer = buf })
+  local global_ok, global_help = pcall(action.help, buf, true)
+  vim.keymap.del("n", "zX")
+  assert(ok, help)
+  assert(global_ok, global_help)
+  MiniTest.expect.equality(help:find("zX%s+capture:local%s+") ~= nil, true)
+  MiniTest.expect.equality(help:find("capture:global", 1, true), nil)
+  MiniTest.expect.equality(global_help:find("zX%s+capture:global%s+") ~= nil, true)
+end
+T["help lists aliases without presenting their Plug names as user keys"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "capture:detail", function() end)
+  action.alias(buf, "capture", "capture:detail")
+  local help = action.help(buf, false)
+  MiniTest.expect.equality(
+    help:find("\n%s+capture:detail%s+<Plug>%(gin%-action%-capture:detail%)") ~= nil,
+    true
+  )
+  local reduced = vim.split(action.help(buf, true), "\n", { plain = true })
+  MiniTest.expect.equality(reduced[1]:match("^~+$") ~= nil, true)
+  MiniTest.expect.equality(reduced[1], reduced[3])
+end
 return T
