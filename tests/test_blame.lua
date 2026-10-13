@@ -17,6 +17,8 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.g.gin_edit_default_args = nil
+      vim.g.gin_edit_persistent_args = nil
       vim.cmd.tabonly({ bang = true })
       vim.cmd.only({ bang = true })
       vim.cmd.enew({ bang = true })
@@ -370,5 +372,29 @@ T["blame detail emojifies only the summary and preserves author and body"] = fun
   check()
   vim.cmd.edit()
   check()
+end
+T["blame uses edit argument settings with explicit arguments replacing defaults"] = function()
+  local defaults = { first, "file.lua" }
+  local persistent = { "++opener=split", "++enc=utf-8" }
+  vim.g.gin_edit_default_args = defaults
+  vim.g.gin_edit_persistent_args = persistent
+  local tabs = #vim.api.nvim_list_tabpages()
+  for _, case in ipairs({
+    { "GinBlame", first, "two" },
+    { "GinBlame HEAD file.lua", "HEAD", "changed" },
+  }) do
+    vim.cmd(case[1])
+    local file = vim.b.gin_blame_file_bufnr
+    local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(file))
+    MiniTest.expect.equality(parsed.params.commitish, case[2])
+    MiniTest.expect.equality(parsed.params.enc, "utf-8")
+    MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs)
+    MiniTest.expect.equality(
+      vim.tbl_contains(vim.api.nvim_buf_get_lines(file, 0, -1, false), case[3]),
+      true
+    )
+  end
+  MiniTest.expect.equality(vim.g.gin_edit_default_args, defaults)
+  MiniTest.expect.equality(vim.g.gin_edit_persistent_args, persistent)
 end
 return T

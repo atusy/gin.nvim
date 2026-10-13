@@ -159,7 +159,8 @@ Set globals before opening a view. Argument settings are lists of strings:
     g:gin_{kind}_persistent_args    Prepended to default or explicit arguments.
 
 Kinds: branch, browse, chaperon, diff, edit, log, reflog, patch, stash, status,
-and tag. Both settings are validated even when explicit arguments are given.
+and tag. GinBlame shares the edit settings, matching the pinned upstream.
+Both settings are validated even when explicit arguments are given.
 Example: >lua
     vim.g.gin_status_default_args = { '--short' }
     vim.g.gin_browse_persistent_args = { '--no-browser' }

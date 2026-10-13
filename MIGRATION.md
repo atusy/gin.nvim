@@ -520,3 +520,11 @@ Blame detail emoji conversion now follows the pinned detail.ts behavior: only
 the first message line is converted. Author metadata and later message lines
 remain literal. A real commit fixture checks full detail output on initial
 open, cursor-driven update and reload, alongside the existing history fixture.
+
+GinBlame now expands and validates g:gin_edit_default_args and
+g:gin_edit_persistent_args, matching the pinned command's shared edit settings.
+A repository fixture verifies default revision selection, explicit-argument
+precedence, persistent opener/encoding and unchanged configuration arrays.
+The pinned command tree has 12 fillCmdArgs call sites; each now has a matching
+shared argument-expansion call in Lua (log/reflog share a module). This closes
+the command-setting wiring audit, not the remaining command behavior audits.

@@ -403,8 +403,10 @@ function M.read_nav(buf)
 end
 
 function M.command(opts)
+  -- The pinned Blame command shares GinEdit's argument settings.
+  local configured = require("gin.command").arguments("edit", opts.fargs)
   local options, args = require("gin.command").parse(
-    opts.fargs,
+    configured,
     { "worktree", "opener", "enc", "encoding", "ff", "fileformat", "emojify" }
   )
   assert(#args == 1 or #args == 2, "GinBlame expects [commitish] path")
