@@ -53,7 +53,9 @@ function M.read(buf, name)
   local function run(args)
     local result = git.run(args, { cwd = parsed.root })
     require("gin.command").finish(result, {}, {})
-    M.read(buf, name)
+    if vim.api.nvim_buf_is_valid(buf) then
+      M.read(buf, name)
+    end
   end
   for _, detach in ipairs({ false, true }) do
     action.define(buf, detach and "switch:detach" or "switch", function(target, range)
@@ -86,6 +88,51 @@ function M.read(buf, name)
           run({ "branch", force and "-D" or "-d", "--", row.branch })
         end
       end
+    end)
+  end
+  for _, variant in ipairs({ "new", "new:force", "new:orphan" }) do
+    action.define(buf, variant, function(target, range)
+      local row = M.candidates(target, range)[1]
+      local from = row and row.target or "HEAD"
+      local orphan = variant == "new:orphan"
+      vim.ui.input({
+        prompt = orphan and "New branch (orphan): " or ("New branch (from " .. from .. "): "),
+        default = not orphan and from or nil,
+      }, function(value)
+        if not value or value == "" then
+          return
+        end
+        local args =
+          { "switch", orphan and "--orphan" or variant == "new:force" and "-C" or "-c", value }
+        if not orphan then
+          args[#args + 1] = from
+        end
+        run(args)
+      end)
+    end)
+  end
+  for _, force in ipairs({ false, true }) do
+    action.define(buf, force and "move:force" or "move", function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      local worktree = row.worktree and row.head ~= "*"
+      local from = worktree and row.worktree or row.branch
+      vim.ui.input({
+        prompt = (worktree and "New path (from " or "Rename (from ") .. from .. "): ",
+        default = from,
+      }, function(value)
+        if not value or value == "" then
+          return
+        end
+        local args = worktree and { "worktree", "move" } or { "branch", "--move" }
+        if force then
+          args[#args + 1] = "--force"
+        end
+        vim.list_extend(args, { "--", from, value })
+        run(args)
+      end)
     end)
   end
   for _, field in ipairs({ "branch", "target", "commit" }) do

@@ -60,4 +60,55 @@ T["deleting the current branch fails without removing its worktree"] = function(
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "main\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "base" })
 end
+local function prompt_action(name, range, value)
+  local original, callback = vim.ui.input, nil
+  vim.ui.input = function(_, done)
+    callback = done
+  end
+  local ok, err = pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), name, range)
+  vim.ui.input = original
+  assert(ok, err)
+  assert(callback, "Expected an input prompt")
+  callback(value)
+end
+T["new branch starts from the selected ref and switches to it"] = function()
+  vim.cmd("GinBranch topic")
+  local source = H.git(root, "rev-parse", "topic")
+  prompt_action("new", { 1, 1 }, "created")
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "created\n")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "created"), source)
+end
+T["move renames the selected branch and cancellation leaves refs intact"] = function()
+  vim.cmd("GinBranch topic")
+  prompt_action("move", { 1, 1 }, nil)
+  MiniTest.expect.equality(H.git(root, "branch", "--list", "topic") ~= "", true)
+  prompt_action("move", { 1, 1 }, "renamed")
+  MiniTest.expect.equality(H.git(root, "branch", "--list", "topic"), "")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "renamed"), H.git(root, "rev-parse", "HEAD"))
+end
+T["orphan creation switches to an unborn branch"] = function()
+  vim.cmd.GinBranch()
+  prompt_action("new:orphan", { 1, 1 }, "empty-history")
+  MiniTest.expect.equality(H.git(root, "symbolic-ref", "HEAD"), "refs/heads/empty-history\n")
+  MiniTest.expect.equality(H.git(root, "ls-files"), "")
+end
+T["move relocates a linked worktree without renaming its branch"] = function()
+  H.git(root, "worktree", "add", root .. "/linked", "topic")
+  vim.cmd("GinBranch topic")
+  prompt_action("move", { 1, 1 }, root .. "/moved")
+  MiniTest.expect.equality(vim.fn.isdirectory(root .. "/linked"), 0)
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/moved/file"), { "base" })
+  MiniTest.expect.equality(H.git(root .. "/moved", "branch", "--show-current"), "topic\n")
+  H.git(root, "worktree", "remove", root .. "/moved")
+end
+T["new force resets an existing branch to the selected starting ref"] = function()
+  H.git(root, "checkout", "topic")
+  vim.fn.writefile({ "topic" }, root .. "/file")
+  H.git(root, "commit", "-am", "topic change")
+  H.git(root, "checkout", "main")
+  vim.cmd("GinBranch main")
+  prompt_action("new:force", { 1, 1 }, "topic")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "topic"), H.git(root, "rev-parse", "main"))
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+end
 return T
