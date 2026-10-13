@@ -46,7 +46,8 @@ to prove an action produces the intended Git state.
   merge ancestry, ff-only rejection, rebase replay/exec and instant-drop history.
 - `tests/test_log.lua`: history order, default/oneline/graph selection, revision
   and path filters, reloads, show/yank actions, branch-to-log navigation,
-  cherry-pick, ordinary revert and mainline revert.
+  cherry-pick, ordinary/mainline revert, reset-mode HEAD/index/worktree effects
+  and keep-mode rejection of local changes.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -132,3 +133,6 @@ GinLog cherry-pick/revert actions include parent-one/parent-two variants.
 Revert supplies --mainline only when selected, correcting the inverted condition
 in the pinned implementation. Tests use a fixture-local editor configuration;
 interactive editor proxy support is still pending.
+
+GinLog reset actions now cover default/soft/hard/merge/keep modes. Tests assert
+actual HEAD, index and worktree state rather than only command output.
