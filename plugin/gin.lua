@@ -86,7 +86,7 @@ for scheme, module in pairs({ gin = "buffer", gindiff = "diff" }) do
         require("gin.buffer").insert_output(
           event.buf,
           event.match,
-          require("gin.diff").output(event.match)
+          require("gin.diff").output(event.match, "both")
         )
       else
         require("gin.buffer").insert(event.buf, event.match)

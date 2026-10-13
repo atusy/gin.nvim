@@ -28,7 +28,7 @@ function M.insert(buf, name)
   local parsed = uri.parse(name)
   local args = parsed.scheme == "ginreflog" and { "reflog", "show" } or { "log" }
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  local text = require("gin.git").run(args, { cwd = parsed.root }).stdout
+  local text = require("gin.git").run(args, { cwd = parsed.root, progress = "both" }).stdout
   require("gin.buffer").insert_output(buf, name, text)
 end
 

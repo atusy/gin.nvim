@@ -52,7 +52,18 @@ local function output(parsed, progress)
 end
 
 function M.insert(buf, name)
-  local text = output(uri.parse(name))
+  local parsed = uri.parse(name)
+  local args = {
+    "tag",
+    "--list",
+    "--color=never",
+    "--format=%(objectname:short) %(refname:short) %(creatordate:short) %(subject)",
+  }
+  vim.list_extend(args, parsed.params.args and vim.json.decode(parsed.params.args) or {})
+  args[#args + 1] = "--"
+  vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
+  -- Insertions have no action candidates; stream only the requested display format.
+  local text = git.run(args, { cwd = parsed.root, progress = "both" }).stdout
   require("gin.buffer").insert_output(buf, name, text)
 end
 

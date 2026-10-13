@@ -846,3 +846,10 @@ Git trace fixtures verify the corresponding commands are displayed, listing
 payload stays in the buffer, and editor options are restored. Shared diff/tag
 output helpers take an explicit progress option so their FileReadCmd paths keep
 their existing behavior pending the separate insertion audit.
+
+FileReadCmd for diff, log, reflog, tag and stash now streams both output channels,
+matching their pinned delegation to `command/buffer/read.ts`. Five real Git
+fixtures check both progress channels, insertion at the requested address and
+absence of trace messages in inserted text. Tag insertion now requests only the
+display format, without candidate metadata, so private NUL-delimited records
+cannot leak into progress. Buffer display still obtains metadata for actions.
