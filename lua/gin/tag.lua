@@ -14,10 +14,38 @@ local function candidates(buf, range)
   return selected
 end
 
+local function flags(parsed)
+  if not parsed.legacy then
+    return parsed.params.args and vim.json.decode(parsed.params.args) or {}
+  end
+  local result = {}
+  for _, key in ipairs(parsed.param_order) do
+    if key ~= "emojify" then
+      local values = parsed.params[key]
+      for _, value in ipairs(type(values) == "table" and values or { values }) do
+        result[#result + 1] = (#key == 1 and "-" or "--")
+          .. key
+          .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
+      end
+    end
+  end
+  return result
+end
+
+local function patterns(parsed)
+  if not parsed.fragment then
+    return {}
+  end
+  if parsed.legacy then
+    return vim.split(parsed.fragment:gsub("%$$", ""), " ", { plain = true, trimempty = true })
+  end
+  return uri.split(parsed.fragment)
+end
+
 local function output(parsed, progress)
   local args = { "tag", "--list", "--color=never" }
   local format = "%(objectname:short) %(refname:short) %(creatordate:short) %(subject)"
-  for _, flag in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
+  for _, flag in ipairs(flags(parsed)) do
     if flag:sub(1, 9) == "--format=" then
       format = flag:sub(10)
     else
@@ -31,7 +59,7 @@ local function output(parsed, progress)
     .. "%00%(refname:strip=2)%00%(objectname)%00"
     .. format
   args[#args + 1] = "--"
-  vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
+  vim.list_extend(args, patterns(parsed))
   local rows, lines = {}, {}
   local records = vim.split(
     git.run(args, { cwd = parsed.root, progress = progress }).stdout,
@@ -59,9 +87,9 @@ function M.insert(buf, name)
     "--color=never",
     "--format=%(objectname:short) %(refname:short) %(creatordate:short) %(subject)",
   }
-  vim.list_extend(args, parsed.params.args and vim.json.decode(parsed.params.args) or {})
+  vim.list_extend(args, flags(parsed))
   args[#args + 1] = "--"
-  vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
+  vim.list_extend(args, patterns(parsed))
   -- Insertions have no action candidates; stream only the requested display format.
   local text = git.run(args, { cwd = parsed.root, progress = "both" }).stdout
   require("gin.buffer").insert_output(buf, name, text)

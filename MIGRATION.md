@@ -1218,3 +1218,11 @@ decoding. A real repository fixture opens a filtered status URI from a
 subdirectory, reloads it and stages the selected dollar-suffixed path. The
 resulting index contains only that path, the refreshed view retains its filter
 and an unrelated untracked file remains untouched.
+
+Legacy GinTag now restores flags from URI parameters and splits its
+dollar-terminated pattern list according to the pinned format. Both display and
+insertion paths use those settings, with structured ref metadata retained for
+actions. A real Git fixture filters annotated tags using multiple patterns,
+applies a custom display format, reloads and inserts the view, then deletes the
+selected tag. The unrelated lightweight tag remains and the refreshed filtered
+view is empty. Custom tag parser overrides remain a separate open requirement.
