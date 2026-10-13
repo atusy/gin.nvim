@@ -50,4 +50,11 @@ T["status smart diff selects the cached changes when both sides differ"] = funct
   local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
 end
+T["smart diff uses the working tree when the index is unchanged"] = function()
+  H.git(root, "reset", "--quiet", "--", "sub/file")
+  vim.cmd.GinStatus()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "diff:smart", { 2, 2 })
+  local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(content:find("-base\n+working", 1, true) ~= nil, true)
+end
 return T
