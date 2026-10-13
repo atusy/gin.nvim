@@ -15,6 +15,28 @@ function M.strip_conflicts(lines)
   return result
 end
 
+local function in_progress_head(root)
+  local git = require("gin.git")
+  local gitdir = vim.trim(git.run({ "rev-parse", "--absolute-git-dir" }, { cwd = root }).stdout)
+  for _, head in ipairs({ "MERGE_HEAD", "REBASE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD" }) do
+    if vim.uv.fs_stat(gitdir .. "/" .. head) then
+      return head
+    end
+  end
+end
+
+local function supplement(root, win, args, filetype)
+  vim.api.nvim_set_current_win(win)
+  local uri = require("gin.uri")
+  require("gin.buffer").open(uri.format("gin", root, { filetype = filetype }, uri.join(args)), {
+    opener = "split",
+    smods = { split = "belowright" },
+  })
+  vim.wo.diff = false
+  vim.api.nvim_win_set_height(0, vim.g.gin_chaperon_supplement_height or 10)
+  vim.wo.winfixheight = true
+end
+
 function M.open(root, path, options)
   options = options or {}
   local edit = require("gin.edit")
@@ -63,6 +85,24 @@ function M.open(root, path, options)
     mapping.bind(ours, "diffput", "diffput", worktree, "dp", disabled)
     mapping.bind(worktree, "diffget-r", "diffget", ours, "dor", disabled)
     mapping.alias(worktree, "diffget-r", disabled)
+  end
+  local no_supplements = vim.g.gin_chaperon_supplement_disable
+  if no_supplements == nil or no_supplements == false or no_supplements == 0 then
+    local head = in_progress_head(root)
+    if theirs and head then
+      supplement(root, vim.fn.bufwinid(theirs), { "log", "-1", head, "-p" }, "git")
+    end
+    if head then
+      supplement(
+        root,
+        worktree_win,
+        { "log", "--oneline", "--left-right", head .. "...HEAD" },
+        "diff"
+      )
+    end
+    if ours then
+      supplement(root, vim.fn.bufwinid(ours), { "log", "-1", "HEAD", "-p" }, "git")
+    end
   end
   for _, win in ipairs(windows) do
     vim.api.nvim_win_call(win, function()
