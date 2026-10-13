@@ -133,6 +133,7 @@ T["reverse diff swaps the working and index jump targets"] = function()
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
 end
 T["diff folds summarize file changes and rebuild on reload"] = function()
+  vim.wo.foldenable = false
   vim.cmd("GinDiff -- sub/file")
   MiniTest.expect.equality(vim.wo.foldmethod, "manual")
   MiniTest.expect.equality(vim.fn.foldlevel(3), 1)

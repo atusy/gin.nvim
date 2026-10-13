@@ -370,3 +370,13 @@ porcelain parsing. A fixture deliberately decodes a UTF-8 filename as Latin-1,
 then stages it after reload and checks Git's NUL-delimited path and blob content,
 verifying the original path remains the action target. Invalid-UTF-8
 filesystem names could not be exercised on this macOS filesystem.
+
+Lua filetype plugins now apply the pinned list-view display options for branch,
+status, log, reflog, tag and stash: no list characters, spelling, wrapping,
+folding or modelines; history/tag/stash cursorline; unlisted buffers except
+branch. Each provides undo_ftplugin restoration. Six filetype tests verify
+application and restoration with filetype plugins enabled.
+
+Diff-fold setup explicitly enables folding so a diff/show window inherited from
+a list view still builds usable folds. The diff regression fixture starts with
+folding disabled; the existing tag-to-show test also exercises this transition.

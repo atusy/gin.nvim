@@ -71,6 +71,7 @@ function M.apply(buf)
   local sections = M.sections(vim.api.nvim_buf_get_lines(buf, 0, -1, false))
   for _, win in ipairs(vim.fn.win_findbuf(buf)) do
     vim.api.nvim_win_call(win, function()
+      vim.wo.foldenable = true
       vim.wo.foldmethod = "manual"
       vim.wo.foldtext = "v:lua.require'gin.difffold'.text()"
       vim.cmd("normal! zE")
