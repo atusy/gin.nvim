@@ -21,7 +21,8 @@ Currently implemented:
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
   status. `<<` stages the current line or visual range; `>>` unstages it.
   `<Plug>(gin-action-stage)` and `<Plug>(gin-action-unstage)` are also available.
-  `dd` opens a smart diff, `pp` opens a patch tab, and `==` stashes the selection.
+  `dd` opens a smart diff, `pp` opens a patch tab, `!!` opens a conflict-resolution
+  tab, and `==` stashes the selection.
   `<CR>` opens the working file, `yy` yanks its absolute path (register prefixes
   work), `a` chooses an action, `.` repeats the chosen action, and `?` shows help.
   The edit actions include `edit:cached`, `edit:HEAD`, and their `:split`,
@@ -40,6 +41,14 @@ Currently implemented:
   gets the HEAD hunk; `:write` saves the result to the index. `do` gets the right
   pane when available, otherwise the left. `dp` puts the hunk into the working
   pane. Other panes use `do`/`dp` with the index where applicable.
+- `:GinChaperon [++no-ours] [++no-theirs] [path]` opens theirs, working-file,
+  and ours conflict panes, focusing the working file. The path defaults to the
+  current file and is relative to cwd. Conflict blocks are removed from the
+  buffer; `dol`/`dor` get a hunk from theirs/ours, and `do` prefers ours when
+  available. Side panes use `dp` to put a hunk into the working file. Write the
+  resolved file, then stage it explicitly. Supporting commit logs appear below
+  the panes; set `g:gin_chaperon_supplement_disable = 1` to hide them or
+  `g:gin_chaperon_supplement_height` to adjust their height (default 10).
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 Commands locate the repository from the current buffer before trying cwd.

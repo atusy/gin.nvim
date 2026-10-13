@@ -37,6 +37,8 @@ to prove an action produces the intended Git state.
 
 ## Current implementation evidence
 
+- `tests/test_chaperon.lua`: real merge resolution, explicit staging, supplementary
+  commit logs, single-side layouts and status conflict tabs.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection.
@@ -76,7 +78,14 @@ folding still need implementation. GinPatch provides three/two-pane diff editing
 with index write-back and status actions; remaining option and visual-range
 compatibility needs an audit. The checklist stays open until those checks finish.
 
-Next work: diff navigation/folding, conflict handling and the remaining parsed
-views with direct Git-state tests. Complete the remaining status browse/echo/
-chaperon actions as their supporting modules become available. Audit every pinned command, option, mapping, event and component
+GinChaperon provides conflict panes, directional resolution mappings, supporting
+commit logs and status actions. Opening the view edits only the buffer; writing
+and staging remain separate steps. Full option, conflict-type and visual-range
+compatibility still needs an audit. When there is no in-progress operation head,
+its dependent supplemental logs are omitted instead of running an invalid log
+command as upstream does.
+
+Next work: diff navigation/folding and the remaining parsed views with direct
+Git-state tests. Complete status browse/echo actions as their supporting modules
+become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.
