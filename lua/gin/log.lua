@@ -82,6 +82,29 @@ function M.read(buf, name)
       require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
     end)
   end
+  for _, force in ipairs({ false, true }) do
+    action.define(
+      buf,
+      force and "tag:lightweight:force" or "tag:lightweight",
+      function(target, range)
+        local row = M.candidates(target, range)[1]
+        if not row then
+          return
+        end
+        vim.ui.input({ prompt = "Name: " }, function(name)
+          if not name or name == "" then
+            return
+          end
+          local args = { "tag" }
+          if force then
+            args[#args + 1] = "--force"
+          end
+          vim.list_extend(args, { "--", name, row.commit })
+          require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
+        end)
+      end
+    )
+  end
   action.define(buf, "yank:commit", function(target, range)
     local values = {}
     for _, row in ipairs(M.candidates(target, range)) do

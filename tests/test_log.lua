@@ -122,4 +122,30 @@ T["reset keep rejects overwriting an uncommitted change"] = function()
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "local change" })
 end
+local function tag_action(action, value)
+  local original, callback = vim.ui.input, nil
+  vim.ui.input = function(_, done)
+    callback = done
+  end
+  local ok, err =
+    pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), action, { 2, 2 })
+  vim.ui.input = original
+  assert(ok, err)
+  assert(callback)
+  callback(value)
+end
+T["lightweight tag points to the selected commit rather than HEAD"] = function()
+  vim.cmd("GinLog --oneline")
+  tag_action("tag:lightweight", "selected")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "selected"), first .. "\n")
+  MiniTest.expect.equality(H.git(root, "cat-file", "-t", "selected"), "commit\n")
+end
+T["force tag updates an existing ref and cancellation is inert"] = function()
+  H.git(root, "tag", "selected", second)
+  vim.cmd("GinLog --oneline")
+  tag_action("tag:lightweight:force", nil)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "selected"), second .. "\n")
+  tag_action("tag:lightweight:force", "selected")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "selected"), first .. "\n")
+end
 return T
