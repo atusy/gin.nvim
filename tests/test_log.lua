@@ -236,4 +236,32 @@ T["colored log and reflog retain actionable commits across reload"] = function()
     MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
   end
 end
+T["interactive rebase edits the selected history through the proxy"] = function()
+  vim.cmd("GinLog --oneline")
+  local process = require("gin.action").call(vim.api.nvim_get_current_buf(), "rebase:i", { 2, 2 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(
+    vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"),
+    "git-rebase-todo"
+  )
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  MiniTest.expect.equality(lines[1]:match("^pick ") ~= nil, true)
+  lines[1] = lines[1]:gsub("^pick ", "drop ")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), first .. "\n")
+  MiniTest.expect.equality(vim.fn.filereadable(root .. "/two"), 0)
+end
 return T

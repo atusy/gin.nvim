@@ -43,7 +43,8 @@ Currently implemented:
   `merge`/`merge:ff`, `merge:no-ff`, and `merge:ff-only` merge the selected ref
   into the current branch. `rebase`, `rebase:x`, and `rebase:instant-drop` replay
   onto the selected ref, run an exec command, or drop the selected commit.
-  Interactive rebase actions remain pending. Remote deletion deletes the remote ref.
+  `rebase:i` edits the rebase todo through the proxy; `rebase:i:x` also prompts
+  for an exec command. Remote deletion deletes the remote ref.
 - `:GinLog [flags] [revision] [-- paths...]` displays commit history. `<CR>`
   shows the selected commit; `yy` yanks its hash. Show actions support edit,
   split, vsplit, and tabedit destinations. Branch `log` actions open GinLog
@@ -55,7 +56,7 @@ Currently implemented:
   an existing tag. `fixup` commits staged changes for the selected commit;
   `fixup:instant-fixup` immediately autosquashes them, including root commits.
   `switch:detach` checks out the selected commit without moving a branch ref.
-  Merge and non-interactive rebase variants work as in GinBranch, targeting
+  Merge and rebase variants work as in GinBranch, targeting
   the selected commit.
   Annotated/signed tags and fixup amend/reword actions remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog

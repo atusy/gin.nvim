@@ -260,3 +260,9 @@ Lua gitcommit/gitrebase filetype plugins now supply the upstream Accept/Cancel
 aliases, respecting existing commands and the disable option. A real commit
 verifies Accept through the proxy's quit handling. The formatter check now
 includes ftplugin Lua files.
+
+Interactive rebase actions (rebase:i and rebase:i:x) now dispatch asynchronously
+from branch and history views through the editor proxy. Completion runs checktime
+and the usual command-post refresh. A history fixture edits the todo to drop a
+commit and verifies resulting HEAD and worktree content. Broader conflict, exec
+and cancellation coverage remains pending.

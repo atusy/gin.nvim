@@ -51,6 +51,9 @@ function M.execute(opts)
     end
   end
   local function finish(result, source)
+    if opts.on_exit then
+      opts.on_exit(result)
+    end
     if result.code ~= 0 then
       report(("%s exited %d: %s"):format(source, result.code, vim.trim(result.stderr or "")))
       return

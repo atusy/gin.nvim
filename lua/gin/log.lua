@@ -75,7 +75,7 @@ function M.read(buf, name)
     end)
   end
   action.alias(buf, "merge", "merge:ff")
-  for _, variant in ipairs({ "rebase", "rebase:x", "rebase:instant-drop" }) do
+  for _, variant in ipairs({ "rebase", "rebase:x", "rebase:i", "rebase:i:x", "rebase:instant-drop" }) do
     action.define(buf, variant, function(target, range)
       local row = M.candidates(target, range)[1]
       if not row then
@@ -84,11 +84,26 @@ function M.read(buf, name)
       local args = variant == "rebase:instant-drop"
           and { "rebase", "--onto", row.commit .. "~", row.commit, "HEAD" }
         or { "rebase", row.commit }
+      local interactive = variant == "rebase:i" or variant == "rebase:i:x"
+      if interactive then
+        args[#args + 1] = "--interactive"
+      end
       local function execute()
+        if interactive then
+          local fargs = { "++worktree=" .. parsed.root }
+          vim.list_extend(fargs, args)
+          return require("gin.command").execute({
+            fargs = fargs,
+            smods = {},
+            on_exit = function()
+              vim.cmd("silent checktime")
+            end,
+          })
+        end
         run(args)
         vim.cmd("silent checktime")
       end
-      if variant == "rebase:x" then
+      if variant == "rebase:x" or variant == "rebase:i:x" then
         vim.ui.input({ prompt = "Execute command after rebase: " }, function(command)
           if not command or command == "" then
             return
@@ -97,7 +112,7 @@ function M.read(buf, name)
           execute()
         end)
       else
-        execute()
+        return execute()
       end
     end)
   end
