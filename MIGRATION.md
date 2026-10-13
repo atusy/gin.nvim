@@ -1144,3 +1144,10 @@ renderer. That renderer also accepts ordinary diff buffers, using standard
 evaluates the legacy foldtext expression in both GinDiff and an unnamed buffer
 containing the same patch, checking the path and added/deleted line counts.
 Existing fixtures cover the published ASCII/Nerd Font presets and overrides.
+
+The legacy fold preset variables also autoload before `plugin/gin.lua` runs.
+They previously existed only after plugin initialization, breaking Vimscript
+startup settings that select a preset. An isolated Neovim process started with
+`-u NONE` reads both presets through Vimscript, verifies all four symbols and
+asserts that the plugin remains uninitialized. The values come from Lua's
+existing preset tables rather than a second implementation.

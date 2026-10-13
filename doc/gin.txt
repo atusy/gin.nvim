@@ -224,7 +224,8 @@ keys use ASCII defaults. Presets are available in Lua: >lua
     vim.g.gin_difffold_prefixes = require('gin.difffold').presets.nerdfont
 <
 The plugin also publishes g:gin#difffold#prefixes_ascii and
-g:gin#difffold#prefixes_nerdfont.
+g:gin#difffold#prefixes_nerdfont. Vimscript references autoload these presets
+even before plugin initialization, so they can be used in startup settings.
 
 gin#difffold#foldtext()                              *gin#difffold#foldtext()*
     Legacy foldtext entry point backed by require('gin.difffold').text().
