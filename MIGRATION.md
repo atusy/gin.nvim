@@ -706,3 +706,10 @@ checks the event's URI and observed unchanged text, an unchanged modified flag,
 and no additional event for a missing index path. This is native read-event
 consistency within the Lua port, not a claim that the pinned Denops append
 implementation explicitly emits the same event.
+
+The shared echo action now uses two-space JSON indentation, matching the pinned
+action/echo.ts presentation. Formatting operates on encoded JSON and leaves
+quoted content untouched. A fixture verifies exact nested output with escaped
+quotes, backslashes, punctuation, newlines, booleans, null and an empty object;
+decoding the output recovers the original candidates. Empty selections retain
+the existing [] representation.

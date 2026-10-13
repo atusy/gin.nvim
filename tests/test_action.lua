@@ -63,6 +63,31 @@ T["echo serializes selected candidates as JSON including escaped paths"] = funct
   MiniTest.expect.equality(vim.json.decode(output), selected)
   MiniTest.expect.equality(observed_range, { 2, 3 })
 end
+T["echo formats nested JSON without changing escaped string content"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local value = 'quote" slash\\ comma, colon: brackets[] braces{}\nnext'
+  action.setup(buf, function()
+    return { { value = { value, false, vim.NIL, vim.empty_dict() } } }
+  end)
+  local echo, output = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    output = chunks[1][1]
+  end
+  local ok, err = pcall(action.call, buf, "echo", { 1, 1 })
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(
+    output,
+    '[\n  {\n    "value": [\n      '
+      .. vim.json.encode(value)
+      .. ",\n      false,\n      null,\n      {}\n    ]\n  }\n]"
+  )
+  MiniTest.expect.equality(
+    vim.json.decode(output),
+    { { value = { value, false, vim.NIL, vim.empty_dict() } } }
+  )
+end
 T["user action aliases appear in choice and preserve explicit ranges"] = function()
   local action = require("gin.action")
   local buf = vim.api.nvim_get_current_buf()

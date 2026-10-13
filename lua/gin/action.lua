@@ -2,6 +2,47 @@ local M = {}
 local actions = {}
 local range_internal
 
+local function pretty_json(json)
+  local parts, depth, quoted, escaped = {}, 0, false, false
+  local function newline()
+    parts[#parts + 1] = "\n" .. string.rep("  ", depth)
+  end
+  for i = 1, #json do
+    local char = json:sub(i, i)
+    if quoted then
+      parts[#parts + 1] = char
+      if escaped then
+        escaped = false
+      elseif char == "\\" then
+        escaped = true
+      elseif char == '"' then
+        quoted = false
+      end
+    elseif char == '"' then
+      quoted = true
+      parts[#parts + 1] = char
+    elseif char == "[" or char == "{" then
+      parts[#parts + 1] = char
+      depth = depth + 1
+      if json:sub(i + 1, i + 1) ~= (char == "[" and "]" or "}") then
+        newline()
+      end
+    elseif char == "]" or char == "}" then
+      depth = depth - 1
+      if json:sub(i - 1, i - 1) ~= (char == "]" and "[" or "{") then
+        newline()
+      end
+      parts[#parts + 1] = char
+    elseif char == "," then
+      parts[#parts + 1] = char
+      newline()
+    else
+      parts[#parts + 1] = char == ":" and ": " or char
+    end
+  end
+  return table.concat(parts)
+end
+
 function M.range()
   if range_internal then
     return vim.deepcopy(range_internal)
@@ -161,7 +202,7 @@ function M.setup(buf, gather)
     require("gin.browse").setup(buf, gather)
     M.define(buf, "echo", function(target, range)
       local selected = gather(target, range)
-      local output = #selected == 0 and "[]" or vim.json.encode(selected)
+      local output = #selected == 0 and "[]" or pretty_json(vim.json.encode(selected))
       vim.api.nvim_echo({ { output, "None" } }, true, {})
     end)
   end
