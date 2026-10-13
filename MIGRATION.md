@@ -899,3 +899,11 @@ overwrites the working file; plumbing stdout (blob IDs) is not displayed. A real
 required clean filter waits for its progress to be displayed before proceeding.
 The fixture checks transformed index content, unchanged working content, no blob
 or hash echo, cleared modified state and restored editor options.
+
+Shared file mutation actions (add/rm/restore/stash) and status stage/unstage paths
+now stream both Git output channels, matching upstream's bare-command dispatch.
+Real required clean-filter fixtures independently cover `stage` and `add`, waiting
+for displayed progress before completing and asserting transformed index content,
+unchanged working content and restored editor options. Existing action fixtures
+continue to validate selection and resulting Git state. This streaming change
+does not close the wider action executor/proxy compatibility audit.

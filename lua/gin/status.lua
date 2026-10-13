@@ -193,18 +193,18 @@ function M.action(buf, name, range)
   if #removed > 0 then
     git.run(
       vim.list_extend({ "rm", "--quiet", "--ignore-unmatch", "--cached", "--" }, removed),
-      { cwd = root }
+      { cwd = root, progress = "both" }
     )
   end
   if #paths > 0 then
     local args = unstage and { "reset", "--quiet", "--" }
       or { "add", "--ignore-errors", "--force", "--" }
-    git.run(vim.list_extend(args, paths), { cwd = root })
+    git.run(vim.list_extend(args, paths), { cwd = root, progress = "both" })
   end
   if #intent > 0 then
     git.run(
       vim.list_extend({ "add", "--ignore-errors", "--force", "--intent-to-add", "--" }, intent),
-      { cwd = root }
+      { cwd = root, progress = "both" }
     )
   end
   require("gin.command").post()

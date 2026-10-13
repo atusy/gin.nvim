@@ -57,6 +57,36 @@ T["staging supports newlines, pathspec magic and leading dashes"] = function()
   table.sort(paths)
   MiniTest.expect.equality(actual, paths)
 end
+for _, name in ipairs({ "stage", "add" }) do
+  T[name .. " displays filter progress before completing the index update"] = function()
+    vim.fn.writefile({ "content" }, root .. "/file")
+    vim.cmd.GinStatus()
+    vim.fn.writefile({ "file filter=progress" }, root .. "/.git/info/attributes")
+    H.git(root, "config", "filter.progress.required", "true")
+    H.git(
+      root,
+      "config",
+      "filter.progress.clean",
+      [[printf 'filter waiting\n' >&2; i=0; while test ! -f .git/action-seen; do i=$((i+1)); test "$i" -lt 100 || exit 9; sleep 0.01; done; tr a-z A-Z]]
+    )
+    local echo, live = vim.api.nvim_echo, false
+    local more, height = vim.o.more, vim.o.cmdheight
+    vim.api.nvim_echo = function(chunks, history)
+      if not history and chunks[1][1] == "filter waiting" then
+        live = true
+        vim.fn.writefile({}, root .. "/.git/action-seen")
+      end
+    end
+    local ok, err =
+      pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), name, { 2, 2 })
+    vim.api.nvim_echo = echo
+    assert(ok, err)
+    MiniTest.expect.equality(live, true)
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "CONTENT\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+  end
+end
 T["unstaging the branch header leaves staged files alone"] = function()
   vim.fn.writefile({ "content" }, root .. "/file")
   H.git(root, "add", "file")
