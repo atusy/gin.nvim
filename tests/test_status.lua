@@ -25,6 +25,23 @@ T["GinStatus lists the branch and untracked paths in sorted order"] = function()
     { "## No commits yet on main", "?? a", "?? z" }
   )
 end
+T["legacy status URIs retain path filters during staging and reload"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.fn.writefile({ "target" }, root .. "/sub/target$")
+  vim.fn.writefile({ "other" }, root .. "/other")
+  vim.cmd.cd(root .. "/sub")
+  local name = "ginstatus://"
+    .. root
+    .. ";untracked-files=no&untracked-files=all#[%22sub/target$%22]$"
+  require("gin.buffer").open(name, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "?? sub/target$" })
+  vim.cmd.edit()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "sub/target$\0")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "A  sub/target$" })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/other"), { "other" })
+end
 T["stage and unstage target the selected path from a subdirectory"] = function()
   vim.fn.mkdir(root .. "/sub", "p")
   vim.fn.writefile({ "hello" }, root .. "/sub/space name")

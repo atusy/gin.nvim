@@ -1210,3 +1210,11 @@ defaults retain upstream override ordering. Fixtures detach HEAD at a different
 commit, then verify the stored branch/path selection, full-hash formatting and
 limit, reloads, selected-commit show actions and insertion without changing the
 destination filetype. Other listing URI payloads and custom parsers remain open.
+
+Legacy GinStatus now reads its dollar-terminated JSON pathspec fragment and
+formats repeated parameter values in their saved order. Previously repeated
+flags raised a table-concatenation error and the fragment marker prevented JSON
+decoding. A real repository fixture opens a filtered status URI from a
+subdirectory, reloads it and stages the selected dollar-suffixed path. The
+resulting index contains only that path, the refreshed view retains its filter
+and an unrelated untracked file remains untouched.

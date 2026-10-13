@@ -167,6 +167,8 @@ Legacy GinDiff parameter/path data and GinBuffer command fragments are also
 accepted for opening, reloading and reading output into another buffer.
 GinLog and GinReflog accept upstream URI flags, revision/ref selectors and
 GinLog path arrays as well.
+GinStatus accepts upstream flags and its dollar-terminated JSON pathspec array;
+selection and automatic reload retain those filters.
 
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select

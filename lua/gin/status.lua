@@ -60,13 +60,22 @@ function M.read(buf, name)
     "--ahead-behind",
     "-z",
   }
-  for key, value in pairs(parsed.params) do
+  for _, key in ipairs(parsed.param_order) do
     if key ~= "enc" and key ~= "ff" then
-      args[#args + 1] = "--" .. key .. (value ~= "" and "=" .. value or "")
+      local values = parsed.params[key]
+      for _, value in ipairs(type(values) == "table" and values or { values }) do
+        args[#args + 1] = (#key == 1 and "-" or "--")
+          .. key
+          .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
+      end
     end
   end
   args[#args + 1] = "--"
-  vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
+  local fragment = parsed.fragment
+  if fragment and parsed.legacy then
+    fragment = fragment:gsub("%$$", "")
+  end
+  vim.list_extend(args, fragment and vim.json.decode(fragment) or {})
   local branch, entries, prefixes =
     M.parse(git.run(args, { cwd = parsed.root, progress = true }).stdout)
   local lines = { branch or "## HEAD" }
