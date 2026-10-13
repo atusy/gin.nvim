@@ -86,6 +86,11 @@ end
 
 function M.run(args, opts)
   opts = opts or {}
+  if opts.progress then
+    opts = vim.tbl_extend("force", opts, {
+      env = vim.tbl_extend("force", require("gin.editor").environment() or {}, opts.env or {}),
+    })
+  end
   local result = opts.progress and with_progress(args, opts) or M.start(args, opts):wait()
   if opts.check ~= false and result.code ~= 0 then
     error(M.error_message(result, "git"), 0)

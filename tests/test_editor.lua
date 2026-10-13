@@ -105,6 +105,31 @@ T["synchronous editor failure preserves the index without a success event"] = fu
   }).code ~= 0, true)
   MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
 end
+T["synchronous progress commands service editor requests before returning"] = function()
+  local timer = vim.uv.new_timer()
+  timer:start(
+    10,
+    10,
+    vim.schedule_wrap(function()
+      if vim.b.gin_editor_request then
+        timer:stop()
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { "synchronous proxy commit" })
+        vim.cmd.Apply()
+      end
+    end)
+  )
+  local ok, result = pcall(require("gin.git").run, { "commit" }, {
+    cwd = root,
+    progress = true,
+    timeout = 5000,
+  })
+  timer:stop()
+  timer:close()
+  assert(ok, result)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "synchronous proxy commit\n")
+  MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+end
 T["Cancel rejects the commit and leaves staged content intact"] = function()
   local process = require("gin.command").execute({
     fargs = { "commit" },

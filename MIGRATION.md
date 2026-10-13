@@ -922,3 +922,12 @@ reset, proving progress is delivered before final echo and checking HEAD moves
 to the selected commit while index and working content remain intact. Existing
 log action fixtures validate the other mutation results; command/proxy behavior
 beyond streaming remains under audit.
+
+Synchronous executions that service progress now inherit the configured editor
+and askpass proxy environment, as upstream installs those overrides before Git
+execution. Explicit per-call environment entries remain authoritative and proxy
+disable settings are respected. A real `git credential fill` regression exposed
+missing proxy variables; fixtures now cover masked credential responses, askpass
+opt-out and an actual commit completed through the editor Apply command. The
+same merged environment is passed to output processors. Manual keyboard-driven
+editing while a synchronous call waits remains unverified.

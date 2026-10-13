@@ -67,6 +67,26 @@ T["interrupted askpass fails Git without returning a credential"] = function()
   MiniTest.expect.equality(result.code ~= 0, true)
   MiniTest.expect.equality(result.stdout, "")
 end
+T["synchronous progress commands service the configured askpass proxy"] = function()
+  local prompts = {}
+  vim.fn.inputsecret = function(prompt)
+    prompts[#prompts + 1] = prompt
+    return #prompts == 1 and "unit-user" or "unit-password"
+  end
+  local more, height = vim.o.more, vim.o.cmdheight
+  local result = require("gin.git").run({ "-c", "credential.helper=", "credential", "fill" }, {
+    cwd = root,
+    env = { GIT_TERMINAL_PROMPT = "0" },
+    stdin = "protocol=https\nhost=example.invalid\n\n",
+    progress = true,
+    timeout = 5000,
+  })
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(#prompts, 2)
+  MiniTest.expect.equality(result.stdout:find("username=unit-user\n", 1, true) ~= nil, true)
+  MiniTest.expect.equality(result.stdout:find("password=unit-password\n", 1, true) ~= nil, true)
+  MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+end
 T["editor and askpass proxy opt-outs are independent"] = function()
   vim.g.gin_proxy_disable_editor = 1
   local env = require("gin.editor").environment()
@@ -79,5 +99,24 @@ T["editor and askpass proxy opt-outs are independent"] = function()
   MiniTest.expect.equality(env.GIT_ASKPASS, nil)
   vim.g.gin_proxy_disable_editor = 1
   MiniTest.expect.equality(require("gin.editor").environment(), nil)
+end
+T["synchronous proxy opt-out keeps credential requests noninteractive"] = function()
+  vim.g.gin_proxy_disable_askpass = 1
+  local prompts = 0
+  vim.fn.inputsecret = function()
+    prompts = prompts + 1
+    return "unexpected"
+  end
+  local result = require("gin.git").run({ "-c", "credential.helper=", "credential", "fill" }, {
+    cwd = root,
+    env = { GIT_TERMINAL_PROMPT = "0" },
+    stdin = "protocol=https\nhost=example.invalid\n\n",
+    progress = true,
+    check = false,
+    timeout = 5000,
+  })
+  MiniTest.expect.equality(result.code ~= 0, true)
+  MiniTest.expect.equality(result.stdout, "")
+  MiniTest.expect.equality(prompts, 0)
 end
 return T
