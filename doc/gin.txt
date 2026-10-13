@@ -1,0 +1,232 @@
+*gin.nvim*  Lua Git integration for Neovim
+
+Requires Neovim 0.10+ and Git. No Deno or Denops runtime is required.
+This rewrite is in progress. Its reference is vim-gin commit
+24cce091cfa32c013bc53cf4ff8f721d6690cf24. See MIGRATION.md in the repository
+for implemented behavior, validation evidence, and remaining compatibility work.
+
+Contents ~
+    Commands           |gin-commands|
+    Arguments          |gin-arguments|
+    Actions            |gin-actions|
+    Configuration      |gin-configuration|
+    Editor and prompts |gin-proxy|
+    Statusline         |gin-components|
+    Events             |gin-events|
+    Limitations        |gin-limitations|
+
+==============================================================================
+COMMANDS                                                        *gin-commands*
+
+:Gin [++wait] [++worktree={path}] {git-arguments}                       *:Gin*
+    Execute Git asynchronously and display live output. :silent suppresses
+    progress. ++wait waits synchronously for completion. Successful commands
+    emit |GinCommandPost|. ++processor={command} transforms stdout; processor
+    failure prevents the success event.
+
+:GinBuffer [++opener={opener}] {git-arguments}                    *:GinBuffer*
+    Display Git output in a buffer. :edit reloads it. ANSI Git colors become
+    highlights; ++monochrome skips forced Git coloring. Supports ++worktree,
+    ++filetype, ++processor, ++emojify, ++enc and ++ff.
+
+:GinStatus [options] [flags] [-- pathspecs]                       *:GinStatus*
+    Display status. << stages the selected lines; >> unstages them. dd opens
+    a smart diff, pp opens patch panes, !! opens conflict panes, == stashes the
+    selection, <CR> opens the working file, and yy yanks its absolute path.
+
+:GinBranch [options] [flags] [patterns...]                       *:GinBranch*
+    List branches. <CR> switches branches and yy yanks the branch name.
+    Actions include new, move, delete, worktree, merge, rebase, and log.
+    Remote deletion deletes the remote ref. Use the action help to inspect
+    available variants before running destructive actions.
+
+:GinLog [options] [flags] [revision] [-- paths...]                   *:GinLog*
+    Display commit history. <CR> shows the commit; yy yanks its hash.
+    Actions include cherry-pick, revert, reset, tag, fixup, merge and rebase.
+    Paths are repository-relative. ++emojify renders GitHub emoji names.
+
+:GinReflog [options] [flags] [ref]                               *:GinReflog*
+    Display reflog history with the implemented GinLog actions.
+
+:GinStash [options] [flags]                                      *:GinStash*
+    List stashes. <CR> shows the stash; yy yanks its ref. apply, pop, and drop
+    act on the first selected entry. apply:index and pop:index restore the
+    index as well. Supports ++emojify.
+
+:GinTag [options] [flags] [patterns...]                             *:GinTag*
+    List tags. <CR> shows the tag; yy yanks its name. Actions include delete,
+    switch:detach, and yank:commit. Supports ++emojify.
+
+:GinEdit [options] [commitish] {path}                              *:GinEdit*
+    Open the index version by default, or an immutable revision if commitish
+    is supplied. Paths are repository-relative. :write on an index buffer
+    updates the index while preserving the working file. Supports ++worktree,
+    ++opener, ++enc and ++ff.
+
+:GinDiff [options] [flags] [commitish] [-- paths...]               *:GinDiff*
+    Display a comparison; --cached compares the index. Revision ranges are
+    supported. Paths are repository-relative. <CR> jumps to the matching side
+    of a changed line, g<CR> to the old side, and <C-g><CR> to the new side.
+    zc/zo close/open file folds. Supports ++worktree, ++opener, ++processor,
+    ++enc and ++ff.
+
+:GinPatch [++no-head] [++no-worktree] [path]                      *:GinPatch*
+    Open HEAD, index and working-file diff panes, focusing the index. Path is
+    relative to cwd and defaults to the current file. In the index pane, dol
+    gets a HEAD hunk, dor gets a working-file hunk, and :write saves the index.
+    do gets the right pane if present, otherwise the left. dp puts the hunk
+    into the working pane. Other panes use do/dp with the index where possible.
+
+:GinChaperon [++no-ours] [++no-theirs] [path]                  *:GinChaperon*
+    Open theirs, working-file and ours conflict panes, focusing the working
+    file. Path is relative to cwd and defaults to the current file. Conflict
+    blocks are removed from the buffer. dol/dor get hunks from theirs/ours;
+    do prefers ours. Side panes use dp to put hunks into the working file.
+    Write the resolved file, then stage it explicitly.
+
+:[range]GinBrowse [flags] [revision] [path]                     *:GinBrowse*
+    Open a hosting URL, defaulting to the current file. --no-browser prints
+    it; ++yank=a copies it to register a. Supports --home, --commit,
+    --permalink, --remote={name}, ++repository and ++worktree. GitHub, GitLab
+    and Bitbucket routes are supported. --pr finds GitHub PR URLs from merge
+    messages and local ancestry, using remote HEAD or main as fallback.
+
+:GinBlame [options] [commitish] {path}                           *:GinBlame*
+    Open synchronized attribution, committed content and commit details.
+    <CR> follows the line's source commit and historical filename; selecting
+    that commit again visits its parent. <C-O>/<C-I> traverse visited revisions.
+    Reloading source or attribution refreshes the panes. Closing a pane closes
+    its companions. Supports ++worktree, ++opener, ++enc, ++ff and ++emojify.
+    Emoji rendering affects metadata, preserving literal source text.
+
+:GinCd                                                            *:GinCd*
+:GinLcd                                                          *:GinLcd*
+:GinTcd                                                          *:GinTcd*
+    Change global, window-local or tab-local cwd to the buffer's repository.
+
+==============================================================================
+ARGUMENTS                                                       *gin-arguments*
+
+Commands locate the repository from the current buffer, then cwd.
+++worktree={path} explicitly selects a repository where supported.
+Use Vim command argument syntax: escape spaces with backslashes. %:p expands
+the current filename. Example: >
+    :GinStatus
+    :GinEdit HEAD src/main.lua
+    :GinDiff --cached -- src/main.lua
+    :GinBuffer ++opener=split log --oneline -10
+<
+Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
+pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
+decoding on commands that support them. ++processor accepts a command with its
+arguments escaped as one Gin argument.
+
+:read {URI} inserts output for gin://, ginedit://, gindiff://, gintag://,
+ginlog://, ginreflog:// and ginstash:// buffers. Obtain the URI from an existing
+Gin buffer's name. Reads support line addresses and decoding without changing
+the destination buffer's encoding or fileformat. URI compatibility is still
+being audited; avoid constructing URIs by hand.
+
+==============================================================================
+ACTIONS                                                           *gin-actions*
+
+In status, branch, tag, log, reflog and stash views:
+    a       Choose an action, with completion.
+    .       Repeat the chosen action on the current selection.
+    ?       Show action help.
+
+Actions use <Plug>(gin-action-{name}) mappings. Available actions depend on the
+view. help:all lists detailed variants. echo prints selected candidate metadata
+as JSON. Normal mode selects the current line; visual mode selects a range.
+User-defined global and buffer-local action mappings appear in discovery.
+
+Lua callers can use: >lua
+    local action = require('gin.action')
+    local buf = vim.api.nvim_get_current_buf()
+    action.list(buf)                   -- sorted action names
+    action.call(buf, 'echo', { 1, 2 }) -- inclusive, one-based line range
+<
+In an initialized Gin action view, use action.define(buf, name, callback).
+The callback receives (buf, range). action.range() returns a copy of the current action selection.
+Treat other module internals as subject to change during the migration.
+
+==============================================================================
+CONFIGURATION                                               *gin-configuration*
+
+Set globals before opening a view. Argument settings are lists of strings:
+    g:gin_{kind}_default_args       Used when no explicit arguments are given.
+    g:gin_{kind}_persistent_args    Prepended to default or explicit arguments.
+
+Kinds: branch, browse, chaperon, diff, edit, log, reflog, patch, stash, status,
+and tag. Both settings are validated even when explicit arguments are given.
+Example: >lua
+    vim.g.gin_status_default_args = { '--short' }
+    vim.g.gin_browse_persistent_args = { '--no-browser' }
+<
+Set g:gin_{kind}_disable_default_mappings = 1 to disable default keys for status,
+branch, tag, log, reflog, stash, diff, buffer, blame, patch or chaperon.
+
+                                             *g:gin_difffold_prefixes*
+Customize fold labels with added, deleted, modified and renamed keys. Missing
+keys use ASCII defaults. Presets are available in Lua: >lua
+    vim.g.gin_difffold_prefixes = require('gin.difffold').presets.nerdfont
+<
+The plugin also publishes g:gin#difffold#prefixes_ascii and
+g:gin#difffold#prefixes_nerdfont.
+
+Set g:gin_chaperon_supplement_disable = 1 to hide supporting commit logs.
+g:gin_chaperon_supplement_height controls their height (default 10).
+g:gin_browse_aliases configures hosting aliases for browse URLs.
+
+==============================================================================
+EDITOR AND PROMPTS                                                 *gin-proxy*
+
+Asynchronous Gin commands open Git editor requests in a new tab. Buffer-local
+:Apply writes the file and continues Git; :Cancel rejects the request. Quitting
+asks whether to apply. Git credential prompts use masked Neovim input.
+
+    g:gin_proxy_editor_opener            Choose another supported opener.
+    g:gin_proxy_disable_editor           Set to 1 to retain Git's editor.
+    g:gin_proxy_disable_askpass          Set to 1 to retain Git's askpass.
+    g:gin_proxy_apply_without_confirm    Set to 1 to apply on quit directly.
+
+With filetype plugins enabled, gitcommit/gitrebase buffers get :Accept (:wq)
+and :Cancel (:cq) aliases unless already defined. Disable them with
+g:gin_proxy_disable_accept_and_cancel_aliases = 1. Proxy buffers retain their
+request-specific :Apply and :Cancel. ++wait proxy integration remains pending.
+
+==============================================================================
+STATUSLINE                                                     *gin-components*
+
+Lua functions return cached strings and update asynchronously:
+    require('gin.component.branch').ascii() / .unicode()
+        Branch and upstream.
+    require('gin.component.traffic').ascii() / .unicode()
+        Ahead/behind counts.
+    require('gin.component.worktree').name() / .full()
+        Repository path.
+
+Listen for |GinComponentPost| to redraw the statusline.
+
+==============================================================================
+EVENTS                                                             *gin-events*
+
+                                                        *GinCommandPost*
+User GinCommandPost
+    Emitted after a successful Gin command and any configured processor.
+    List views and components use it to refresh.
+
+                                                        *GinComponentPost*
+User GinComponentPost
+    Emitted when asynchronous component data is ready.
+
+==============================================================================
+LIMITATIONS                                                   *gin-limitations*
+
+The migration is incomplete. See MIGRATION.md for the detailed audit status.
+Synchronous Git processes currently have a 30-second timeout. Asynchronous Gin
+commands have no such timeout so interactive editing can finish. Synchronous
+proxy/progress integration, custom indicator APIs, full decoration and parse
+pattern compatibility, and legacy Vimscript APIs remain under audit.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

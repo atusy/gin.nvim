@@ -508,3 +508,10 @@ preserved and no success event is emitted. A separate headless input probe
 confirmed that vim.wait does not process normal editor input, so merely pumping
 scheduled RPC callbacks would not establish usable ++wait editor integration;
 that integration remains pending.
+
+Native Neovim help now documents the implemented commands, action mappings and
+Lua selection API, configuration, proxies, components and events. All 29 tags
+were opened successfully with isolated runtimes on Neovim 0.10.0 and the current
+development build. This is a guide to the implemented subset, not a claim of
+complete upstream help/API compatibility. README statements about colors,
+Blame emoji rendering and minimum-version validation were brought up to date.

@@ -5,6 +5,7 @@ The reference is fixed at `24cce091cfa32c013bc53cf4ff8f721d6690cf24`.
 This implementation is in progress; see [MIGRATION.md](MIGRATION.md).
 
 Requires Neovim 0.10+ and Git. No Denops or Deno runtime is required.
+See `:help gin.nvim` for commands, configuration, actions, and Lua components.
 
 Run `make test` for mini.nvim tests and `make check` for formatting.
 Use `make test NVIM_BIN=/path/to/nvim` to test another Neovim installation;
@@ -22,7 +23,7 @@ Currently implemented:
 - `:GinBuffer [++opener=edit|split|vsplit|tabedit|pedit] {git arguments}` displays
   command output. Use `:edit` to reload, or `:read {gin-URI}` to insert output
   into another buffer. `++worktree`, `++filetype`, and
-  `++monochrome` are accepted; output is currently monochrome.
+  `++monochrome` are accepted; ANSI Git colors are rendered as highlights.
   `++enc`/`++encoding` and `++ff`/`++fileformat` select decoding and survive reloads.
   `++processor=command\ args` transforms successful Git output through a command
   run in the repository directory; processor errors fail the read.
@@ -128,7 +129,7 @@ Currently implemented:
   key bindings. `<C-O>` and `<C-I>` move backward and forward through visited
   revisions, restoring filenames and cursor positions. `++enc`/`++encoding` and
   `++ff`/`++fileformat` select file decoding and persist through navigation.
-  Emoji rendering is still being ported.
+  `++emojify` renders emoji names in metadata while preserving source text.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
@@ -144,9 +145,9 @@ Synchronous Git processes currently have a 30-second timeout. Asynchronous `Gin`
 commands wait without that timeout so interactive editing can finish.
 
 The rewrite is not a complete replacement yet. Other views and actions,
-interactive editor/askpass integration, full decoration support, and compatibility audits remain
-in the migration checklist. Tests currently run locally on Neovim 0.13 nightly;
-the stated minimum version has not yet been exercised.
+synchronous editor/askpass integration, full decoration support, and compatibility audits remain
+in the migration checklist. The 308-case suite was verified on Neovim 0.10.0
+and 0.10.4; development also uses Neovim 0.13 nightly.
 
 Statusline components are available as Lua functions:
 
@@ -171,7 +172,8 @@ Asynchronous `:Gin commit` opens Git's editor file in a new tab. Use buffer-loca
 whether to apply; `g:gin_proxy_apply_without_confirm = 1` applies without asking.
 Asynchronous Gin commands also route Git credential prompts through masked
 Neovim input; `g:gin_proxy_disable_askpass = 1` retains the configured askpass.
-Terminal inheritance and synchronous/action integration are still being ported.
+Terminal inheritance, synchronous integration, and remaining action compatibility
+are still being audited.
 
 With filetype plugins enabled, gitcommit/gitrebase buffers receive `:Accept`
 (`:wq`) and `:Cancel` (`:cq`) aliases unless those commands already exist.
