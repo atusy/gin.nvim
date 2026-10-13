@@ -50,3 +50,10 @@ vim.api.nvim_create_autocmd("BufWriteCmd", {
     require("gin.edit").write(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_autocmd("FileReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_edit", { clear = false }),
+  pattern = "ginedit://*",
+  callback = function(event)
+    require("gin.edit").insert(event.buf, event.match)
+  end,
+})

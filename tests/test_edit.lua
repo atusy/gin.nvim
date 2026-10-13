@@ -101,4 +101,17 @@ T["writing an empty index buffer keeps the blob empty"] = function()
   vim.cmd.write()
   MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "")
 end
+T["read inserts a revision at the requested line"] = function()
+  vim.cmd("GinEdit HEAD sub/file.lua")
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "first", "last" })
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_cmd({ cmd = "read", range = { 1 }, args = { vim.fn.fnameescape(name) } }, {})
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "first", "committed", "last" }
+  )
+  MiniTest.expect.equality(vim.bo.buftype, "")
+end
 return T

@@ -107,6 +107,24 @@ function M.write(buf, name)
   require("gin.command").post()
 end
 
+function M.insert(buf, name)
+  local parsed = uri.parse(name)
+  local path = M.path(parsed.root, assert(parsed.fragment, "GinEdit requires a path"))
+  local data = git.run(
+    { "show", (parsed.params.commitish or "") .. ":" .. path },
+    { cwd = parsed.root }
+  ).stdout
+  if data == "" then
+    return
+  end
+  local lines = M.decode(data, parsed.params)
+  local after = vim.fn.line("'[")
+  vim.api.nvim_buf_set_lines(buf, after, after, false, lines)
+  vim.api.nvim_buf_set_mark(buf, "[", after + 1, 0, {})
+  vim.api.nvim_buf_set_mark(buf, "]", after + #lines, 0, {})
+  vim.api.nvim_exec_autocmds("FileReadPost", { pattern = name, modeline = false })
+end
+
 function M.open(root, path, options)
   options = options or {}
   return buffer.open(
