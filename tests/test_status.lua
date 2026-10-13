@@ -171,4 +171,33 @@ T["restore reverts only the selected working file"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/one"), { "base" })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "changed" })
 end
+for _, variant in ipairs({ "ours", "theirs", "conflict:merge", "conflict:diff3" }) do
+  T["restore " .. variant .. " uses unmerged index stages"] = function()
+    local git = require("gin.git")
+    local records = {}
+    for stage, content in ipairs({ "base", "ours", "theirs" }) do
+      local hash = vim.trim(
+        git.run({ "hash-object", "-w", "--stdin" }, { cwd = root, stdin = content .. "\n" }).stdout
+      )
+      records[#records + 1] = "100644 " .. hash .. " " .. stage .. "\tfile\0"
+    end
+    git.run({ "update-index", "-z", "--index-info" }, { cwd = root, stdin = table.concat(records) })
+    vim.fn.writefile({ "unresolved" }, root .. "/file")
+    vim.cmd.GinStatus()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "restore:" .. variant, { 2, 2 })
+    local content = table.concat(vim.fn.readfile(root .. "/file"), "\n")
+    if variant == "ours" or variant == "theirs" then
+      MiniTest.expect.equality(content, variant)
+    else
+      MiniTest.expect.equality(content:find("<<<<<<<", 1, true) ~= nil, true)
+      MiniTest.expect.equality(content:find("ours", 1, true) ~= nil, true)
+      MiniTest.expect.equality(content:find("theirs", 1, true) ~= nil, true)
+      MiniTest.expect.equality(content:find("base", 1, true) ~= nil, variant == "conflict:diff3")
+    end
+    MiniTest.expect.equality(
+      #vim.split(H.git(root, "ls-files", "--unmerged"), "\n", { trimempty = true }),
+      3
+    )
+  end
+end
 return T
