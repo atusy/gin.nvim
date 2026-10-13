@@ -169,8 +169,14 @@ compatibility remains part of the final action audit.
 
 GinBrowse supports file/tree/home/commit URLs, explicit remotes, aliases, ranges
 and permalinks. Provider routes were checked against deno-git-browse v1.0.1
-(the minimum version referenced by pinned vim-gin). PR lookup and full URL edge-case parity remain
+(the minimum version referenced by pinned vim-gin). Full URL edge-case parity remains
 pending. Browser opening uses vim.ui.open and was not launched by the tests.
 
 Shared browse actions now support file/ref, commit, permalink and yank variants
-in implemented candidate views. PR variants remain pending lookup support.
+in implemented candidate views. PR variants now use merge-message/ancestry lookup.
+
+GitHub PR lookup recognizes standard merge messages, either directly or along
+remote-default-branch ancestry. It uses local remote HEAD (fallback main) rather
+than upstream’s network remote-show discovery. Squash/rebase-merged PRs without
+matching messages are not inferred. Tests cover direct/containing merges and
+missing matches without network access.

@@ -103,6 +103,8 @@ Currently implemented:
   and `++repository`, with GitHub/GitLab/Bitbucket routes and host aliases in
   `g:gin_browse_aliases`. Remote selection prefers `origin` among remotes
   containing the commit, then another containing remote, with `origin` as fallback.
+  `--pr` (or `browse:pr`/`browse:pr:yank`) finds GitHub PR URLs from merge
+  messages and local ancestry; it uses the remote HEAD ref, falling back to `main`.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
