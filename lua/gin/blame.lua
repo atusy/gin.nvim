@@ -126,8 +126,10 @@ function M.update_detail(buf, lnum)
   if not commit or vim.b[detail].gin_blame_detail_last_commit == commit then
     return
   end
-  local output =
-    git.run({ "show", "--no-patch", "--format=fuller", commit, "--" }, { cwd = parsed.root }).stdout
+  local output = git.run(
+    { "show", "--no-patch", "--format=fuller", commit, "--" },
+    { cwd = parsed.root, progress = true }
+  ).stdout
   buffer.replace(detail, detail_lines(output, parsed.params), parsed.root, "git")
   vim.bo[detail].buftype = "nowrite"
   vim.b[detail].gin_blame_detail_last_commit = commit
@@ -140,7 +142,7 @@ function M.read(buf, name, output)
   output = output
     or git.run(
       { "blame", "--line-porcelain", parsed.params.commitish or "HEAD", "--", path },
-      { cwd = parsed.root }
+      { cwd = parsed.root, progress = true }
     ).stdout
   local result = M.parse(output)
   local options = buffer.read_options(parsed.params)
@@ -199,7 +201,7 @@ function M.read(buf, name, output)
     detail_lines(
       git.run(
         { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
-        { cwd = parsed.root }
+        { cwd = parsed.root, progress = true }
       ).stdout,
       parsed.params
     ),
@@ -318,8 +320,10 @@ local filename = require("gin.git_path").unquote
 local function visit(current, parsed, revision, path, position, source_line)
   -- Resolve Git output before changing any buffers so a missing parent/path
   -- leaves the current view usable.
-  local output =
-    git.run({ "blame", "--line-porcelain", revision, "--", path }, { cwd = parsed.root }).stdout
+  local output = git.run(
+    { "blame", "--line-porcelain", revision, "--", path },
+    { cwd = parsed.root, progress = true }
+  ).stdout
   local file, nav, detail =
     vim.b[current].gin_blame_file_bufnr,
     vim.b[current].gin_blame_nav_bufnr,

@@ -60,6 +60,38 @@ T["blame opens synchronized attribution and committed content from a subdirector
   end
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "dirty" })
 end
+T["blame and commit detail stream stderr without displaying porcelain data"] = function()
+  local trace, echo = vim.env.GIT_TRACE, vim.api.nvim_echo
+  local output = {}
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.env.GIT_TRACE = "1"
+  vim.api.nvim_echo = function(chunks)
+    output[#output + 1] = chunks[1][1]
+  end
+  local ok, err = pcall(function()
+    vim.cmd("GinBlame file.lua")
+    local progress = table.concat(output, "\n")
+    MiniTest.expect.equality(progress:find("built-in: git blame", 1, true) ~= nil, true)
+    MiniTest.expect.equality(progress:find("built-in: git show", 1, true) ~= nil, true)
+    MiniTest.expect.equality(progress:find("author Gin Test", 1, true), nil)
+    MiniTest.expect.equality(progress:find("Author:", 1, true), nil)
+    output = {}
+    vim.api.nvim_win_set_cursor(0, { 2, 0 })
+    vim.api.nvim_exec_autocmds("CursorMoved", { buffer = 0 })
+    progress = table.concat(output, "\n")
+    MiniTest.expect.equality(progress:find("--format=fuller " .. first, 1, true) ~= nil, true)
+    MiniTest.expect.equality(progress:find("Author:", 1, true), nil)
+    local detail = vim.b.gin_blame_detail_bufnr
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(detail, 0, 1, false),
+      { "commit " .. first }
+    )
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+  end)
+  vim.env.GIT_TRACE, vim.api.nvim_echo = trace, echo
+  assert(ok, err)
+end
 T["moving across blame groups updates commit detail and dividers retain it"] = function()
   vim.cmd("GinBlame file.lua")
   local detail = vim.b.gin_blame_detail_bufnr

@@ -853,3 +853,10 @@ fixtures check both progress channels, insertion at the requested address and
 absence of trace messages in inserted text. Tag insertion now requests only the
 display format, without candidate metadata, so private NUL-delimited records
 cannot leak into progress. Buffer display still obtains metadata for actions.
+
+Blame initial loads, history visits and commit-detail reads now stream stderr,
+matching the pinned blame edit/detail executors' null stdout indicators. A real
+Git trace fixture checks initial blame/detail execution and cursor-driven detail
+updates without echoing porcelain or commit-body output. It also verifies the
+selected commit, three-pane layout and restored editor options. Existing blame
+navigation, reload and failure fixtures exercise the same progress lifecycle.
