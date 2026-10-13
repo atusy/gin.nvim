@@ -660,3 +660,10 @@ and after moving the worktree, including upstream tracking information. It
 also checks that the current branch omits its own worktree path. Action targets
 continue to come from the same structured Git record as the display. Column
 alignment and default branch color parity remain pending.
+
+Default branch rows now pad names to the widest selected name before the commit
+column. A native branch -vv comparison covers unequal ASCII names, Japanese
+wide characters, filtered results and reloads. The width is computed from the
+same Git response used for action metadata; custom formats retain their own
+spacing. Remote prefixes, aliases, detached HEAD labels, unusual character
+width rules and default colors still need display parity checks.

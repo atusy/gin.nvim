@@ -31,6 +31,20 @@ T["branch view lists refs and switches the selected branch"] = function()
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
   MiniTest.expect.equality(vim.b.gin_branches[2].head, "*")
 end
+T["default branch columns align names by display width"] = function()
+  H.git(root, "branch", "long-branch-name")
+  H.git(root, "branch", "日本語")
+  for _, pattern in ipairs({ "*", "m*" }) do
+    vim.cmd("GinBranch --no-color " .. pattern)
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        H.git(root, "branch", "--list", "-vv", "--no-color", "--", pattern)
+      )
+      vim.cmd.edit()
+    end
+  end
+end
 T["custom branch formats retain sorted switch targets across reload"] = function()
   vim.cmd("GinBranch --sort=-refname --format=%(refname:short):%(subject)")
   vim.cmd.edit()

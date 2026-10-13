@@ -36,10 +36,16 @@ function M.read(buf, name)
   local output = git.run(args, { cwd = parsed.root }).stdout
   local rows, lines = {}, {}
   local records = vim.split(output, "\0" .. boundary .. "\0", { plain = true })
+  local width, names = 0, {}
   for i = 2, #records do
-    local fields = vim.split(records[i]:sub(1, -2), "\0", { plain = true })
+    records[i] = vim.split(records[i]:sub(1, -2), "\0", { plain = true })
+    names[i] = records[i][2]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
+    width = math.max(width, vim.fn.strdisplaywidth(names[i]))
+  end
+  for i = 2, #records do
+    local fields = records[i]
     local remote = fields[2]:match("^refs/remotes/(.-)/")
-    local target = fields[2]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
+    local target = names[i]
     local row = {
       head = fields[1],
       target = target,
@@ -55,8 +61,9 @@ function M.read(buf, name)
     local linked = row.worktree and row.head ~= "*"
     local marker = linked and "+" or row.head
     local location = linked and (" (" .. row.worktree .. ")") or ""
+    local padded = target .. string.rep(" ", width - vim.fn.strdisplaywidth(target))
     local display = format and table.concat(fields, "\0", 9)
-      or marker .. " " .. target .. " " .. row.commit .. location .. tracking .. " " .. fields[4]
+      or marker .. " " .. padded .. " " .. row.commit .. location .. tracking .. " " .. fields[4]
     for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
       rows[#rows + 1] = row
       lines[#lines + 1] = line
