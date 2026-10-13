@@ -244,8 +244,9 @@ Editor QuitPre handling now asks whether to apply, or applies automatically with
 g:gin_proxy_apply_without_confirm. Cleanup is deferred until the quit operation
 finishes so it does not close a different tab. A real commit verifies automatic
 apply-on-quit. Prompt acceptance and rejection are also checked against real Git
-completion and staged state. Failed writes and whole-editor shutdown still need
-lifecycle coverage.
+completion and staged state. A failed Apply write preserves the pending request
+and modified buffer, and a later retry commits successfully. Whole-editor
+shutdown still needs lifecycle coverage.
 
 Asynchronous Gin children now receive an askpass launcher as well as the editor
 command. Git credential fill verifies username/password exchange with masked

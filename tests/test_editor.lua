@@ -189,4 +189,35 @@ T["Accept uses the commit filetype alias and releases Git"] = function()
   MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "accepted through alias\n")
 end
+T["failed Apply keeps the editor request usable for a successful retry"] = function()
+  local process = require("gin.command").execute({
+    fargs = { "commit" },
+    smods = { silent = true, emsg_silent = true },
+  })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  local request = vim.b.gin_editor_request
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "retried message" })
+  vim.bo.readonly = true
+  MiniTest.expect.error(function()
+    vim.cmd.Apply()
+  end, "E45")
+  MiniTest.expect.equality(vim.b.gin_editor_request, request)
+  MiniTest.expect.equality(vim.bo.modified, true)
+  MiniTest.expect.equality(process:is_closing(), false)
+  vim.bo.readonly = false
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "retried message\n")
+end
 return T
