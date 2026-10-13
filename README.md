@@ -48,7 +48,8 @@ Currently implemented:
   for an exec command. Remote deletion deletes the remote ref.
 - `:GinLog [flags] [revision] [-- paths...]` displays commit history. Paths
   are repository-relative, including when cwd is a subdirectory. `++emojify`
-  renders GitHub emoji names in log/reflog output. `<CR>`
+  renders GitHub emoji names in log/reflog output; tag and stash lists also
+  accept this option. `<CR>`
   shows the selected commit; `yy` yanks its hash. Show actions support edit,
   split, vsplit, and tabedit destinations. `show:emojify` and
   `show:{opener}:emojify` render emoji names from log, reflog, tag and stash views.

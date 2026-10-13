@@ -340,3 +340,8 @@ variants in log, reflog, tag and stash views. Real-repository fixtures verify
 the selected commit, converted message, window/tab counts and reload behavior
 for every view/opener combination. Plain show actions retain their existing
 behavior.
+
+Tag and stash lists now accept ++emojify and retain it across reloads. Conversion
+runs on display lines after candidate extraction, preserving original refs and
+object IDs. Integration tests delete the selected annotated tag and pop the
+selected stash after reload, checking remaining refs and restored file content.

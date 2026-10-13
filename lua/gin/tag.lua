@@ -24,6 +24,9 @@ function M.read(buf, name)
     rows[#rows + 1] = { tag = fields[1], commit = fields[2] }
     lines[#lines + 1] = fields[2]:sub(1, 7) .. " " .. fields[1] .. " " .. fields[3]
   end
+  if parsed.params.emojify ~= nil then
+    lines = vim.tbl_map(require("gin.emoji").emojify, lines)
+  end
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-tag")
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_tags = rows
@@ -131,7 +134,7 @@ end
 function M.command(opts)
   local args = vim.deepcopy(vim.g.gin_tag_persistent_args or {})
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_tag_default_args or {}) or opts.fargs)
-  local options, residue = require("gin.command").parse(args, { "worktree", "opener" })
+  local options, residue = require("gin.command").parse(args, { "worktree", "opener", "emojify" })
   local flags, patterns, paths = {}, {}, false
   for _, value in ipairs(residue) do
     if value == "--" and not paths then
@@ -145,7 +148,12 @@ function M.command(opts)
   local root = require("gin.worktree").current(options.worktree)
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(
-    uri.format("gintag", root, { args = vim.json.encode(flags) }, uri.join(patterns)),
+    uri.format(
+      "gintag",
+      root,
+      { args = vim.json.encode(flags), emojify = options.emojify and "" or nil },
+      uri.join(patterns)
+    ),
     options
   )
 end

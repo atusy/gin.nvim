@@ -81,4 +81,18 @@ T["show tab opens the selected object in another tab"] = function()
   local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   MiniTest.expect.equality(text:find("release notes", 1, true) ~= nil, true)
 end
+
+T["tag emojify retains selected deletion targets across reload"] = function()
+  H.git(root, "tag", "-a", "emoji", "-m", ":sparkles: release")
+  local commit = vim.trim(H.git(root, "rev-parse", "emoji"))
+  vim.cmd("GinTag ++emojify")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.b.gin_tags[1], { tag = "emoji", commit = commit })
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]:find("✨ release", 1, true) ~= nil,
+    true
+  )
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\nrelease\n")
+end
 return T

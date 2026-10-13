@@ -55,4 +55,24 @@ T["failed stash pop retains the stash and exposes conflict state"] = function()
   MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%H"), before)
   MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged") ~= "", true)
 end
+
+T["stash emojify retains pop targets across reload"] = function()
+  vim.fn.writefile({ "emoji content" }, root .. "/file")
+  H.git(root, "stash", "push", "-m", ":sparkles: stash")
+  local commit = vim.trim(H.git(root, "rev-parse", "stash"))
+  vim.cmd("GinStash ++emojify")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.b.gin_stashes[1], { stash = "stash@{0}", commit = commit })
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]:find("✨ stash", 1, true) ~= nil,
+    true
+  )
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "emoji content" })
+  MiniTest.expect.equality(#vim.b.gin_stashes, 2)
+  MiniTest.expect.equality(
+    H.git(root, "stash", "list", "--format=%s"),
+    "On main: newer\nOn main: older\n"
+  )
+end
 return T

@@ -22,6 +22,9 @@ function M.read(buf, name)
     rows[#rows + 1] = { stash = fields[1], commit = fields[2] }
     lines[#lines + 1] = fields[1] .. ": " .. fields[3]
   end
+  if parsed.params.emojify ~= nil then
+    lines = vim.tbl_map(require("gin.emoji").emojify, lines)
+  end
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-stash")
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_stashes = rows
@@ -117,13 +120,13 @@ end
 function M.command(opts)
   local args = vim.deepcopy(vim.g.gin_stash_persistent_args or {})
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_stash_default_args or {}) or opts.fargs)
-  local options, residue = require("gin.command").parse(args, { "worktree", "opener" })
+  local options, residue = require("gin.command").parse(args, { "worktree", "opener", "emojify" })
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(
     uri.format(
       "ginstash",
       require("gin.worktree").current(options.worktree),
-      {},
+      { emojify = options.emojify and "" or nil },
       vim.json.encode(residue)
     ),
     options
