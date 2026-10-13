@@ -67,3 +67,6 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.diff").read(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_user_command("GinPatch", function(opts)
+  require("gin.patch").command(opts)
+end, { nargs = "*", bar = true, bang = true })
