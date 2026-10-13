@@ -1256,5 +1256,8 @@ file reads retain their paired URI names so existing navigation/detail panes
 are reused. A real repository fixture loads three upstream-named buffers,
 reloads from navigation using only the upstream file reference, verifies
 revision content/attribution/detail and fixed windows, then reloads the file.
-Recreating a missing file pane and reconciling divergent navigation/file URI
-parameters remain outside this verified case.
+A second fixture starts with no file buffer and an empty right-hand window.
+Navigation reload creates the referenced file there, explicitly reads its blame
+content despite non-nested BufReadCmd handling, reuses the original navigation
+and detail buffers, and restores fixed-window behavior and navigation focus.
+Reconciling divergent navigation/file URI parameters remains unaudited.

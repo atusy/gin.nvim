@@ -424,7 +424,35 @@ function M.read_nav(buf)
     local name = vim.b[buf].gin_blame_file_bufname
     file = type(name) == "string" and vim.fn.bufnr(name) or -1
   end
-  assert(file ~= -1 and vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
+  if file == -1 then
+    local name = vim.b[buf].gin_blame_file_bufname
+    assert(type(name) == "string" and name ~= "", "GinBlame file buffer is missing")
+    local navwin = vim.fn.bufwinid(buf)
+    assert(navwin ~= -1, "GinBlame navigation window is missing")
+    vim.api.nvim_win_call(navwin, function()
+      local win = vim.fn.win_getid(vim.fn.winnr("l"))
+      if win == navwin then
+        vim.cmd("rightbelow vnew")
+        win = vim.api.nvim_get_current_win()
+      end
+      vim.api.nvim_win_call(win, function()
+        local fixed = vim.wo[win].winfixbuf
+        vim.wo[win].winfixbuf = false
+        local ok, err = pcall(function()
+          local restored = buffer.open(name, {})
+          vim.api.nvim_set_current_win(win)
+          -- BufReadCmd does not nest while the navigation buffer is reloading.
+          M.read(restored, name)
+        end)
+        if not ok then
+          vim.wo[win].winfixbuf = fixed
+          error(err, 0)
+        end
+      end)
+    end)
+    return
+  end
+  assert(vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
   local win = vim.fn.bufwinid(file)
   assert(win ~= -1, "GinBlame file window is missing")
   vim.api.nvim_win_call(win, function()
