@@ -45,6 +45,38 @@ T["default branch columns align names by display width"] = function()
     end
   end
 end
+T["detached branch listings honor commit abbreviation flags"] = function()
+  H.git(root, "config", "core.abbrev", "9")
+  H.git(root, "checkout", "--detach", "HEAD")
+  for _, flag in ipairs({
+    "",
+    "--abbrev=12",
+    "--no-abbrev",
+    "--abbrev=0",
+    "--abbrev=2",
+    "--no-abbrev --abbrev",
+    "--abbrev=12 --no-abbrev",
+  }) do
+    vim.cmd("GinBranch --no-color " .. flag)
+    for _ = 1, 2 do
+      local expected = H.git(
+        root,
+        "branch",
+        "--list",
+        "-vv",
+        "--no-color",
+        unpack(vim.split(flag, " ", { trimempty = true }))
+      )
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        expected
+      )
+      require("gin.action").call(vim.api.nvim_get_current_buf(), "yank:commit", { 1, 1 })
+      MiniTest.expect.equality(vim.fn.getreg('"'), expected:match("%) (%x+)"))
+      vim.cmd.edit()
+    end
+  end
+end
 T["remote branch display preserves prefixes and symbolic targets"] = function()
   H.git(root, "update-ref", "refs/remotes/origin/topic", "HEAD")
   H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/topic")

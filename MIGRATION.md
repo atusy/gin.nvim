@@ -674,3 +674,10 @@ comparison covers --all/--remotes, -a/-r, mixed flag ordering and reloads.
 Metadata and target yanks retain the underlying origin/name target independent
 of the display prefix; custom formats remain unchanged. Detached HEAD labels,
 unusual character width rules and default colors remain under audit.
+
+GinBranch now applies --abbrev and --no-abbrev to its commit metadata atom,
+so the default commit column and yank:commit match the requested length.
+A native branch -vv comparison covers detached HEAD labels, core.abbrev,
+explicit lengths, zero/full length, a below-minimum length, flag ordering and
+reloads. Git still resolves abbreviation uniqueness. Ordinary detached labels
+already matched; rebase/bisect labels and detached-row actions remain unaudited.

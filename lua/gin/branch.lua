@@ -19,6 +19,7 @@ function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "branch", "--list", "--color=always" }
   local format, all
+  local objectname = "%(objectname:short)"
   for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
     if arg:sub(1, 9) == "--format=" then
       format = arg:sub(10)
@@ -28,13 +29,21 @@ function M.read(buf, name)
         all = true
       elseif arg == "--remotes" or arg == "-r" then
         all = false
+      elseif arg == "--no-abbrev" or arg == "--abbrev=0" then
+        objectname = "%(objectname)"
+      elseif arg == "--abbrev" then
+        objectname = "%(objectname:short)"
+      elseif arg:match("^%-%-abbrev=%d+$") then
+        objectname = "%(objectname:short=" .. arg:match("=(%d+)$") .. ")"
       end
     end
   end
   local boundary = vim.fn.sha256(vim.fn.tempname())
   args[#args + 1] = "--format=%00"
     .. boundary
-    .. "%00%(HEAD)%00%(refname)%00%(objectname:short)%00%(subject)%00%(upstream:short)%00%(upstream:track)%00%(worktreepath)%00%(symref)%00"
+    .. "%00%(HEAD)%00%(refname)%00"
+    .. objectname
+    .. "%00%(subject)%00%(upstream:short)%00%(upstream:track)%00%(worktreepath)%00%(symref)%00"
     .. (format or "")
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})

@@ -42,6 +42,7 @@ COMMANDS                                                        *gin-commands*
 :GinBranch [options] [flags] [patterns...]                       *:GinBranch*
     List branches. <CR> switches branches and yy yanks the branch name.
     Color atoms in --format render as highlights; --no-color disables them.
+    --abbrev={n} and --no-abbrev control the default commit column and its yank.
     Actions include new, move, delete, worktree, merge, rebase, and log.
     Remote deletion deletes the remote ref. Use the action help to inspect
     available variants before running destructive actions.
