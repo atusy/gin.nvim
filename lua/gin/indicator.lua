@@ -111,4 +111,25 @@ function M.stream(name)
   }
 end
 
+---Open paired output channels and always close both, even after a backend error.
+function M.channels(stdout_name, stderr_name)
+  local stdout = M.stream(stdout_name)
+  local ok, stderr = pcall(M.stream, stderr_name)
+  if not ok then
+    pcall(stdout.close)
+    error(stderr, 0)
+  end
+  return {
+    write = stdout.write,
+    write_stderr = stderr.write,
+    close = function()
+      local first_ok, first_error = pcall(stdout.close)
+      local second_ok, second_error = pcall(stderr.close)
+      if not first_ok or not second_ok then
+        error(not first_ok and first_error or second_error, 0)
+      end
+    end,
+  }
+end
+
 return M

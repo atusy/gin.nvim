@@ -274,6 +274,11 @@ name providing gin#indicator#{name}#open/write/close. The stdout default is
 receive a distinct ID per channel and decoded line arrays. Captured Git output
 remains unchanged. Backend failures close opened channels and raise an error.
 
+require('gin.command').execute(opts) accepts the same indicator names alongside
+fargs and smods. Both channels default to "echo"; smods.silent suppresses them.
+Backend failures skip processors and GinCommandPost. With ++wait they raise an
+error; asynchronous calls report through vim.notify unless emsg_silent is set.
+
 ==============================================================================
 STATUSLINE                                                     *gin-components*
 

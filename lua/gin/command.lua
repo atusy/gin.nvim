@@ -85,13 +85,17 @@ function M.execute(opts)
       vim.notify(message, vim.log.levels.ERROR)
     end
   end
-  local function finish(result, source)
+  local function finish(result, source, progress_error)
     if cancelled then
       return
     end
     completed = result
     if opts.on_exit then
       opts.on_exit(result)
+    end
+    if progress_error then
+      report(tostring(progress_error))
+      return
     end
     if result.code ~= 0 then
       report(require("gin.git").error_message(result, source))
@@ -103,7 +107,12 @@ function M.execute(opts)
     end
   end
   local env = require("gin.editor").environment()
-  local indicator = not opts.smods.silent and require("gin.indicator").open() or nil
+  local indicator = not opts.smods.silent
+      and require("gin.indicator").channels(
+        opts.stdout_indicator or "echo",
+        opts.stderr_indicator or "echo"
+      )
+    or nil
   local ok, process = pcall(
     require("gin.git").start,
     args,
@@ -116,7 +125,11 @@ function M.execute(opts)
     },
     vim.schedule_wrap(function(result)
       if indicator then
-        indicator.close()
+        local closed, err = pcall(indicator.close)
+        if not closed then
+          finish(result, "git", err)
+          return
+        end
       end
       if cancelled then
         return
@@ -145,7 +158,7 @@ function M.execute(opts)
   )
   if not ok then
     if indicator then
-      indicator.close()
+      pcall(indicator.close)
     end
     error(process, 0)
   end
@@ -161,7 +174,7 @@ function M.execute(opts)
         running:kill(15)
       end
       if indicator then
-        indicator.close()
+        pcall(indicator.close)
       end
       error("Gin wait interrupted", 0)
     end

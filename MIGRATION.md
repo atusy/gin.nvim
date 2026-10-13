@@ -1169,3 +1169,12 @@ Backend open/write/close failures reach the caller after cleanup; a failure
 opening stderr also closes stdout before any Git process starts. Existing raw
 stdout listeners remain active when stdout progress is not selected. The
 broader internal executor API remains subject to audit.
+
+`gin.command.execute` now also accepts `stdout_indicator` and `stderr_indicator`
+for its asynchronous and `++wait` paths. Both default to echo, while silent
+execution starts neither backend. Paired channels close together even if a
+backend fails. Integration fixtures verify both execution modes, preserving
+captured output and callback completion; backend failures report through the
+appropriate synchronous/asynchronous route without launching a processor or
+publishing GinCommandPost. The original process-launch and interruption errors
+retain priority if indicator cleanup also fails.
