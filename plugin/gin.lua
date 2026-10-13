@@ -70,3 +70,6 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
 vim.api.nvim_create_user_command("GinPatch", function(opts)
   require("gin.patch").command(opts)
 end, { nargs = "*", bar = true, bang = true })
+vim.api.nvim_create_user_command("GinChaperon", function(opts)
+  require("gin.chaperon").command(opts)
+end, { nargs = "*", bar = true, bang = true })
