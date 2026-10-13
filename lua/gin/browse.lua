@@ -4,10 +4,35 @@ local function encode(path)
   return vim.uri_encode(path, "rfc3986"):gsub("%%2[Ff]", "/")
 end
 
+local function containing_remote(root, revision)
+  local branches = git.run(
+    { "branch", "-r", "--contains", revision, "--format=%(refname:short)" },
+    { cwd = root, check = false }
+  )
+  if branches.code ~= 0 then
+    return nil
+  end
+  local remotes = git.run({ "remote" }, { cwd = root }).stdout
+  local first
+  for remote in remotes:gmatch("[^\n]+") do
+    for branch in branches.stdout:gmatch("[^\n]+") do
+      if branch:sub(1, #remote + 1) == remote .. "/" then
+        if remote == "origin" then
+          return remote
+        end
+        first = first or remote
+      end
+    end
+  end
+  return first
+end
+
 function M.url(root, revision, options)
   options = options or {}
   revision = revision or "HEAD"
-  local remote = options.remote or "origin"
+  local remote = options.remote
+    or containing_remote(root, options.home and "HEAD" or revision)
+    or "origin"
   local fetch = vim.trim(git.run({ "remote", "get-url", remote }, { cwd = root }).stdout)
   local host, repository = fetch:match("^%w+://[^/]-@([^/]+)/(.+)$")
   if not host then

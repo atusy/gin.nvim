@@ -53,4 +53,37 @@ T["GinBrowse no-browser yanks a current-file URL with a range"] = function()
     "https://github.com/owner/repo/blob/main/sub/space%20%23%20file.md?plain=1#L1-L2"
   )
 end
+T["browse selects a containing remote and prefers origin when both contain"] = function()
+  H.git(root, "remote", "add", "upstream", "https://github.com/upstream/repo.git")
+  H.git(root, "update-ref", "refs/remotes/upstream/main", hash)
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { home = true }),
+    "https://github.com/upstream/repo"
+  )
+  H.git(root, "update-ref", "refs/remotes/origin/main", hash)
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { home = true }),
+    "https://github.com/owner/repo"
+  )
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { home = true, remote = "upstream" }),
+    "https://github.com/upstream/repo"
+  )
+end
+T["browse selects remotes by ancestry rather than the presence of any ref"] = function()
+  H.git(root, "update-ref", "refs/remotes/origin/main", hash)
+  vim.fn.writefile({ "new" }, root .. "/new")
+  H.git(root, "add", "new")
+  H.git(root, "commit", "-m", "new commit")
+  H.git(root, "remote", "add", "upstream", "https://github.com/upstream/repo.git")
+  H.git(root, "update-ref", "refs/remotes/upstream/main", "HEAD")
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { home = true }),
+    "https://github.com/upstream/repo"
+  )
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, hash, { commit = true }),
+    "https://github.com/owner/repo/commit/" .. hash
+  )
+end
 return T
