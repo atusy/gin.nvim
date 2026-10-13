@@ -251,5 +251,6 @@ Asynchronous Gin children now receive an askpass launcher as well as the editor
 command. Git credential fill verifies username/password exchange with masked
 Neovim input using synthetic credentials and no network. The Unix launcher is
 created with owner-only permissions and removed on editor exit; Windows launching
-and interrupted prompts still need verification. Editor and askpass disable
-settings are independent. Global environment/terminal inheritance remains pending.
+still needs verification. Interrupted prompts are tested to fail Git without
+returning credentials. Editor and askpass disable settings are independently
+verified. Global environment/terminal inheritance remains pending.
