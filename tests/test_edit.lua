@@ -126,4 +126,22 @@ T["Gin filename expansion resolves the path of a revision buffer"] = function()
   vim.cmd("Gin ++wait add -- %:p")
   MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "working\n")
 end
+T["reading GinEdit honors explicit decoding without changing destination options"] = function()
+  vim.fn.writefile({ "\27[31mcafé\27[m\r" }, root .. "/sub/encoded")
+  H.git(root, "add", "sub/encoded")
+  local name =
+    require("gin.uri").format("ginedit", root, { enc = "latin1", ff = "dos" }, "sub/encoded")
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.bo.fileencoding, vim.bo.fileformat = "latin1", "dos"
+  vim.cmd("1read ++encoding=utf-8 ++fileformat=unix " .. vim.fn.fnameescape(name))
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "before",
+    "\27[31mcafé\27[m\r",
+    "after",
+  })
+  MiniTest.expect.equality({ vim.bo.fileencoding, vim.bo.fileformat }, { "latin1", "dos" })
+  MiniTest.expect.equality({ vim.fn.line("'["), vim.fn.line("']") }, { 2, 2 })
+  MiniTest.expect.equality(vim.bo.modified, true)
+end
 return T

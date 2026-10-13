@@ -586,3 +586,8 @@ behavior of every allowed dependency version.
 A real status refresh fixture stages a path while the same view is visible in
 two windows, then verifies updated status text and both cursor positions. The
 existing implementation already passes; no buffer-replacement change was needed.
+
+GinEdit URI insertion now applies explicit :read encoding/fileformat overrides,
+matching the pinned edit/read.ts option path. The fixture reads UTF-8 bytes with
+an explicit Unix format over Latin-1/DOS URI defaults, checks addressed insertion
+and marks, and verifies destination options plus literal ANSI bytes are retained.

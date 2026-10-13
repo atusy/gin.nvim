@@ -117,7 +117,7 @@ function M.insert(buf, name)
   if data == "" then
     return
   end
-  local lines = M.decode(data, parsed.params)
+  local lines = M.decode(data, buffer.read_options(parsed.params))
   local after = vim.fn.line("'[")
   local empty = vim.api.nvim_buf_line_count(buf) == 1
     and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
