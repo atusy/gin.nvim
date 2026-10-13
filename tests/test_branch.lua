@@ -251,4 +251,38 @@ T["instant drop removes the selected commit while retaining descendants"] = func
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/topic-file"), 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/later"), { "later" })
 end
+T["interactive branch rebase executes the supplied command after Apply"] = function()
+  diverge()
+  vim.cmd("GinBranch topic")
+  local completed = false
+  local event = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    once = true,
+    callback = function()
+      completed = true
+    end,
+  })
+  prompt_action("rebase:i:x", { 1, 1 }, "git config gin.executed interactive")
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  local todo = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(
+    todo:find("exec git config gin.executed interactive", 1, true) ~= nil,
+    true
+  )
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return completed
+    end, 10),
+    true
+  )
+  pcall(vim.api.nvim_del_autocmd, event)
+  MiniTest.expect.equality(H.git(root, "config", "gin.executed"), "interactive\n")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), H.git(root, "rev-parse", "topic"))
+end
 return T
