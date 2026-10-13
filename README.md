@@ -97,6 +97,11 @@ Currently implemented:
   resolved file, then stage it explicitly. Supporting commit logs appear below
   the panes; set `g:gin_chaperon_supplement_disable = 1` to hide them or
   `g:gin_chaperon_supplement_height` to adjust their height (default 10).
+- `:[range]GinBrowse [flags] [revision] [path]` opens a hosting URL for the
+  current file by default. `--no-browser` prints it; `++yank=a` copies it to
+  register `a`. Supports `--home`, `--commit`, `--permalink`, `--remote=name`,
+  and `++repository`, with GitHub/GitLab/Bitbucket routes and host aliases in
+  `g:gin_browse_aliases`. Remote selection currently defaults to `origin`.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
