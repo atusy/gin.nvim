@@ -162,3 +162,10 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.blame").read_nav(event.buf)
   end,
 })
+require("gin.blame").highlights()
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = vim.api.nvim_create_augroup("gin_blame", { clear = false }),
+  callback = function()
+    require("gin.blame").highlights()
+  end,
+})

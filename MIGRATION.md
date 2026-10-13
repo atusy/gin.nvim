@@ -190,8 +190,10 @@ filenames and source positions, with parent selection when already viewing the
 selected commit. Quoted filename decoding and failed-parent view retention are
 tested. Back/forward history restores visited revisions, filenames and both pane
 cursors; selecting a new commit discards forward history after the current entry.
-Remaining blame work includes divider highlights, encoding/fileformat and emoji
-options, and broader parser/UI parity checks. Source/attribution reload now
+Commit dividers use the Comment colors with strikethrough and refresh when the
+colorscheme changes. A dedicated sign group preserves unrelated plugin signs.
+Remaining blame work includes encoding/fileformat and emoji options, and broader
+parser/UI parity checks. Source/attribution reload now
 refreshes existing panes; unloading a pane removes its companions after the
 operation settles so reload does not trigger cleanup. Tests cover all three
 close paths and retention of an unrelated file buffer. Restoring missing panes

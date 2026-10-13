@@ -3,6 +3,19 @@ local git = require("gin.git")
 local uri = require("gin.uri")
 local buffer = require("gin.buffer")
 
+function M.highlights()
+  local comment = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
+  vim.api.nvim_set_hl(0, "GinBlameDivider", {
+    fg = comment.fg,
+    bg = comment.bg,
+    ctermfg = comment.ctermfg,
+    ctermbg = comment.ctermbg,
+    strikethrough = true,
+    cterm = { strikethrough = true },
+  })
+  vim.fn.sign_define("GinBlameDividerSign", { linehl = "GinBlameDivider" })
+end
+
 -- Use line porcelain so filename/previous metadata belongs to each line,
 -- including when the same commit contributed lines from different paths.
 function M.parse(output)
@@ -103,13 +116,14 @@ function M.read(buf, name, output)
       { cwd = parsed.root }
     ).stdout
   local result = M.parse(output)
-  local content, navlines, map, reverse = {}, {}, {}, {}
+  local content, navlines, map, reverse, dividers = {}, {}, {}, {}, {}
   local previous
   local width = #tostring(#result.lines)
   for _, line in ipairs(result.lines) do
     local label = string.format("%" .. width .. "d", line.lineNumber)
     if line.commitSha ~= previous then
       content[#content + 1], navlines[#navlines + 1] = "", ""
+      dividers[#dividers + 1] = #content
       label = label
         .. " "
         .. relative_time(line.metadata["author-time"])
@@ -122,6 +136,7 @@ function M.read(buf, name, output)
     map[#content], reverse[line.lineNumber] = line, #content
     previous = line.commitSha
   end
+  local signs = { [buf] = vim.fn.sign_getplaced(buf, { group = "*" })[1].signs }
   local ft = vim.filetype.match({ filename = path, buf = buf })
   buffer.replace(buf, content, parsed.root, ft and ft .. ".gin-blame" or "gin-blame")
   local filewin = vim.api.nvim_get_current_win()
@@ -153,6 +168,7 @@ function M.read(buf, name, output)
   else
     vim.api.nvim_set_current_win(vim.fn.bufwinid(nav))
   end
+  signs[nav] = vim.fn.sign_getplaced(nav, { group = "*" })[1].signs
   buffer.replace(nav, navlines, parsed.root, "gin-blame-nav")
   for _, target in ipairs({ buf, nav, detail }) do
     vim.bo[target].buftype = "nowrite"
@@ -190,6 +206,18 @@ function M.read(buf, name, output)
       end,
     })
     if target ~= detail then
+      for _, sign in ipairs(signs[target]) do
+        if sign.group ~= "gin_blame" then
+          vim.fn.sign_place(sign.id, sign.group, sign.name, target, {
+            lnum = math.min(sign.lnum, vim.api.nvim_buf_line_count(target)),
+            priority = sign.priority,
+          })
+        end
+      end
+      vim.fn.sign_unplace("gin_blame", { buffer = target })
+      for _, row in ipairs(dividers) do
+        vim.fn.sign_place(row, "gin_blame", "GinBlameDividerSign", target, { lnum = row })
+      end
       vim.api.nvim_create_autocmd("CursorMoved", {
         group = group,
         buffer = target,

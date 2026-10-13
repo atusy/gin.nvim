@@ -237,4 +237,36 @@ T["new blame selections truncate forward history and failures preserve it"] = fu
   require("gin.blame").navigate_history("older")
   MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 2)
 end
+T["blame marks commit dividers and refreshes them after navigation"] = function()
+  vim.cmd("GinBlame file.lua")
+  local file, nav = vim.b.gin_blame_file_bufnr, vim.api.nvim_get_current_buf()
+  local function dividers(buf)
+    local rows = {}
+    for _, sign in ipairs(vim.fn.sign_getplaced(buf, { group = "gin_blame" })[1].signs) do
+      rows[#rows + 1] = sign.lnum
+      MiniTest.expect.equality(sign.name, "GinBlameDividerSign")
+    end
+    table.sort(rows)
+    return rows
+  end
+  for _, buf in ipairs({ file, nav }) do
+    MiniTest.expect.equality(dividers(buf), { 1, 3, 5 })
+  end
+  vim.fn.sign_define("GinTestUnrelated", { text = "!" })
+  vim.fn.sign_place(1, "gin_test_other", "GinTestUnrelated", file, { lnum = 2 })
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").switch_commit()
+  for _, buf in ipairs({ file, nav }) do
+    MiniTest.expect.equality(dividers(buf), { 1 })
+  end
+  MiniTest.expect.equality(#vim.fn.sign_getplaced(file, { group = "gin_test_other" })[1].signs, 1)
+  MiniTest.expect.equality(
+    vim.fn.sign_getdefined("GinBlameDividerSign")[1].linehl,
+    "GinBlameDivider"
+  )
+  MiniTest.expect.equality(
+    vim.api.nvim_get_hl(0, { name = "GinBlameDivider", link = false }).strikethrough,
+    true
+  )
+end
 return T
