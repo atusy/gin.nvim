@@ -35,6 +35,46 @@ T["GinDiff cached comparison survives URI reload"] = function()
   local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
 end
+T["legacy diff URIs retain flags paths and cached jump targets"] = function()
+  local name = "gindiff://"
+    .. root
+    .. ";cached=&U=5&U=0&diff-filter=M&diff-filter=A&src-prefix=old+path%2F&dst-prefix=new+path%2F"
+    .. "#[%22sub/file%22]"
+  local expected = H.git(
+    root,
+    "diff",
+    "--no-color",
+    "--cached",
+    "-U5",
+    "-U0",
+    "--diff-filter=M",
+    "--diff-filter=A",
+    "--src-prefix=old path/",
+    "--dst-prefix=new path/",
+    "--",
+    "sub/file"
+  )
+  require("gin.buffer").open(name, {})
+  for _ = 1, 2 do
+    MiniTest.expect.equality(
+      table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+      expected
+    )
+    vim.cmd("normal! zM")
+    MiniTest.expect.equality(vim.fn.foldtextresult(3), "[.] sub/file (+1 -1)")
+    vim.cmd.edit()
+  end
+  vim.cmd("normal! zR")
+  for row, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    if line == "+index" then
+      vim.api.nvim_win_set_cursor(0, { row, 0 })
+    end
+  end
+  require("gin.diffjump").jump("new")
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "index" })
+  MiniTest.expect.equality(vim.b.gin_path, "sub/file")
+end
 T["legacy foldtext works in Gin views and ordinary diff buffers"] = function()
   for _, gin_view in ipairs({ true, false }) do
     if gin_view then

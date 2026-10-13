@@ -163,6 +163,8 @@ The Vimscript utility functions delegate to the Lua implementations above.
 GinEdit also reads upstream buffer names using semicolon parameters, such as
 ginedit:///path/to/repo;commitish=HEAD#file.lua. Index URIs use an empty commitish
 and support normal write-back. New buffers continue using Lua's URI format.
+Legacy GinDiff parameter/path data and GinBuffer command fragments are also
+accepted for opening, reloading and reading output into another buffer.
 
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select

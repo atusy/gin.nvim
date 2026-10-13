@@ -1188,3 +1188,16 @@ escaped semicolon/percent/hash characters in the repository name and a fragment
 with spaces, plus/hash signs, a quote, Unicode and a literal trailing dollar.
 This establishes GinEdit interoperability for these cases; other command URI
 payloads and exhaustive encoding/malformed-input parity remain under audit.
+
+Legacy GinDiff coverage now verifies repeated short/long flag values, ordered
+form-query parameters, space-containing prefixes and JSON path fragments against
+real Git output. Reloads retain those settings, fold labels resolve the actual
+path and a cached new-side jump opens the index contents.
+
+Legacy GinBuffer fragments have a command-specific trailing dollar marker and
+use literal space splitting. The shared URI result now identifies legacy data
+so GinBuffer's edit/read paths can apply that convention without changing Lua
+argument escaping or stripping a dollar from GinEdit filenames. A real Git
+fixture reads a tracked filename containing a backslash and final dollar,
+reloads it, and inserts its contents with `:read` while preserving destination
+buffer options. Other command payload formats remain under audit.

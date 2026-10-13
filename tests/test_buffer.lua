@@ -24,6 +24,30 @@ T["GinBuffer opens Git output in an immutable scratch buffer"] = function()
   MiniTest.expect.equality(vim.bo.filetype, "gin-buffer")
   MiniTest.expect.equality(require("gin.worktree").current(), vim.uv.fs_realpath(root))
 end
+T["legacy GinBuffer URIs preserve literal backslashes and trailing dollars"] = function()
+  local path = "literal\\name$"
+  vim.fn.writefile({ "committed" }, root .. "/" .. path)
+  H.git(root, "add", "--", path)
+  H.git(root, "commit", "-m", "fixture")
+  local name = "gin://" .. root .. ";monochrome=&filetype=text#show HEAD:" .. path .. "$"
+  require("gin.buffer").open(name, {})
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
+    MiniTest.expect.equality(vim.bo.filetype, "text")
+    MiniTest.expect.equality(vim.bo.modifiable, false)
+    vim.cmd.edit()
+  end
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.bo.filetype = "lua"
+  vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "before", "committed", "after" }
+  )
+  MiniTest.expect.equality(vim.bo.filetype, "lua")
+  MiniTest.expect.equality(vim.bo.modifiable, true)
+end
 T["GinBuffer displays stderr before Git finishes without echoing stdout"] = function()
   H.git(
     root,

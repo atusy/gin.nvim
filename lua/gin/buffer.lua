@@ -60,16 +60,23 @@ function M.replace_output(buf, output, root, filetype, options)
   vim.bo[buf].modified = false
 end
 
+local function arguments(parsed)
+  assert(parsed.fragment, "Gin buffer requires command arguments")
+  if parsed.legacy then
+    return vim.split(parsed.fragment:gsub("%$$", ""), " ", { plain = true })
+  end
+  return require("gin.uri").split(parsed.fragment)
+end
+
 function M.read(buf, name)
   local uri = require("gin.uri").parse(name)
-  assert(uri.fragment, "Gin buffer requires command arguments")
   local args = {}
   if uri.params.monochrome == nil then
     for _, key in ipairs({ "branch", "diff", "status", "ui" }) do
       vim.list_extend(args, { "-c", "color." .. key .. "=always" })
     end
   end
-  vim.list_extend(args, require("gin.uri").split(uri.fragment))
+  vim.list_extend(args, arguments(uri))
   local result = require("gin.git").run(args, {
     cwd = uri.root,
     processor = uri.params.processor,
@@ -111,9 +118,8 @@ end
 
 function M.insert(buf, name)
   local parsed = require("gin.uri").parse(name)
-  assert(parsed.fragment, "Gin buffer requires command arguments")
   local result = require("gin.git").run(
-    require("gin.uri").split(parsed.fragment),
+    arguments(parsed),
     { cwd = parsed.root, processor = parsed.params.processor, progress = "both" }
   )
   M.insert_output(buf, name, result.stdout)

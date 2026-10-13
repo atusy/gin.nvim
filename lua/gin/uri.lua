@@ -68,6 +68,7 @@ function M.parse(name)
   end
   return {
     scheme = scheme,
+    legacy = not not legacy,
     root = vim.uri_decode(root or expr),
     params = params,
     param_order = param_order,
