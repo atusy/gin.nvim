@@ -1,6 +1,7 @@
 local H = require("tests.helpers")
 local root
 local cwd = vim.fn.getcwd()
+local merge_autoedit = vim.env.GIT_MERGE_AUTOEDIT
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
@@ -13,6 +14,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.env.GIT_MERGE_AUTOEDIT = merge_autoedit
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
@@ -183,19 +185,44 @@ end
 T["merge fast-forwards to the selected branch"] = function()
   advance_topic()
   vim.cmd("GinBranch topic")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "merge", { 1, 1 })
+  local process = require("gin.action").call(vim.api.nvim_get_current_buf(), "merge", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), H.git(root, "rev-parse", "topic"))
   MiniTest.expect.equality(vim.fn.readfile(root .. "/topic-file"), { "topic" })
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
 end
-T["merge no-ff records both parents"] = function()
+T["merge no-ff edits the message and records both parents"] = function()
+  vim.env.GIT_MERGE_AUTOEDIT = "yes"
   advance_topic()
   H.git(root, "config", "user.name", "Gin Test")
   H.git(root, "config", "user.email", "gin@example.invalid")
   H.git(root, "config", "core.editor", "true")
   local before, topic = H.git(root, "rev-parse", "main"), H.git(root, "rev-parse", "topic")
   vim.cmd("GinBranch topic")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:no-ff", { 1, 1 })
+  local process =
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:no-ff", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "edited merge message" })
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "edited merge message\n")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^1"), before)
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^2"), topic)
 end
@@ -206,9 +233,25 @@ T["merge ff-only rejects divergent history without changing HEAD"] = function()
   H.git(root, "commit", "-m", "main change")
   local before = H.git(root, "rev-parse", "HEAD")
   vim.cmd("GinBranch topic")
-  MiniTest.expect.error(function()
-    require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:ff-only", { 1, 1 })
-  end, "git exited")
+  local message
+  local notify = vim.notify
+  vim.notify = function(text)
+    message = text
+  end
+  local ok, err = pcall(function()
+    local process =
+      require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:ff-only", { 1, 1 })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return message ~= nil
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+    MiniTest.expect.equality(message:find("git exited", 1, true) ~= nil, true)
+  end)
+  vim.notify = notify
+  assert(ok, err)
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), before)
   MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
 end

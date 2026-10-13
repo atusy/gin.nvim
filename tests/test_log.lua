@@ -206,7 +206,15 @@ end
 T["log merge uses the selected commit as its target"] = function()
   H.git(root, "checkout", "-b", "target", first)
   vim.cmd("GinLog --oneline main")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:ff-only", { 1, 1 })
+  local process =
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:ff-only", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end

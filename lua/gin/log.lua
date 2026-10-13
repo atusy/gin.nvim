@@ -70,7 +70,13 @@ function M.read(buf, name)
     action.define(buf, "merge:" .. method, function(target, range)
       local row = M.candidates(target, range)[1]
       if row then
-        run({ "merge", "--" .. method, row.commit })
+        return require("gin.command").execute({
+          fargs = { "++worktree=" .. parsed.root, "merge", "--" .. method, row.commit },
+          smods = {},
+          on_exit = function()
+            vim.cmd("silent checktime")
+          end,
+        })
       end
     end)
   end

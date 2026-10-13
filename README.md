@@ -41,7 +41,8 @@ Currently implemented:
   its linked worktree. `worktree`, `worktree:force`, and `worktree:orphan` prompt
   for a branch and checkout path, then change cwd to the created worktree.
   `merge`/`merge:ff`, `merge:no-ff`, and `merge:ff-only` merge the selected ref
-  into the current branch. `rebase`, `rebase:x`, and `rebase:instant-drop` replay
+  into the current branch, opening the proxy editor when Git requests a merge
+  message. `rebase`, `rebase:x`, and `rebase:instant-drop` replay
   onto the selected ref, run an exec command, or drop the selected commit.
   `rebase:i` edits the rebase todo through the proxy; `rebase:i:x` also prompts
   for an exec command. Remote deletion deletes the remote ref.

@@ -282,3 +282,9 @@ fixtures verify replacement of the root message, preservation of descendants,
 and amend content; cancellation preserves HEAD and the staged changes. Reword
 with dirty state, autosquash conflicts, and other editor failures still need
 broader coverage.
+
+Branch and history merge actions now run through the asynchronous command proxy,
+so Git can request an editable merge message. A no-ff branch fixture applies a
+custom message and verifies both parents. Fast-forward branch/history fixtures
+and divergent ff-only rejection verify completion and unchanged failure state.
+Merge-editor cancellation and conflict continuation need further coverage.
