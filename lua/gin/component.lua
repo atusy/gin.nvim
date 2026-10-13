@@ -33,13 +33,15 @@ function M.refresh()
   local version = generation
   local cwd = vim.fn.getcwd()
   local anchor = vim.b.gin_worktree or vim.api.nvim_buf_get_name(0)
-  local stat = vim.uv.fs_stat(anchor)
-  anchor = stat and (stat.type == "directory" and anchor or vim.fs.dirname(anchor)) or cwd
-  local function discover(dir, fallback)
-    run({ "rev-parse", "--show-toplevel" }, dir, version, function(found)
+  local dirs = require("gin.worktree").candidates(anchor)
+  if not vim.tbl_contains(dirs, cwd) then
+    dirs[#dirs + 1] = cwd
+  end
+  local function discover(index)
+    run({ "rev-parse", "--show-toplevel" }, dirs[index], version, function(found)
       if found.code ~= 0 then
-        if fallback and dir ~= cwd then
-          discover(cwd, false)
+        if dirs[index + 1] then
+          discover(index + 1)
         else
           publish({ branch = "", upstream = "", ahead = 0, behind = 0, root = "" }, version)
         end
@@ -83,7 +85,7 @@ function M.refresh()
       )
     end)
   end
-  discover(anchor, true)
+  discover(1)
 end
 
 local function schedule()

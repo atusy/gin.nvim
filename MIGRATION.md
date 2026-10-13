@@ -539,3 +539,10 @@ Blame source and attribution windows now enable winfixbuf, as in the pinned
 Blame ftplugins. A real view fixture verifies that ordinary :edit cannot replace
 either pane and that protection survives reload, commit selection and history
 navigation. Tests reset this window-local setting after forced teardown.
+
+Worktree discovery now shares ordered filesystem candidates with asynchronous
+components. For a file symlink outside a repository, both try its real target's
+parent before falling back to cwd; a repository containing the link still wins.
+This matches normSuspect in the pinned worktree implementation. A real symlink
+fixture verifies both APIs before and after initializing a repository around
+the link. Existing stale-result component tests cover asynchronous invalidation.

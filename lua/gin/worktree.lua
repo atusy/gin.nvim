@@ -1,19 +1,36 @@
 local git = require("gin.git")
 local M = {}
 
+---Ordered search directories: the link's location precedes its target.
+function M.candidates(anchor)
+  local stat = vim.uv.fs_stat(anchor)
+  if not stat then
+    return {}
+  end
+  local dirs = { stat.type == "directory" and anchor or vim.fs.dirname(anchor) }
+  local link = vim.uv.fs_lstat(anchor)
+  if link and link.type == "link" then
+    local real = vim.uv.fs_realpath(anchor)
+    if real then
+      local dir = stat.type == "directory" and real or vim.fs.dirname(real)
+      if dir ~= dirs[1] then
+        dirs[#dirs + 1] = dir
+      end
+    end
+  end
+  return dirs
+end
+
 ---@param anchor string
 ---@return string
 function M.find(anchor)
-  local stat = vim.uv.fs_stat(anchor)
-  if not stat then
-    error("No git repository found (searched from " .. anchor .. ")", 0)
+  for _, dir in ipairs(M.candidates(anchor)) do
+    local result = git.run({ "rev-parse", "--show-toplevel" }, { cwd = dir, check = false })
+    if result.code == 0 then
+      return vim.uv.fs_realpath((result.stdout:gsub("\n$", "")))
+    end
   end
-  local dir = stat.type == "directory" and anchor or vim.fs.dirname(anchor)
-  local result = git.run({ "rev-parse", "--show-toplevel" }, { cwd = dir, check = false })
-  if result.code ~= 0 then
-    error("No git repository found (searched from " .. anchor .. ")", 0)
-  end
-  return vim.uv.fs_realpath((result.stdout:gsub("\n$", "")))
+  error("No git repository found (searched from " .. anchor .. ")", 0)
 end
 
 ---Resolve the current buffer before falling back to the window's cwd.

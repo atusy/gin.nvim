@@ -49,4 +49,27 @@ T["explicit missing repository fails without falling back"] = function()
     require("gin.worktree").current(root .. "/missing")
   end, "No git repository found")
 end
+T["file symlinks resolve target repositories after checking their own directory"] = function()
+  vim.fn.writefile({ "target" }, root .. "/file")
+  local directory = root .. " symlink"
+  vim.fn.mkdir(directory, "p")
+  assert(vim.uv.fs_symlink(root .. "/file", directory .. "/link"))
+  vim.cmd.edit(vim.fn.fnameescape(directory .. "/link"))
+  local worktree = require("gin.worktree")
+  local component = require("gin.component.worktree")
+  for _, expected in ipairs({ root, directory }) do
+    if expected == directory then
+      H.git(directory, "init", "--initial-branch=local-link")
+    end
+    MiniTest.expect.equality(worktree.current(), vim.uv.fs_realpath(expected))
+    component.full()
+    require("gin.component").refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return component.full() == vim.uv.fs_realpath(expected)
+      end, 10),
+      true
+    )
+  end
+end
 return T
