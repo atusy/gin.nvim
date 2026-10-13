@@ -357,3 +357,9 @@ them in reload URIs and using the shared display decoder. Latin-1 fixtures
 verify descriptions, buffer options and the original candidate targets through
 tag deletion and stash pop. Candidate extraction continues to use raw Git
 identifiers before display decoding.
+
+Branch lists now retain enc/encoding and ff/fileformat options in their URIs
+and decode display output through the shared buffer path. A Latin-1 commit
+subject fixture verifies reload, buffer options and a subsequent switch to the
+original branch and commit. Raw branch/worktree identifiers remain separate
+from display decoding.

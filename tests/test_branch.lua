@@ -420,4 +420,31 @@ T["interactive branch rebase executes the supplied command after Apply"] = funct
   MiniTest.expect.equality(H.git(root, "config", "gin.executed"), "interactive\n")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), H.git(root, "rev-parse", "topic"))
 end
+
+T["branch decoding options survive reload and preserve switch targets"] = function()
+  H.git(root, "checkout", "topic")
+  H.git(
+    root,
+    "-c",
+    "i18n.commitEncoding=ISO-8859-1",
+    "commit",
+    "--allow-empty",
+    "-m",
+    "caf" .. string.char(233)
+  )
+  local commit = H.git(root, "rev-parse", "HEAD")
+  H.git(root, "checkout", "main")
+  vim.cmd("GinBranch ++encoding=latin1 ++fileformat=unix topic")
+  vim.cmd.edit()
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]:find("café", 1, true) ~= nil,
+    true
+  )
+  MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+  MiniTest.expect.equality(vim.bo.fileformat, "unix")
+  MiniTest.expect.equality(vim.b.gin_branches[1].target, "topic")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), commit)
+end
 return T

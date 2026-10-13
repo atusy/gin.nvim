@@ -47,7 +47,13 @@ function M.read(buf, name)
       .. " "
       .. fields[4]
   end
-  require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-branch")
+  require("gin.buffer").replace_output(
+    buf,
+    table.concat(lines, "\n") .. (#lines > 0 and "\n" or ""),
+    parsed.root,
+    "gin-branch",
+    parsed.params
+  )
   vim.b[buf].gin_branches = rows
   action.setup(buf, M.candidates)
   local group = vim.api.nvim_create_augroup("gin_branch_" .. buf, { clear = true })
@@ -301,7 +307,10 @@ end
 function M.command(opts)
   local args = vim.deepcopy(vim.g.gin_branch_persistent_args or {})
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_branch_default_args or {}) or opts.fargs)
-  local options, residue = require("gin.command").parse(args, { "worktree", "opener" })
+  local options, residue = require("gin.command").parse(
+    args,
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+  )
   local flags, patterns, paths = {}, {}, false
   for _, value in ipairs(residue) do
     if value == "--" and not paths then
@@ -315,7 +324,11 @@ function M.command(opts)
   local root = require("gin.worktree").current(options.worktree)
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(
-    uri.format("ginbranch", root, { args = vim.json.encode(flags) }, uri.join(patterns)),
+    uri.format("ginbranch", root, {
+      args = vim.json.encode(flags),
+      enc = options.enc or options.encoding,
+      ff = options.ff or options.fileformat,
+    }, uri.join(patterns)),
     options
   )
 end
