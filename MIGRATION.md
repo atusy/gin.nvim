@@ -180,3 +180,11 @@ remote-default-branch ancestry. It uses local remote HEAD (fallback main) rather
 than upstream’s network remote-show discovery. Squash/rebase-merged PRs without
 matching messages are not inferred. Tests cover direct/containing merges and
 missing matches without network access.
+
+GinBlame now opens the three-pane attribution/content/detail layout. Its Git
+line-porcelain reader retains per-line source metadata and physical/source line
+maps; cursor movement updates details, preserving the last commit on intermediate
+dividers. Tests exercise a subdirectory, a dirty working file, repeated commit
+groups and detail selection. Remaining blame work includes commit/history
+navigation and rename tracking, paired-buffer cleanup/reload, divider highlights,
+encoding/fileformat and emoji options, and broader parser/UI parity checks.

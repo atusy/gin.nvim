@@ -105,6 +105,10 @@ Currently implemented:
   containing the commit, then another containing remote, with `origin` as fallback.
   `--pr` (or `browse:pr`/`browse:pr:yank`) finds GitHub PR URLs from merge
   messages and local ancestry; it uses the remote HEAD ref, falling back to `main`.
+- `:GinBlame [commitish] path` opens a tab with synchronized attribution and
+  committed file content, plus commit details that follow the cursor. Supports
+  `++worktree` and `++opener`. Commit navigation, paired-pane cleanup/reload,
+  encoding options and emoji rendering are still being ported.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
