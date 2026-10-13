@@ -4,9 +4,13 @@ local uri = require("gin.uri")
 local action = require("gin.action")
 
 function M.candidates(buf, range)
-  local rows, selected = vim.b[buf].gin_branches or {}, {}
+  local rows, selected, seen = vim.b[buf].gin_branches or {}, {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
-    selected[#selected + 1] = rows[i]
+    local key = rows[i].kind .. ":" .. rows[i].target
+    if not seen[key] then
+      selected[#selected + 1] = rows[i]
+      seen[key] = true
+    end
   end
   return selected
 end
@@ -14,15 +18,26 @@ end
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "branch", "--list", "--no-color" }
-  vim.list_extend(args, parsed.params.args and vim.json.decode(parsed.params.args) or {})
-  args[#args + 1] =
-    "--format=%(HEAD)%00%(refname)%00%(objectname:short)%00%(subject)%00%(upstream:short)%00%(upstream:track)%00%(worktreepath)%00%(symref)"
+  local format
+  for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
+    if arg:sub(1, 9) == "--format=" then
+      format = arg:sub(10)
+    else
+      args[#args + 1] = arg
+    end
+  end
+  local boundary = vim.fn.sha256(vim.fn.tempname())
+  args[#args + 1] = "--format=%00"
+    .. boundary
+    .. "%00%(HEAD)%00%(refname)%00%(objectname:short)%00%(subject)%00%(upstream:short)%00%(upstream:track)%00%(worktreepath)%00%(symref)%00"
+    .. (format or "")
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
   local output = git.run(args, { cwd = parsed.root }).stdout
   local rows, lines = {}, {}
-  for line in output:gmatch("[^\n]+") do
-    local fields = vim.split(line, "\0", { plain = true })
+  local records = vim.split(output, "\0" .. boundary .. "\0", { plain = true })
+  for i = 2, #records do
+    local fields = vim.split(records[i]:sub(1, -2), "\0", { plain = true })
     local remote = fields[2]:match("^refs/remotes/(.-)/")
     local target = fields[2]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
     local row = {
@@ -34,18 +49,15 @@ function M.read(buf, name)
       worktree = fields[7] ~= "" and fields[7] or nil,
       kind = fields[8] ~= "" and "alias" or remote and "remote" or "local",
     }
-    rows[#rows + 1] = row
     local tracking = fields[5] ~= ""
         and (" [" .. fields[5] .. (fields[6] ~= "" and ": " .. fields[6]:sub(2, -2) or "") .. "]")
       or ""
-    lines[#lines + 1] = row.head
-      .. " "
-      .. target
-      .. " "
-      .. row.commit
-      .. tracking
-      .. " "
-      .. fields[4]
+    local display = format and table.concat(fields, "\0", 9)
+      or row.head .. " " .. target .. " " .. row.commit .. tracking .. " " .. fields[4]
+    for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
+      rows[#rows + 1] = row
+      lines[#lines + 1] = line
+    end
   end
   require("gin.buffer").replace_output(
     buf,

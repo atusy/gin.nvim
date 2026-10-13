@@ -31,11 +31,34 @@ T["branch view lists refs and switches the selected branch"] = function()
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
   MiniTest.expect.equality(vim.b.gin_branches[2].head, "*")
 end
+T["custom branch formats retain sorted switch targets across reload"] = function()
+  vim.cmd("GinBranch --sort=-refname --format=%(refname:short):%(subject)")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "topic:initial",
+    "main:initial",
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+end
 T["branch deletion changes refs and reloads the view"] = function()
   vim.cmd.GinBranch()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 2, 2 })
   MiniTest.expect.equality(H.git(root, "branch", "--list", "topic"), "")
   MiniTest.expect.equality(#vim.b.gin_branches, 1)
+end
+T["multiline branch formats preserve NULs and deduplicate deletion targets"] = function()
+  vim.cmd("GinBranch --format=%(refname:short)%00%0a%(subject)")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "main\0",
+    "initial",
+    "topic\0",
+    "initial",
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 3, 4 })
+  MiniTest.expect.equality(H.git(root, "branch", "--list", "topic"), "")
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "main\n")
 end
 T["branch patterns and named-register yanks survive reload"] = function()
   vim.cmd("GinBranch top*")
@@ -48,9 +71,13 @@ T["deleting a remote branch removes the remote ref"] = function()
   H.git(root, "init", "--bare", "remote.git")
   H.git(root, "remote", "add", "origin", root .. "/remote.git")
   H.git(root, "push", "origin", "topic")
-  vim.cmd("GinBranch --remotes")
+  vim.cmd("GinBranch --remotes --format=%(subject)%0a%(refname:short)")
   MiniTest.expect.equality(vim.b.gin_branches[1].target, "origin/topic")
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "initial", "origin/topic" }
+  )
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 2, 2 })
   MiniTest.expect.equality(H.git(root, "ls-remote", "origin", "refs/heads/topic"), "")
   MiniTest.expect.equality(#vim.b.gin_branches, 0)
 end

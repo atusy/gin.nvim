@@ -440,3 +440,10 @@ display text; range candidates deduplicate lines from the same stash. Real Git
 fixtures filter to an older stash, reload, and verify pop:index restores its
 worktree and index content while retaining the newer stash. Named pretty formats,
 graph/patch output and custom parse-pattern settings remain under audit.
+
+GinBranch honors --format while retaining local/remote ref identities, current
+branch state and worktree metadata separately from display text. Tests cover
+sorted selection after reload, multiline/NUL display, deduplicated deletion and
+deleting the selected remote ref through a custom display. Default layout
+alignment, other display flags and custom parse-pattern settings remain under
+audit.
