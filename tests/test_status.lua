@@ -178,6 +178,10 @@ T["revision edit actions honor persistent decoding arguments"] = function()
   vim.g.gin_edit_persistent_args = { "++enc=latin1", "++opener=vsplit" }
   local windows = #vim.api.nvim_tabpage_list_wins(0)
   local ok, err = pcall(function()
+    MiniTest.expect.error(function()
+      require("gin.action").call(status, "edit:cached", { 2, 2 })
+    end, "Duplicate Gin option: %+%+opener")
+    vim.g.gin_edit_persistent_args = { "++enc=latin1" }
     for _, source in ipairs({ "cached", "HEAD" }) do
       require("gin.action").call(status, "edit:" .. source, { 2, 2 })
       MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "café" })

@@ -199,6 +199,10 @@ Set globals before opening a view. Argument settings are lists of strings:
     g:gin_{kind}_default_args       Used when no explicit arguments are given.
     g:gin_{kind}_persistent_args    Prepended to default or explicit arguments.
 
+Repeated ++option names are errors, including duplicates introduced by
+persistent arguments. An action's explicit ++opener can therefore conflict
+with ++opener in its destination command's persistent arguments.
+
 Kinds: branch, browse, chaperon, diff, edit, log, reflog, patch, stash, status,
 and tag. GinBlame shares the edit settings, matching the pinned upstream.
 Both settings are validated even when explicit arguments are given.

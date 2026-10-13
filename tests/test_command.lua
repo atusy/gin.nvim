@@ -79,6 +79,14 @@ T["Gin treats plus-prefixed paths after the separator as literal arguments"] = f
   vim.cmd("Gin ++wait add -- " .. table.concat(paths, " "))
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), table.concat(paths, "\0") .. "\0")
 end
+T["duplicate Gin options fail before executing Git"] = function()
+  vim.fn.writefile({ "literal" }, root .. "/file")
+  MiniTest.expect.error(function()
+    vim.cmd("Gin ++wait ++wait add -- file")
+  end, "Duplicate Gin option: %+%+wait")
+  MiniTest.expect.equality(H.git(root, "ls-files"), "")
+  MiniTest.expect.equality(events, 0)
+end
 T["failed Gin does not publish a success event"] = function()
   MiniTest.expect.error(function()
     vim.cmd("Gin ++wait not-a-git-command")

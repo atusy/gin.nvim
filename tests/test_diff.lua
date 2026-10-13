@@ -55,6 +55,10 @@ T["file diff actions honor persistent flags and retain the selected path"] = fun
   vim.g.gin_diff_persistent_args = { "--word-diff=plain", "++opener=tabedit" }
   local tabs = #vim.api.nvim_list_tabpages()
   local ok, err = pcall(function()
+    MiniTest.expect.error(function()
+      require("gin.action").call(status, "diff:local", { 2, 2 })
+    end, "Duplicate Gin option: %+%+opener")
+    vim.g.gin_diff_persistent_args = { "--word-diff=plain" }
     for _, source in ipairs({ "local", "cached", "HEAD", "smart" }) do
       require("gin.action").call(status, "diff:" .. source, { 2, 2 })
       local args = { "diff", "--word-diff=plain", "--no-color" }

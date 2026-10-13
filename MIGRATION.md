@@ -760,8 +760,8 @@ the existing [] representation.
 Cached/HEAD file edit actions now dispatch through GinEdit's command handler,
 as the pinned action/edit.ts does, so persistent encoding and other command
 arguments apply. A fixture opens a Latin-1 index/HEAD file through both actions,
-checks decoding and verifies the action's explicit opener overrides a persistent
-opener. The selected path is made absolute before command expansion so a literal
+checks decoding and rejects an opener duplicated by persistent and action
+arguments. The selected path is made absolute before command expansion so a literal
 % prefix remains a filename. Other action-to-command dispatch paths, including
 diff, still need the same configuration audit.
 
@@ -769,21 +769,21 @@ File diff actions now dispatch through GinDiff's command handler so persistent
 flags and decoding/processor options apply. A real-diff fixture verifies
 --word-diff=plain for local, cached, HEAD and smart selections, with distinct
 HEAD/index/worktree contents and a literal % filename under a subdirectory.
-It checks full output across reloads, selected-path isolation and explicit
-action opener precedence. Other direct action open paths remain under audit.
+It checks full output across reloads, selected-path isolation and rejection of
+duplicate openers. Other direct action open paths remain under audit.
 
 Patch file actions now dispatch through GinPatch's command handler, matching
 the pinned action/patch.ts route. Persistent pane/decoding arguments therefore
 apply before the explicit action arguments. A status-action fixture verifies
-that persistent ++no-head yields two panes, the explicit tab opener overrides
-a persistent split opener, and applying one hunk changes only that part of the
+that persistent ++no-head yields two panes, a duplicate opener is rejected,
+and applying one hunk changes only that part of the
 index while preserving the working file. The path remains anchored to the
 selected repository even when invoked from a subdirectory.
 
 Chaperon file actions likewise dispatch through GinChaperon's command handler,
 following action/chaperon.ts. A real merge-conflict fixture applies persistent
-++no-ours through the both action, verifies the explicit tab opener overrides
-a persistent split opener, resolves from the remaining theirs pane, then checks
+++no-ours through the both action, rejects a duplicate opener,
+resolves from the remaining theirs pane, then checks
 that only explicit staging clears unmerged index entries. The resulting staged
 blob is asserted. This completes the direct file edit/diff/patch/chaperon
 configuration-path fixes; other action families remain under audit.
@@ -791,7 +791,7 @@ configuration-path fixes; other action families remain under audit.
 Branch log actions now dispatch through GinLog's command handler so persistent
 history filters apply, following action/log.ts. A fixture selects a %prefixed
 branch behind the current branch, applies --max-count=1, verifies the exact
-selected commit across reloads and checks explicit opener precedence. Named
+selected commit across reloads and checks duplicate-opener rejection. Named
 branches are passed as full refs to avoid Vim filename/option expansion;
 detached display labels use their recorded commit instead.
 
@@ -1072,3 +1072,11 @@ that separator and subsequent arguments. This matches denops std v7's
 stages files named `++unknown`, `++wait` and `++worktree=elsewhere`, checking the
 exact NUL-delimited index paths. Filename placeholder expansion remains active
 after the separator, as upstream normalizes arguments before parsing options.
+
+Repeated `++option` names now fail before executing Git, matching denops std
+v7's option parser. This also applies when a persistent option collides with
+an action's explicit option. Earlier fixtures incorrectly treated last-wins
+opener precedence as compatible; edit/diff/log/patch/chaperon action fixtures
+now verify the duplicate error, then retain their content and Git-state checks
+with non-conflicting persistent arguments. Repeated Git flags and different
+option aliases are outside this same-name validation.

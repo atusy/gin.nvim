@@ -114,6 +114,10 @@ T["branch log actions honor persistent log filters"] = function()
   vim.g.gin_log_persistent_args = { "--max-count=1", "++opener=tabedit" }
   local tabs = #vim.api.nvim_list_tabpages()
   local ok, err = pcall(function()
+    MiniTest.expect.error(function()
+      require("gin.action").call(branch, "log", { 1, 1 })
+    end, "Duplicate Gin option: %+%+opener")
+    vim.g.gin_log_persistent_args = { "--max-count=1" }
     require("gin.action").call(branch, "log", { 1, 1 })
     MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs)
     for _ = 1, 2 do

@@ -38,6 +38,7 @@ function M.parse(args, allowed)
       if not vim.tbl_contains(allowed, name) then
         error("Unknown Gin option: ++" .. name, 0)
       end
+      assert(options[name] == nil, "Duplicate Gin option: ++" .. name)
       options[name] = value
     else
       if arg:match("^[%%#]") then
