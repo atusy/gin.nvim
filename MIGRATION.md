@@ -779,3 +779,9 @@ relative-time, author and summary groups. It retains the specified GUI/terminal
 time and author colors and bold author text. Syntax-engine fixtures cover
 just-now, past and future relative times, names with spaces, and highlight
 attributes. Divider signs continue to use the existing independent renderer.
+
+Blame navigation highlight definitions now share the existing ColorScheme
+refresh hook with the divider. A real colorscheme reload reproduced missing
+time/author colors; default definitions restore them while respecting a theme's
+explicit author style. Additional lifecycle fixtures verify list default links
+survive colorscheme reload and user-defined tag colors survive syntax reload.

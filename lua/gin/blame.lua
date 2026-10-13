@@ -4,6 +4,16 @@ local uri = require("gin.uri")
 local buffer = require("gin.buffer")
 
 function M.highlights()
+  vim.api.nvim_set_hl(0, "GinBlameLineNumber", { default = true, link = "LineNr" })
+  vim.api.nvim_set_hl(0, "GinBlameTime", { default = true, fg = "#87afaf", ctermfg = 109 })
+  vim.api.nvim_set_hl(0, "GinBlameAuthor", {
+    default = true,
+    fg = "#ffaf5f",
+    ctermfg = 215,
+    bold = true,
+    cterm = { bold = true },
+  })
+  vim.api.nvim_set_hl(0, "GinBlameSummary", { default = true, link = "Normal" })
   local comment = vim.api.nvim_get_hl(0, { name = "Comment", link = false })
   vim.api.nvim_set_hl(0, "GinBlameDivider", {
     fg = comment.fg,
