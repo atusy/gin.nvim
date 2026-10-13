@@ -14,7 +14,7 @@ scope, not proof of complete upstream parity.
 - [ ] GinStatus: status display, path selection and all status actions.
 - [ ] GinBranch, GinTag: parsed views and ref actions.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
-- [ ] GinEdit: working tree, revision and index buffers with write-back.
+- [ ] GinEdit: revision and index buffers with write-back; working files via edit actions.
 - [ ] GinDiff: revision selection, read and diff navigation/folding.
 - [ ] GinPatch: staging/unstaging partial changes.
 - [ ] GinChaperon: conflict panes and resolution.
@@ -37,6 +37,10 @@ to prove an action produces the intended Git state.
 
 ## Current implementation evidence
 
+- `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
+- `tests/test_edit.lua`: revision reads, direct index writes, executable mode, absent
+  working files, clean filters, BOM/CRLF, no-EOL, empty blobs, failed writes,
+  addressed/empty-buffer reads and filename expansion.
 - `tests/test_git.lua`: literal pathspecs, exit status/stderr, NUL output and timeouts.
 - `tests/test_worktree.lua`: files/subdirectories, buffer priority, linked worktrees,
   symlinks and explicit invalid selection.
@@ -44,7 +48,8 @@ to prove an action produces the intended Git state.
   completion events and local directory scope.
 - `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes and split modifiers.
 - `tests/test_status.lua`: display, staging/unstaging, empty selection, deletion,
-  rename, newline/magic/dash paths, path filtering, visual range and event refresh.
+  rename, newline/magic/dash paths, path filtering, visual range, event refresh,
+  action repeat, local/cached edit navigation and named-register path yanks.
 
 Gin, GinBuffer and GinStatus remain unchecked above because their full option,
 UI and action scope is still incomplete. No full upstream parity claim is made.
@@ -53,7 +58,13 @@ when reloaded; exact upstream URI interoperability still needs an audit.
 Unstaging a rename resets both destination and original paths, so the whole
 rename leaves the index. This differs from upstream's destination-only reset.
 
-Next work: complete shared actions and the remaining status mappings, then
-implement revision/index buffers, diff/patch and conflict handling with direct
-Git-state tests. Audit every pinned command, option, mapping, event and component
+Shared choice/repeat/help/alias dispatch and file edit/yank actions are now
+implemented. Their complete mapping and customization compatibility still needs
+an audit. GinEdit supports revision and index reads, addressed reads and index
+writes; binary/encoding edge cases and full upstream option parity remain to be
+verified. Index writes use hash-object/update-index with the existing file mode
+and clean filters, avoiding temporary replacement of working files.
+
+Next work: complete the remaining status actions, then implement diff/patch,
+conflict handling and the remaining parsed views with direct Git-state tests. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.

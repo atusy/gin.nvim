@@ -21,6 +21,15 @@ Currently implemented:
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
   status. `<<` stages the current line or visual range; `>>` unstages it.
   `<Plug>(gin-action-stage)` and `<Plug>(gin-action-unstage)` are also available.
+  `<CR>` opens the working file, `yy` yanks its absolute path (register prefixes
+  work), `a` chooses an action, `.` repeats the chosen action, and `?` shows help.
+  The edit actions include `edit:cached`, `edit:HEAD`, and their `:split`,
+  `:vsplit`, and `:tabedit` variants.
+- `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
+  file by default, or an immutable revision when a commitish is given. Relative
+  paths are repository-relative. Writing the index buffer updates Git's index
+  while preserving the working file. `:read {ginedit-URI}` inserts its content
+  into another buffer. Encoding and fileformat options are accepted.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 Commands locate the repository from the current buffer before trying cwd.
