@@ -123,8 +123,9 @@ Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
 decoding on commands that support them. ++processor accepts a command with its
 arguments escaped as one Gin argument.
-For output views and GinEdit, :edit ++enc={encoding} ++ff={format} overrides
-the URI decoding settings for that read. Ordinary reload uses the URI defaults.
+For output views, GinEdit and either Blame pane, :edit ++enc={encoding}
+++ff={format} overrides the URI decoding settings for that read. Ordinary
+reload uses the URI defaults.
 
 :read {URI} inserts output for gin://, ginedit://, gindiff://, gintag://,
 ginlog://, ginreflog:// and ginstash:// buffers. Obtain the URI from an existing

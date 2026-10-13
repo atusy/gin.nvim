@@ -422,4 +422,31 @@ T["blame panes reject unrelated buffers across reload and history navigation"] =
   require("gin.blame").navigate_history("older")
   check()
 end
+T["blame reload decoding overrides work from either synchronized pane"] = function()
+  vim.fn.writefile({ "café\r" }, root .. "/sub/file.lua")
+  H.git(root, "commit", "--author=José <jose@example.invalid>", "-am", "UTF-8 source")
+  vim.cmd("GinBlame ++enc=latin1 ++ff=dos file.lua")
+  local file, nav = vim.b.gin_blame_file_bufnr, vim.b.gin_blame_nav_bufnr
+  local file_name, nav_name = vim.api.nvim_buf_get_name(file), vim.api.nvim_buf_get_name(nav)
+  for _, target in ipairs({ file, nav }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
+    vim.cmd("edit ++encoding=utf-8 ++fileformat=unix")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), { "", "café\r" })
+    for _, buf in ipairs({ file, nav }) do
+      MiniTest.expect.equality(
+        { vim.bo[buf].fileencoding, vim.bo[buf].fileformat },
+        { "utf-8", "unix" }
+      )
+      MiniTest.expect.equality(vim.b[buf].gin_blame_line_map[2].metadata.author, "José")
+    end
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(file), file_name)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(nav), nav_name)
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), { "", "cafÃ©" })
+    MiniTest.expect.equality(
+      { vim.bo[file].fileencoding, vim.bo[file].fileformat },
+      { "latin1", "dos" }
+    )
+  end
+end
 return T

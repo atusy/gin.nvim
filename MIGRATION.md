@@ -561,3 +561,9 @@ fixture opens UTF-8/CRLF data with Latin-1/DOS defaults, reloads it as UTF-8/Uni
 and verifies both text and options before returning to the unchanged URI
 settings on ordinary reload. Blame's separate decoding path and other builtin
 read options remain under audit.
+
+Blame source and attribution reloads now use the same explicit read-option
+precedence. A UTF-8/CRLF fixture reloads each pane with encoding/fileformat
+overrides, verifies both synchronized buffers and literal UTF-8 author metadata,
+and returns to the unchanged URI defaults on an ordinary reload. Other builtin
+read options and complete decoding compatibility remain under audit.

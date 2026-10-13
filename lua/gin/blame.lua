@@ -133,8 +133,9 @@ function M.read(buf, name, output)
       { cwd = parsed.root }
     ).stdout
   local result = M.parse(output)
-  local encoding = parsed.params.enc or "utf-8"
-  local ff = parsed.params.ff or (output:find("\r\n", 1, true) and "dos" or "unix")
+  local options = buffer.read_options(parsed.params)
+  local encoding = options.enc or "utf-8"
+  local ff = options.ff or (output:find("\r\n", 1, true) and "dos" or "unix")
   for _, line in ipairs(result.lines) do
     -- Git metadata and paths are separate from the file's byte encoding.
     if encoding ~= "utf-8" and encoding ~= "utf8" then
