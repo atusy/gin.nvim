@@ -45,6 +45,25 @@ T["stash echo exposes the selected reflog reference and index"] = function()
     { stashRef = "stash@{1}", index = 1, commit = "stash@{1}" },
   })
 end
+T["stash show opens the selected reflog reference"] = function()
+  for _, value in ipairs({ "selected", "unselected" }) do
+    vim.fn.writefile({ value }, root .. "/file")
+    H.git(root, "stash", "push", "-m", value)
+  end
+  vim.cmd.GinStash()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "show", { 2, 2 })
+  local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(0))
+  MiniTest.expect.equality(parsed.params.diffjump, "stash@{1}")
+  MiniTest.expect.equality(require("gin.uri").split(parsed.fragment), { "show", "stash@{1}" })
+  local row
+  for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    if line == "++selected" then
+      row = i
+      break
+    end
+  end
+  assert(row, "selected stash content must appear in the combined diff")
+end
 T["stash pop restores only the selected stash and removes it"] = function()
   vim.cmd.GinStash()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 2, 2 })

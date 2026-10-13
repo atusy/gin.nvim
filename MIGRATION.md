@@ -1031,3 +1031,7 @@ the reference rather than the stored object's hash. Apply/pop/drop and yank
 continue to use that same selected stash reference. Structured per-row Git
 metadata remains available internally for custom and multiline displays;
 this change does not close the custom parse-pattern audit.
+A real stash-show fixture additionally checks the selected reference in the
+show argv and diffjump URI parameter, and the selected stash's combined-diff
+content. Combined (`@@@`) hunk jumps are unsupported by both the pinned
+diffjump parser and the Lua parser; this fixture does not claim to test them.
