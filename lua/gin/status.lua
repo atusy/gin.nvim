@@ -115,6 +115,12 @@ function M.command(opts)
   )
 end
 
+function M.candidates(buf, range)
+  return vim.tbl_filter(function(entry)
+    return entry.line >= range[1] and entry.line <= range[2]
+  end, vim.b[buf].gin_status_entries or {})
+end
+
 function M.action(buf, name, range)
   local root = vim.b[buf].gin_worktree
   local paths, removed = {}, {}
@@ -160,6 +166,7 @@ function M.mappings(buf)
     end)
   end
   action.alias(buf, "reset", "unstage")
+  require("gin.file_actions").setup(buf, M.candidates)
   if
     not vim.g.gin_status_disable_default_mappings
     or vim.g.gin_status_disable_default_mappings == 0
@@ -168,6 +175,7 @@ function M.mappings(buf)
       ["<<"] = "stage",
       [">>"] = "unstage",
       a = "choice",
+      ["<CR>"] = "edit",
       ["."] = "repeat",
       ["?"] = "help",
     }) do

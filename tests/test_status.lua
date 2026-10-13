@@ -122,4 +122,17 @@ T["chosen status actions remain repeatable after refresh"] = function()
   action.call(vim.api.nvim_get_current_buf(), "repeat", { 3, 3 })
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "one\ntwo\n")
 end
+T["edit action opens the selected working file from a subdirectory"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.fn.writefile({ "working" }, root .. "/sub/file.lua")
+  vim.cmd.cd(root .. "/sub")
+  vim.cmd.GinStatus()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "mx", false)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_name(0),
+    vim.uv.fs_realpath(root) .. "/sub/file.lua"
+  )
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "working" })
+end
 return T
