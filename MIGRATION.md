@@ -148,8 +148,8 @@ GinLog reset actions now cover default/soft/hard/merge/keep modes. Tests assert
 actual HEAD, index and worktree state rather than only command output.
 
 GinLog lightweight tag creation and force replacement are implemented.
-Annotated/signed tag actions and the default annotated-tag alias remain pending
-editor/signing integration.
+Annotated tag actions and the default tag alias now use the editor proxy.
+Signed tags remain pending signing integration.
 
 GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
 selected parent (or --root), correcting the pinned double-parent traversal.
@@ -267,3 +267,7 @@ and the usual command-post refresh. A history fixture edits the todo to drop a
 commit and verifies resulting HEAD and worktree content. A branch fixture checks
 interactive exec execution and rewritten ancestry. Broader conflict and
 cancellation coverage remains pending.
+
+The annotated-tag fixture verifies the edited message, tag object type and peeled
+target commit. Annotated force replacement is exposed; its direct coverage and
+signed variants remain pending.

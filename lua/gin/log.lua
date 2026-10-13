@@ -174,6 +174,32 @@ function M.read(buf, name)
       end
     )
   end
+  for _, force in ipairs({ false, true }) do
+    action.define(buf, force and "tag:annotate:force" or "tag:annotate", function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      vim.ui.input({ prompt = "Name: " }, function(name)
+        if not name or name == "" then
+          return
+        end
+        local args = { "++worktree=" .. parsed.root, "tag", "--annotate" }
+        if force then
+          args[#args + 1] = "--force"
+        end
+        vim.list_extend(args, { "--", name, row.commit })
+        require("gin.command").execute({
+          fargs = args,
+          smods = {},
+          on_exit = function()
+            vim.cmd("silent checktime")
+          end,
+        })
+      end)
+    end)
+  end
+  action.alias(buf, "tag", "tag:annotate")
   for _, instant in ipairs({ false, true }) do
     action.define(buf, instant and "fixup:instant-fixup" or "fixup:fixup", function(target, range)
       local rows = M.candidates(target, range)

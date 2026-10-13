@@ -58,7 +58,8 @@ Currently implemented:
   `switch:detach` checks out the selected commit without moving a branch ref.
   Merge and rebase variants work as in GinBranch, targeting
   the selected commit.
-  Annotated/signed tags and fixup amend/reword actions remain pending.
+  `tag`/`tag:annotate` edits an annotated tag message; `tag:annotate:force`
+  replaces an existing tag. Signed tags and fixup amend/reword remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
   actions, including show and reset for commits no longer in normal history.
 - `:GinStash [flags]` lists saved changes. Actions include `apply`, `pop`, their

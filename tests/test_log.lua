@@ -264,4 +264,38 @@ T["interactive rebase edits the selected history through the proxy"] = function(
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), first .. "\n")
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/two"), 0)
 end
+T["tag alias creates an annotated tag with the edited message on the selection"] = function()
+  vim.cmd("GinLog --oneline")
+  local done = false
+  local event = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    once = true,
+    callback = function()
+      done = true
+    end,
+  })
+  tag_action("tag", "annotated")
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "TAG_EDITMSG")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "release notes" })
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return done
+    end, 10),
+    true
+  )
+  pcall(vim.api.nvim_del_autocmd, event)
+  MiniTest.expect.equality(H.git(root, "cat-file", "-t", "annotated"), "tag\n")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "annotated^{}"), first .. "\n")
+  MiniTest.expect.equality(
+    H.git(root, "for-each-ref", "--format=%(contents)", "refs/tags/annotated"),
+    "release notes\n\n"
+  )
+end
 return T
