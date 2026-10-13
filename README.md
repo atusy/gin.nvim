@@ -46,7 +46,9 @@ Currently implemented:
   Interactive rebase actions remain pending. Remote deletion deletes the remote ref.
 - `:GinTag [flags] [patterns...]` lists tags. `<CR>` shows the selected tag;
   `yy` yanks its name. Actions include `delete`, `switch:detach`, and
-  `yank:commit`. The view refreshes after successful Gin commands.
+  `yank:commit`. `show:split`, `show:vsplit`, and `show:tabedit` choose the
+  destination. Show views support diff folds and revision jumps. The tag view
+  refreshes after successful Gin commands.
 - `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
   file by default, or an immutable revision when a commitish is given. Relative
   paths are repository-relative. Writing the index buffer updates Git's index
