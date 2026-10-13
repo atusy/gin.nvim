@@ -52,7 +52,8 @@ to prove an action produces the intended Git state.
 - `tests/test_worktree.lua`: files/subdirectories, buffer priority, linked worktrees,
   symlinks and explicit invalid selection.
 - `tests/test_command.lua`: synchronous/asynchronous Gin, filename expansion,
-  completion events and local directory scope.
+  completion events, local directory scope, synchronous/asynchronous processors
+  and failure propagation without success events.
 - `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes, split
   modifiers, addressed reads, encoding conversion, insertion marks/read events
   and failure handling without destination changes, plus encoding/fileformat
@@ -92,7 +93,7 @@ compatibility still needs an audit. When there is no in-progress operation head,
 its dependent supplemental logs are omitted instead of running an invalid log
 command as upstream does.
 
-Next work: remaining buffer/diff options, Gin command processors and parsed views with direct
+Next work: remaining buffer/diff options and parsed views with direct
 Git-state tests. Complete status browse/echo actions as their supporting modules
 become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.

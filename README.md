@@ -14,7 +14,8 @@ Currently implemented:
 
 - `:Gin [++wait] [++worktree=path] {git arguments}` runs asynchronously by
   default. `++wait` waits for the result. Successful commands emit
-  `User GinCommandPost`.
+  `User GinCommandPost`. `++processor=command\ args` transforms stdout; with a
+  processor configured, the event fires only after the processor succeeds.
 - `:GinBuffer [++opener=edit|split|vsplit|tabedit|pedit] {git arguments}` displays
   command output. Use `:edit` to reload, or `:read {gin-URI}` to insert output
   into another buffer. `++worktree`, `++filetype`, and
