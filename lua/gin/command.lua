@@ -95,7 +95,11 @@ function M.finish(result, options, mods)
     output = vim.fn.iconv(output, encoding, "utf-8")
   end
   local ff = options.ff or options.fileformat
-  output = ff == "mac" and output:gsub("\r", "\n") or output:gsub("\r\n", "\n")
+  if ff == "mac" then
+    output = output:gsub("\r", "\n")
+  elseif ff ~= "unix" then
+    output = output:gsub("\r\n", "\n")
+  end
   output = output:gsub("\27%[[%d;]*m", "")
   if output ~= "" and not mods.silent then
     vim.api.nvim_echo({ { output:gsub("\n$", ""), "None" } }, true, {})

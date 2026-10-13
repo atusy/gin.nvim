@@ -120,4 +120,43 @@ T["asynchronous processor failures report errors without success events"] = func
   MiniTest.expect.equality(received:find("processor exited", 1, true) ~= nil, true)
   MiniTest.expect.equality(events, 0)
 end
+
+for _, spec in ipairs({
+  { option = "++ff=unix", expected = "first\r\nsecond\r" },
+  { option = "++fileformat=unix", expected = "first\r\nsecond\r" },
+  { option = "++ff=dos", expected = "first\nsecond" },
+  { option = "++ff=mac", expected = "first\n\nsecond\n" },
+  { option = "", expected = "first\nsecond" },
+}) do
+  for _, wait in ipairs({ false, true }) do
+    T["command output decoding " .. spec.option .. " wait=" .. tostring(wait)] = function()
+      vim.fn.writefile({ "first\r", "second\r" }, root .. "/file")
+      H.git(root, "add", "file")
+      local echo = vim.api.nvim_echo
+      local output
+      vim.api.nvim_echo = function(chunks)
+        output = chunks[1][1]
+      end
+      local ok, err = pcall(function()
+        local args = { "show", ":file" }
+        if spec.option ~= "" then
+          table.insert(args, 1, spec.option)
+        end
+        if wait then
+          table.insert(args, 1, "++wait")
+        end
+        require("gin.command").execute({ fargs = args, smods = {} })
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return events == 1
+          end, 10),
+          true
+        )
+        MiniTest.expect.equality(output, spec.expected)
+      end)
+      vim.api.nvim_echo = echo
+      assert(ok, err)
+    end
+  end
+end
 return T

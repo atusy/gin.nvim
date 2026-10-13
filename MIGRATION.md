@@ -305,3 +305,8 @@ conflicts. They check operation markers, index contents, unchanged HEAD and no
 success event after failure. Gin cherry-pick/revert --continue produces a child
 of the original HEAD with the resolved content; --abort restores the original
 files and HEAD. Both recovery paths clear operation state and emit the success event.
+
+Bare-command fileformat decoding now preserves carriage returns when unix is
+explicitly selected, matching the pinned separator behavior. Raw Git blob
+fixtures cover ff/fileformat aliases, unix/dos/mac/default output and both
+synchronous and asynchronous execution.
