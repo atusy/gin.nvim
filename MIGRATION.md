@@ -979,3 +979,10 @@ Lua log URIs retain their argv representation, resolving paths after `--`.
 Malformed URI data is contained rather than raising from expansion. This adds
 the Lua API; it does not supply legacy Vimscript function-name shims or close
 the separate URI-format compatibility audit.
+
+The public Lua `gin.util.worktree([path])` now corresponds to upstream
+`gin#util#worktree`, sharing the existing worktree discovery implementation.
+The API fixture checks current-view context, an explicit subdirectory, failure
+without fallback for a missing explicit path, and string argument validation.
+Existing discovery fixtures cover linked worktrees and symlinks. Legacy
+Vimscript names and the public reload utility remain separate audit items.

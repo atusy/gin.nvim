@@ -135,6 +135,12 @@ require('gin.util').expand(expr)                              *gin-util-expand*
     without a file path and unrecognized URI data retain their expanded name.
     Commands use the same function for % and # arguments.
 
+require('gin.util').worktree([path])                        *gin-util-worktree*
+    Return the repository worktree for an explicit path, or use the current
+    buffer and window directory when omitted. Raise an error if no repository
+    can be found. An invalid explicit path does not fall back to the current
+    repository.
+
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
 decoding on commands that support them. ++processor accepts a command with its

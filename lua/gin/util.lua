@@ -1,5 +1,11 @@
 local M = {}
 
+---Find the worktree for an explicit path or the current buffer/window context.
+function M.worktree(path)
+  assert(path == nil or type(path) == "string", "worktree path must be a string")
+  return require("gin.worktree").current(path)
+end
+
 ---Expand a Vim filename expression, resolving file-bearing Gin views.
 function M.expand(expr)
   local name = vim.fn.expand(expr)

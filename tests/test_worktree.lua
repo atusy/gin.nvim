@@ -110,4 +110,18 @@ T["Gin URI buffers resolve their repository without cached buffer variables"] = 
     )
   end
 end
+T["public worktree utility resolves the current view and explicit paths"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_name(0, require("gin.uri").format("ginstatus", root, {}, nil))
+  local util = require("gin.util")
+  MiniTest.expect.equality(util.worktree(), vim.uv.fs_realpath(root))
+  MiniTest.expect.equality(util.worktree(root .. "/sub"), vim.uv.fs_realpath(root))
+  MiniTest.expect.error(function()
+    util.worktree(root .. "/missing")
+  end, "No git repository")
+  MiniTest.expect.error(function()
+    util.worktree(42)
+  end, "string")
+end
 return T
