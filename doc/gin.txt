@@ -30,8 +30,10 @@ COMMANDS                                                        *gin-commands*
     ++filetype, ++processor, ++emojify, ++enc and ++ff.
 
 :GinStatus [options] [flags] [-- pathspecs]                       *:GinStatus*
-    Display status. << stages the selected lines; >> unstages them. dd opens
-    a smart diff, pp opens patch panes, !! opens conflict panes, == stashes the
+    Display status using Git's untracked-file settings. Use --untracked-files=all
+    to list individual files inside untracked directories. << stages the
+    selected lines; >> unstages them. dd opens a smart diff, pp opens patch
+    panes, !! opens conflict panes, == stashes the
     selection, <CR> opens the working file, and yy yanks its absolute path.
 
 :GinBranch [options] [flags] [patterns...]                       *:GinBranch*

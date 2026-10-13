@@ -58,7 +58,6 @@ function M.read(buf, name)
     "--short",
     "--branch",
     "--ahead-behind",
-    "--untracked-files",
     "-z",
   }
   for key, value in pairs(parsed.params) do

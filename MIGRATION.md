@@ -618,3 +618,9 @@ pinned status-to-buffer executor path. Repository configuration is unchanged.
 A fixture sets color.status=never and a custom untracked color, then verifies
 colored extmarks, plain visible text and unchanged config on open and reload.
 The full status suite consequently exercises action parsing with default colors.
+
+GinStatus no longer forces --untracked-files on every read. It now honors Git's
+configured visibility and default directory grouping, matching the pinned status
+argument list. A fixture checks grouped defaults, configured suppression on
+reload and explicit all-mode staging. The file-edit fixture requests all-mode
+explicitly because its subject is a file rather than an untracked directory.

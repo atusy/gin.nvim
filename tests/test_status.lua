@@ -126,7 +126,7 @@ T["edit action opens the selected working file from a subdirectory"] = function(
   vim.fn.mkdir(root .. "/sub", "p")
   vim.fn.writefile({ "working" }, root .. "/sub/file.lua")
   vim.cmd.cd(root .. "/sub")
-  vim.cmd.GinStatus()
+  vim.cmd("GinStatus --untracked-files=all")
   vim.api.nvim_win_set_cursor(0, { 2, 0 })
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "mx", false)
   MiniTest.expect.equality(
@@ -399,5 +399,18 @@ T["status enables display colors without changing repository configuration"] = f
     MiniTest.expect.equality(H.git(root, "config", "color.status"), "never\n")
     vim.cmd.edit()
   end
+end
+T["status honors configured untracked visibility and explicit overrides"] = function()
+  vim.fn.mkdir(root .. "/new", "p")
+  vim.fn.writefile({ "content" }, root .. "/new/file")
+  vim.cmd.GinStatus()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "?? new/" })
+  H.git(root, "config", "status.showUntrackedFiles", "no")
+  vim.cmd.edit()
+  MiniTest.expect.equality(#vim.b.gin_status_entries, 0)
+  vim.cmd("GinStatus --untracked-files=all")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "?? new/file" })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "show", ":new/file"), "content\n")
 end
 return T
