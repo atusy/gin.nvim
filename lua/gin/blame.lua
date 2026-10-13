@@ -214,6 +214,18 @@ function M.read(buf, name, output)
           { buffer = target, remap = true, silent = true }
         )
       end
+      for direction, key in pairs({ older = "<C-O>", newer = "<C-I>" }) do
+        local plug = "<Plug>(gin-blame-navigate-" .. direction .. ")"
+        vim.keymap.set("n", plug, function()
+          M.navigate_history(direction)
+        end, { buffer = target, silent = true })
+        if
+          not vim.g.gin_blame_disable_default_mappings
+          or vim.g.gin_blame_disable_default_mappings == 0
+        then
+          vim.keymap.set("n", key, plug, { buffer = target, remap = true, silent = true })
+        end
+      end
       vim.b[target].gin_blame_result = result
       vim.b[target].gin_blame_line_map = map
       vim.b[target].gin_blame_file_line_to_physical = reverse
@@ -245,20 +257,7 @@ local function filename(value)
   return table.concat(result)
 end
 
-function M.switch_commit()
-  local current = vim.api.nvim_get_current_buf()
-  local row = vim.api.nvim_win_get_cursor(0)[1]
-  local line = (vim.b[current].gin_blame_line_map or {})[row]
-  if type(line) ~= "table" then
-    return
-  end
-  local parsed = uri.parse(vim.api.nvim_buf_get_name(current))
-  local revision, path = line.commitSha, filename(line.metadata.filename)
-  if (parsed.params.commitish or "HEAD") == revision then
-    revision = revision .. "^"
-    local previous = line.metadata.previous and line.metadata.previous:match("^%x+ (.*)$")
-    path = previous and filename(previous) or parsed.fragment
-  end
+local function visit(current, parsed, revision, path, position, source_line)
   -- Resolve Git output before changing any buffers so a missing parent/path
   -- leaves the current view usable.
   local output =
@@ -274,12 +273,77 @@ function M.switch_commit()
   end
   vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
   M.read(file, vim.api.nvim_buf_get_name(file), output)
-  local physical = vim.b[file].gin_blame_file_line_to_physical[line.originalLineNumber] or 1
+  local physical = source_line and (vim.b[file].gin_blame_file_line_to_physical[position] or 1)
+    or position
+  physical = math.min(physical, vim.api.nvim_buf_line_count(file))
   for _, buf in ipairs({ file, nav }) do
     vim.api.nvim_win_set_cursor(vim.fn.bufwinid(buf), { physical, 0 })
   end
   vim.api.nvim_set_current_win(win)
   M.update_detail(current, physical)
+  return physical
+end
+
+local function save_history(current, history, index)
+  for _, buf in ipairs({ vim.b[current].gin_blame_file_bufnr, vim.b[current].gin_blame_nav_bufnr }) do
+    vim.b[buf].gin_blame_history = history
+    vim.b[buf].gin_blame_history_index = index
+  end
+end
+
+function M.switch_commit()
+  local current = vim.api.nvim_get_current_buf()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local line = (vim.b[current].gin_blame_line_map or {})[row]
+  if type(line) ~= "table" then
+    return
+  end
+  local parsed = uri.parse(vim.api.nvim_buf_get_name(current))
+  local revision, path = line.commitSha, filename(line.metadata.filename)
+  if (parsed.params.commitish or "HEAD") == revision then
+    revision = revision .. "^"
+    local previous = line.metadata.previous and line.metadata.previous:match("^%x+ (.*)$")
+    path = previous and filename(previous) or parsed.fragment
+  end
+  local history = vim.b[current].gin_blame_history or {}
+  local index = vim.b[current].gin_blame_history_index or 1
+  history[index] = {
+    commitish = parsed.params.commitish or "HEAD",
+    filename = parsed.fragment,
+    physicalLine = row,
+  }
+  while #history > index do
+    table.remove(history)
+  end
+  local physical = visit(current, parsed, revision, path, line.originalLineNumber, true)
+  history[#history + 1] = { commitish = revision, filename = path, physicalLine = physical }
+  save_history(current, history, #history)
+end
+
+function M.navigate_history(direction)
+  assert(direction == "older" or direction == "newer", "Invalid blame history direction")
+  local current = vim.api.nvim_get_current_buf()
+  local history = vim.b[current].gin_blame_history or {}
+  local index = (vim.b[current].gin_blame_history_index or 1) + (direction == "older" and -1 or 1)
+  if index < 1 or index > #history then
+    vim.api.nvim_echo({
+      {
+        direction == "older" and "Already at oldest commit" or "Already at newest commit",
+        "WarningMsg",
+      },
+    }, false, {})
+    return
+  end
+  local entry = history[index]
+  visit(
+    current,
+    uri.parse(vim.api.nvim_buf_get_name(current)),
+    entry.commitish,
+    entry.filename,
+    entry.physicalLine,
+    false
+  )
+  save_history(current, history, index)
 end
 
 function M.read_nav(buf)

@@ -188,4 +188,28 @@ T["divider selection and an unavailable parent preserve the blame view"] = funct
     { "", "one", "two", "three" }
   )
 end
+T["blame history restores filenames and positions in both directions"] = function()
+  H.git(root, "mv", "sub/file.lua", "sub/renamed.lua")
+  H.git(root, "commit", "-m", "rename")
+  vim.cmd("GinBlame renamed.lua")
+  local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  require("gin.blame").switch_commit()
+  for _, case in ipairs({
+    { "older", second, "sub/file.lua", 4 },
+    { "older", "HEAD", "sub/renamed.lua", 4 },
+    { "newer", second, "sub/file.lua", 4 },
+    { "newer", second .. "^", "sub/file.lua", 3 },
+  }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
+    require("gin.blame").navigate_history(case[1])
+    local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(file))
+    MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { case[2], case[3] })
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), file)
+    for _, buf in ipairs({ file, nav }) do
+      MiniTest.expect.equality(vim.api.nvim_win_get_cursor(vim.fn.bufwinid(buf))[1], case[4])
+    end
+  end
+end
 return T
