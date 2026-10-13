@@ -114,4 +114,11 @@ T["read inserts a revision at the requested line"] = function()
   )
   MiniTest.expect.equality(vim.bo.buftype, "")
 end
+T["read into an empty buffer does not add a blank line"] = function()
+  vim.cmd("GinEdit HEAD sub/file.lua")
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.enew()
+  vim.api.nvim_cmd({ cmd = "read", args = { vim.fn.fnameescape(name) } }, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
+end
 return T

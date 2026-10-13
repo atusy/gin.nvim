@@ -119,7 +119,14 @@ function M.insert(buf, name)
   end
   local lines = M.decode(data, parsed.params)
   local after = vim.fn.line("'[")
-  vim.api.nvim_buf_set_lines(buf, after, after, false, lines)
+  local empty = vim.api.nvim_buf_line_count(buf) == 1
+    and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
+  if empty then
+    after = 0
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  else
+    vim.api.nvim_buf_set_lines(buf, after, after, false, lines)
+  end
   vim.api.nvim_buf_set_mark(buf, "[", after + 1, 0, {})
   vim.api.nvim_buf_set_mark(buf, "]", after + #lines, 0, {})
   vim.api.nvim_exec_autocmds("FileReadPost", { pattern = name, modeline = false })
