@@ -18,12 +18,17 @@ end
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "branch", "--list", "--color=always" }
-  local format
+  local format, all
   for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
     if arg:sub(1, 9) == "--format=" then
       format = arg:sub(10)
     else
       args[#args + 1] = arg
+      if arg == "--all" or arg == "-a" then
+        all = true
+      elseif arg == "--remotes" or arg == "-r" then
+        all = false
+      end
     end
   end
   local boundary = vim.fn.sha256(vim.fn.tempname())
@@ -36,16 +41,18 @@ function M.read(buf, name)
   local output = git.run(args, { cwd = parsed.root }).stdout
   local rows, lines = {}, {}
   local records = vim.split(output, "\0" .. boundary .. "\0", { plain = true })
-  local width, names = 0, {}
+  local width, names, targets = 0, {}, {}
   for i = 2, #records do
     records[i] = vim.split(records[i]:sub(1, -2), "\0", { plain = true })
-    names[i] = records[i][2]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
+    targets[i] = records[i][2]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
+    names[i] = all and records[i][2]:match("^refs/remotes/") and ("remotes/" .. targets[i])
+      or targets[i]
     width = math.max(width, vim.fn.strdisplaywidth(names[i]))
   end
   for i = 2, #records do
     local fields = records[i]
     local remote = fields[2]:match("^refs/remotes/(.-)/")
-    local target = names[i]
+    local target = targets[i]
     local row = {
       head = fields[1],
       target = target,
@@ -61,8 +68,11 @@ function M.read(buf, name)
     local linked = row.worktree and row.head ~= "*"
     local marker = linked and "+" or row.head
     local location = linked and (" (" .. row.worktree .. ")") or ""
-    local padded = target .. string.rep(" ", width - vim.fn.strdisplaywidth(target))
+    local padded = names[i] .. string.rep(" ", width - vim.fn.strdisplaywidth(names[i]))
     local display = format and table.concat(fields, "\0", 9)
+      or row.kind == "alias" and ("  " .. padded .. " -> " .. fields[8]
+        :gsub("^refs/heads/", "")
+        :gsub("^refs/remotes/", ""))
       or marker .. " " .. padded .. " " .. row.commit .. location .. tracking .. " " .. fields[4]
     for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
       rows[#rows + 1] = row

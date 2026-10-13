@@ -45,6 +45,36 @@ T["default branch columns align names by display width"] = function()
     end
   end
 end
+T["remote branch display preserves prefixes and symbolic targets"] = function()
+  H.git(root, "update-ref", "refs/remotes/origin/topic", "HEAD")
+  H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/topic")
+  for _, flag in ipairs({ "--all", "--remotes", "-a", "-r", "--all --remotes", "--remotes --all" }) do
+    vim.cmd("GinBranch --no-color " .. flag)
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        H.git(root, "branch", "--list", "-vv", "--no-color", unpack(vim.split(flag, " ")))
+      )
+      local rows = vim.b.gin_branches
+      for index, row in ipairs(rows) do
+        if row.kind == "alias" then
+          MiniTest.expect.equality(row.target, "origin/HEAD")
+          MiniTest.expect.equality(row.branch, "HEAD")
+        elseif row.kind == "remote" then
+          MiniTest.expect.equality(row.target, "origin/topic")
+          MiniTest.expect.equality(row.branch, "topic")
+          require("gin.action").call(
+            vim.api.nvim_get_current_buf(),
+            "yank:target",
+            { index, index }
+          )
+          MiniTest.expect.equality(vim.fn.getreg('"'), "origin/topic")
+        end
+      end
+      vim.cmd.edit()
+    end
+  end
+end
 T["custom branch formats retain sorted switch targets across reload"] = function()
   vim.cmd("GinBranch --sort=-refname --format=%(refname:short):%(subject)")
   vim.cmd.edit()

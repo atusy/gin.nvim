@@ -667,3 +667,10 @@ wide characters, filtered results and reloads. The width is computed from the
 same Git response used for action metadata; custom formats retain their own
 spacing. Remote prefixes, aliases, detached HEAD labels, unusual character
 width rules and default colors still need display parity checks.
+
+Default branch listings now add the remotes/ prefix in all-ref mode and show
+symbolic remote refs as aligned name -> target rows. A native branch -vv
+comparison covers --all/--remotes, -a/-r, mixed flag ordering and reloads.
+Metadata and target yanks retain the underlying origin/name target independent
+of the display prefix; custom formats remain unchanged. Detached HEAD labels,
+unusual character width rules and default colors remain under audit.
