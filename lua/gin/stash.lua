@@ -19,10 +19,28 @@ local function candidates(buf, range)
   return result
 end
 
+local function arguments(parsed)
+  if not parsed.legacy then
+    return parsed.fragment and vim.json.decode(parsed.fragment) or {}
+  end
+  local args = {}
+  for _, key in ipairs(parsed.param_order) do
+    if key ~= "emojify" then
+      local values = parsed.params[key]
+      for _, value in ipairs(type(values) == "table" and values or { values }) do
+        args[#args + 1] = (#key == 1 and "-" or "--")
+          .. key
+          .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
+      end
+    end
+  end
+  return args
+end
+
 function M.insert(buf, name)
   local parsed = uri.parse(name)
   local args = { "stash", "list", "--color=never" }
-  vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
+  vim.list_extend(args, arguments(parsed))
   local text = git.run(args, { cwd = parsed.root, progress = "both" }).stdout
   require("gin.buffer").insert_output(buf, name, text)
 end
@@ -31,7 +49,7 @@ function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "stash", "list", "--color=never" }
   local format = "%gd: %s"
-  for _, arg in ipairs(parsed.fragment and vim.json.decode(parsed.fragment) or {}) do
+  for _, arg in ipairs(arguments(parsed)) do
     if arg:sub(1, 9) == "--format=" then
       format = arg:sub(10)
     else

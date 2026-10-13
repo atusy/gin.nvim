@@ -170,6 +170,7 @@ GinLog path arrays as well.
 GinStatus accepts upstream flags and its dollar-terminated JSON pathspec array;
 selection and automatic reload retain those filters.
 GinTag accepts upstream display flags and its dollar-terminated pattern list.
+GinStash accepts upstream display and filtering flags from URI parameters.
 
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select

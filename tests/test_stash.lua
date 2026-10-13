@@ -32,6 +32,31 @@ T["stash apply index restores selected content and retains both stashes"] = func
   H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
+T["legacy stash URIs restore filters and selected stash references"] = function()
+  local stashes = H.git(root, "stash", "list", "--format=%H")
+  local name = "ginstash://" .. root .. ";format=%25s&skip=1&max-count=2&max-count=1"
+  require("gin.buffer").open(name, {})
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "On main: older" })
+    MiniTest.expect.equality(vim.b.gin_stashes[1].stash, "stash@{1}")
+    vim.cmd.edit()
+  end
+  vim.cmd.enew()
+  vim.bo.filetype = "lua"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "before", "On main: older", "after" }
+  )
+  MiniTest.expect.equality(vim.bo.filetype, "lua")
+  require("gin.buffer").open(name, { bang = true })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "apply:index", { 1, 1 })
+  H.drain()
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
+  MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%H"), stashes)
+end
 T["stash echo exposes the selected reflog reference and index"] = function()
   vim.cmd.GinStash()
   local echo, output = vim.api.nvim_echo, nil

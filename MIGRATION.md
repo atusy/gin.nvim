@@ -1226,3 +1226,11 @@ actions. A real Git fixture filters annotated tags using multiple patterns,
 applies a custom display format, reloads and inserts the view, then deletes the
 selected tag. The unrelated lightweight tag remains and the refreshed filtered
 view is empty. Custom tag parser overrides remain a separate open requirement.
+
+Legacy GinStash now restores ordered and repeated flags from URI parameters for
+both view reads and `:read`. Previously those flags were ignored because only
+Lua's argv fragment was consulted. A real Git fixture selects the older stash
+using skip/count flags and a custom format, verifies reload and insertion, then
+applies the visible row with its index. Its original `stash@{1}` reference is
+retained: the working file and index receive the older content, and both stash
+object IDs remain unchanged. Custom stash parser overrides remain outstanding.
