@@ -391,3 +391,8 @@ Command-buffer diff jumps now respect gin_buffer_disable_default_mappings
 independently of gin_diff_disable_default_mappings, matching the pinned filetype
 plugins. Fixtures exercise both switches in opposite states for GinBuffer and
 GinDiff, checking all three default keys and retained Plug callbacks.
+
+Diff header path decoding now processes C/octal escapes in one pass, avoiding
+a second interpretation of escaped literal backslashes. A real diff fixture
+uses backslashes before octal digits and an escape letter alongside Japanese
+characters; its jump verifies the exact working-file path and line content.

@@ -235,4 +235,15 @@ for _, disabled in ipairs({ false, true }) do
     assert(ok, err)
   end
 end
+
+T["jump preserves literal backslashes before octal digits and escape letters"] = function()
+  local path = "sub/literal" .. string.char(92) .. "123" .. string.char(92) .. "n日本語"
+  vim.fn.writefile({ "old" }, root .. "/" .. path)
+  H.git(root, "add", "--", path)
+  vim.fn.writefile({ "new" }, root .. "/" .. path)
+  require("gin.diff").open(vim.uv.fs_realpath(root), { paths = { path } })
+  jump("+new")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/" .. path)
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "new")
+end
 return T
