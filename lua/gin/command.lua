@@ -1,9 +1,21 @@
 local M = {}
 
 function M.arguments(kind, args)
-  local result = vim.deepcopy(vim.g["gin_" .. kind .. "_persistent_args"] or {})
-  vim.list_extend(result, #args == 0 and (vim.g["gin_" .. kind .. "_default_args"] or {}) or args)
-  return result
+  local function configured(suffix)
+    local name = "gin_" .. kind .. "_" .. suffix .. "_args"
+    local value = vim.g[name]
+    if value == nil then
+      return {}
+    end
+    local message = "g:" .. name .. " must be a list of strings"
+    assert(type(value) == "table" and vim.islist(value), message)
+    for _, arg in ipairs(value) do
+      assert(type(arg) == "string", message)
+    end
+    return value
+  end
+  local defaults, persistent = configured("default"), configured("persistent")
+  return vim.list_extend(vim.deepcopy(persistent), #args == 0 and defaults or args)
 end
 
 ---Normalize Vim filename placeholders and separate ++ options from Git arguments.

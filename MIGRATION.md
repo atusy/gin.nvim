@@ -478,3 +478,10 @@ separators. The test harness now isolates runtimepath and uses the running
 installation's bundled parsers, avoiding unrelated system-parser ABI conflicts.
 This verifies the exercised behavior at the documented minimum version; the
 remaining migration checklist still applies.
+
+Commands with default/persistent argument settings now share their expansion
+path and validate both settings as lists of strings, matching upstream even
+when explicit arguments replace the defaults. Invalid booleans, dictionaries
+and list elements fail with the setting name before opening a view. A real
+status fixture verifies persistent worktree selection, explicit-argument
+precedence and unchanged configuration arrays.

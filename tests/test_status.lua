@@ -286,4 +286,51 @@ T["status decoding preserves raw staging paths across reload"] = function()
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), filename .. "\0")
   MiniTest.expect.equality(H.git(root, "show", ":" .. filename), "content\n")
 end
+T["invalid default arguments fail even when explicit arguments are supplied"] = function()
+  local previous = vim.g.gin_status_default_args
+  vim.g.gin_status_default_args = "--short"
+  local buf = vim.api.nvim_get_current_buf()
+  local ok, err = pcall(vim.cmd, "GinStatus --untracked-files=all")
+  vim.g.gin_status_default_args = previous
+  MiniTest.expect.equality(ok, false)
+  MiniTest.expect.equality(tostring(err):find("g:gin_status_default_args", 1, true) ~= nil, true)
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+end
+for _, case in ipairs({
+  { name = "boolean", value = false },
+  { name = "dictionary", value = vim.empty_dict() },
+  { name = "non-string element", value = { 1 } },
+}) do
+  T["persistent arguments reject a " .. case.name] = function()
+    local previous = vim.g.gin_status_persistent_args
+    vim.g.gin_status_persistent_args = case.value
+    local buf = vim.api.nvim_get_current_buf()
+    local ok, err = pcall(vim.cmd, "GinStatus")
+    vim.g.gin_status_persistent_args = previous
+    MiniTest.expect.equality(ok, false)
+    MiniTest.expect.equality(
+      tostring(err):find("g:gin_status_persistent_args", 1, true) ~= nil,
+      true
+    )
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+  end
+end
+T["configured arguments preserve worktree selection and explicit precedence"] = function()
+  vim.fn.writefile({ "content" }, root .. "/untracked")
+  local defaults, persistent = vim.g.gin_status_default_args, vim.g.gin_status_persistent_args
+  local configured = { "++worktree=" .. root }
+  vim.g.gin_status_default_args = { "--untracked-files=no" }
+  vim.g.gin_status_persistent_args = configured
+  vim.cmd.cd(vim.fn.fnamemodify(root, ":h"))
+  local ok, err = pcall(function()
+    vim.cmd.GinStatus()
+    MiniTest.expect.equality(vim.api.nvim_buf_line_count(0), 1)
+    vim.cmd("GinStatus --untracked-files=all")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "?? untracked" })
+    MiniTest.expect.equality(vim.g.gin_status_default_args, { "--untracked-files=no" })
+    MiniTest.expect.equality(vim.g.gin_status_persistent_args, configured)
+  end)
+  vim.g.gin_status_default_args, vim.g.gin_status_persistent_args = defaults, persistent
+  assert(ok, err)
+end
 return T
