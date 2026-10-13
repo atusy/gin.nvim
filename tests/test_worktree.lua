@@ -72,4 +72,42 @@ T["file symlinks resolve target repositories after checking their own directory"
     )
   end
 end
+T["Gin URI buffers resolve their repository without cached buffer variables"] = function()
+  local worktree = require("gin.worktree")
+  local component = require("gin.component.worktree")
+  local outside = worktree.find(saved_cwd)
+  for _, scheme in ipairs({
+    "gin",
+    "ginbranch",
+    "gindiff",
+    "ginedit",
+    "ginlog",
+    "ginreflog",
+    "ginstash",
+    "ginstatus",
+  }) do
+    vim.cmd.enew({ bang = true })
+    component.full()
+    require("gin.component").refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return component.full() == outside
+      end, 10),
+      true
+    )
+    local name = require("gin.uri").format(scheme, root, { commitish = "HEAD" }, "space # name")
+    vim.api.nvim_buf_set_name(0, name)
+    MiniTest.expect.equality(vim.b.gin_worktree, nil)
+    MiniTest.expect.equality(worktree.current(), vim.uv.fs_realpath(root))
+    MiniTest.expect.equality(worktree.find(name), vim.uv.fs_realpath(root))
+    component.full()
+    require("gin.component").refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return component.full() == vim.uv.fs_realpath(root)
+      end, 10),
+      true
+    )
+  end
+end
 return T

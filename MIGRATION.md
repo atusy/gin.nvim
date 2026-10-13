@@ -546,3 +546,11 @@ parent before falling back to cwd; a repository containing the link still wins.
 This matches normSuspect in the pinned worktree implementation. A real symlink
 fixture verifies both APIs before and after initializing a repository around
 the link. Existing stale-result component tests cover asynchronous invalidation.
+
+Worktree discovery also decodes repository roots from the eight Gin URI schemes
+listed in the pinned GIN_BUFFER_PROTOCOLS, without relying on b:gin_worktree.
+The shared candidate resolver serves direct commands and async components.
+A fixture covers each scheme with encoded fragments and no cached buffer data,
+resetting component context between cases so stale values cannot pass the check.
+Tag/Blame URI discovery without buffer metadata remains outside this pinned
+protocol list and is not claimed by this audit.

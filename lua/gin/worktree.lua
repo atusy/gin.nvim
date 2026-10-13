@@ -1,8 +1,25 @@
 local git = require("gin.git")
 local M = {}
+local schemes = {
+  gin = true,
+  ginbranch = true,
+  gindiff = true,
+  ginedit = true,
+  ginlog = true,
+  ginreflog = true,
+  ginstash = true,
+  ginstatus = true,
+}
 
 ---Ordered search directories: the link's location precedes its target.
 function M.candidates(anchor)
+  local scheme = anchor:match("^(gin[%w]*)://")
+  if scheme then
+    if not schemes[scheme] then
+      return {}
+    end
+    anchor = require("gin.uri").parse(anchor).root
+  end
   local stat = vim.uv.fs_stat(anchor)
   if not stat then
     return {}
