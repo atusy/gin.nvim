@@ -1302,3 +1302,11 @@ verify both selected commits on open and reload, reject extra revisions before
 replacing the view, and insert the same rows into an ordinary Lua buffer. A
 GinLog path beginning with -- remains a literal pathspec after the separator.
 Display-default precedence and malformed flag syntax still need separate audit.
+
+Native GinLog/GinReflog display reads now move explicit decorate flags to the
+position of the pinned decorate default before other flag names. This matches
+the existing legacy-URI reader's default merge precedence. Real Git fixtures
+verify that --no-decorate followed by --decorate=full suppresses decorations in
+the displayed and reloaded view, while :read retains the original flag order
+and inserts full ref decorations. A literal --decorate=full pathspec after --
+remains a path. Malformed flag syntax and other default merges remain under audit.

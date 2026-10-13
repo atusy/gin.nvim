@@ -33,7 +33,21 @@ end
 
 local function arguments(parsed, display)
   if not parsed.legacy then
-    return parsed.fragment and vim.json.decode(parsed.fragment) or {}
+    local args = parsed.fragment and vim.json.decode(parsed.fragment) or {}
+    if not display then
+      return args
+    end
+    -- Explicit decorate values replace the first, default flag entry upstream.
+    local decorate, rest, paths = {}, {}, false
+    for _, arg in ipairs(args) do
+      paths = paths or arg == "--"
+      if not paths and (arg == "--decorate" or arg:match("^%-%-decorate=")) then
+        decorate[#decorate + 1] = arg
+      else
+        rest[#rest + 1] = arg
+      end
+    end
+    return vim.list_extend(decorate, rest)
   end
   local args = {}
   local selector = parsed.scheme == "ginreflog" and "ref" or "commitish"

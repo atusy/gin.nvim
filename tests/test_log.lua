@@ -68,6 +68,54 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
     MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
   end
 end
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " merges decoration defaults only for display"] = function()
+    local base = command == "GinLog" and { "log" } or { "reflog", "show" }
+    local display = vim.split(
+      vim.trim(H.git(
+        root,
+        unpack(vim.list_extend(vim.deepcopy(base), {
+          "--decorate=full",
+          "--oneline",
+          "--no-decorate",
+        }))
+      )),
+      "\n"
+    )
+    local inserted = vim.split(
+      vim.trim(H.git(
+        root,
+        unpack(vim.list_extend(vim.deepcopy(base), {
+          "--oneline",
+          "--no-decorate",
+          "--decorate=full",
+        }))
+      )),
+      "\n"
+    )
+    MiniTest.expect.equality(table.concat(display):find("main", 1, true), nil)
+    MiniTest.expect.equality(table.concat(inserted):find("refs/heads/main", 1, true) ~= nil, true)
+    vim.cmd(command .. " --oneline --no-decorate --decorate=full")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), display)
+      vim.cmd.edit()
+    end
+    local name = vim.api.nvim_buf_get_name(0)
+    vim.cmd.enew()
+    vim.bo.filetype = "lua"
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", inserted[1], inserted[2], "after" }
+    )
+    MiniTest.expect.equality(vim.bo.filetype, "lua")
+    if command == "GinLog" then
+      vim.cmd("GinLog! --format=%H -- --decorate=full")
+      MiniTest.expect.equality(require("gin.log").candidates(0, { 1, 2 }), {})
+    end
+  end
+end
 for _, kind in ipairs({ "log", "reflog" }) do
   T["legacy " .. kind .. " URI restores selection for reads reloads and actions"] = function()
     H.git(root, "switch", "--detach", first)
