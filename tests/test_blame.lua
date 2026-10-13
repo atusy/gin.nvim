@@ -57,4 +57,17 @@ T["blame opens synchronized attribution and committed content from a subdirector
   end
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "dirty" })
 end
+T["moving across blame groups updates commit detail and dividers retain it"] = function()
+  vim.cmd("GinBlame file.lua")
+  local detail = vim.b.gin_blame_detail_bufnr
+  local function displayed()
+    return vim.api.nvim_buf_get_lines(detail, 0, 1, false)[1]
+  end
+  MiniTest.expect.equality(displayed(), "commit " .. second)
+  for _, case in ipairs({ { 2, first }, { 3, first }, { 4, second }, { 6, first }, { 1, second } }) do
+    vim.api.nvim_win_set_cursor(0, { case[1], 0 })
+    vim.api.nvim_exec_autocmds("CursorMoved", { buffer = 0 })
+    MiniTest.expect.equality(displayed(), "commit " .. case[2])
+  end
+end
 return T

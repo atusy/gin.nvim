@@ -74,6 +74,25 @@ local function relative_time(timestamp)
   return diff < 0 and "in " .. text or text .. " ago"
 end
 
+function M.update_detail(buf, lnum)
+  local detail = vim.b[buf].gin_blame_detail_bufnr
+  if not detail or not vim.api.nvim_buf_is_loaded(detail) then
+    return
+  end
+  local parsed = uri.parse(vim.api.nvim_buf_get_name(buf))
+  local line = (vim.b[buf].gin_blame_line_map or {})[lnum]
+  local commit = lnum == 1 and (parsed.params.commitish or "HEAD")
+    or (type(line) == "table" and line.commitSha)
+  if not commit or vim.b[detail].gin_blame_detail_last_commit == commit then
+    return
+  end
+  local output =
+    git.run({ "show", "--no-patch", "--format=fuller", commit, "--" }, { cwd = parsed.root }).stdout
+  buffer.replace(detail, buffer.lines(output), parsed.root, "git")
+  vim.bo[detail].buftype = "nowrite"
+  vim.b[detail].gin_blame_detail_last_commit = commit
+end
+
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local path =
@@ -134,6 +153,14 @@ function M.read(buf, name)
     vim.wo[win].number, vim.wo[win].relativenumber = false, false
     vim.wo[win].wrap, vim.wo[win].signcolumn = false, "no"
     if target ~= detail then
+      local group = vim.api.nvim_create_augroup("gin_blame_detail_" .. target, { clear = true })
+      vim.api.nvim_create_autocmd("CursorMoved", {
+        group = group,
+        buffer = target,
+        callback = function()
+          M.update_detail(target, vim.api.nvim_win_get_cursor(0)[1])
+        end,
+      })
       vim.b[target].gin_blame_result = result
       vim.b[target].gin_blame_line_map = map
       vim.b[target].gin_blame_file_line_to_physical = reverse
