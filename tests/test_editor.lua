@@ -5,6 +5,7 @@ local input = vim.fn.input
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
+      vim.cmd("filetype plugin on")
       root = H.repo()
       H.git(root, "config", "user.name", "Gin Test")
       H.git(root, "config", "user.email", "gin@example.invalid")
@@ -163,5 +164,29 @@ T["accepting the default quit answer writes and commits the message"] = function
   MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(prompted, true)
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "confirmed on quit\n")
+end
+T["Accept uses the commit filetype alias and releases Git"] = function()
+  vim.g.gin_proxy_apply_without_confirm = 1
+  local process = require("gin.command").execute({
+    fargs = { "commit" },
+    smods = { silent = true, emsg_silent = true },
+  })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(vim.bo.filetype, "gitcommit")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "accepted through alias" })
+  vim.cmd.Accept()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "accepted through alias\n")
 end
 return T

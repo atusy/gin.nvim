@@ -236,7 +236,7 @@ file and releases Git, while Cancel returns failure. A real commit fixture
 verifies the edited message and committed content. The editor opener/disable
 settings are supported. Unlike the pinned global-environment proxy, this stage
 is scoped to asynchronous Gin children; synchronous calls, action/terminal
-integration, editor aliases, askpass and client-disconnect lifecycle
+integration, askpass and client-disconnect lifecycle
 audits remain pending. Cancellation is verified to reject the commit, clear the
 draft message and retain staged content.
 
@@ -254,3 +254,8 @@ created with owner-only permissions and removed on editor exit; Windows launchin
 still needs verification. Interrupted prompts are tested to fail Git without
 returning credentials. Editor and askpass disable settings are independently
 verified. Global environment/terminal inheritance remains pending.
+
+Lua gitcommit/gitrebase filetype plugins now supply the upstream Accept/Cancel
+aliases, respecting existing commands and the disable option. A real commit
+verifies Accept through the proxy's quit handling. The formatter check now
+includes ftplugin Lua files.

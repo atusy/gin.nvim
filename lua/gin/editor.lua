@@ -3,6 +3,22 @@ local requests, serial = {}, 0
 local address, askpass_launcher
 local script = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)) .. "/editor_client.lua"
 
+function M.aliases()
+  if
+    vim.g.gin_proxy_disable_accept_and_cancel_aliases
+    and vim.g.gin_proxy_disable_accept_and_cancel_aliases ~= 0
+  then
+    return
+  end
+  for name, command in pairs({ Accept = "wq", Cancel = "cq" }) do
+    if vim.fn.exists(":" .. name) == 0 then
+      vim.api.nvim_buf_create_user_command(0, name, command, {})
+      local undo = "silent! delcommand -buffer " .. name
+      vim.b.undo_ftplugin = vim.b.undo_ftplugin and (vim.b.undo_ftplugin .. " | " .. undo) or undo
+    end
+  end
+end
+
 function M.environment()
   local disable_editor = vim.g.gin_proxy_disable_editor and vim.g.gin_proxy_disable_editor ~= 0
   local disable_askpass = vim.g.gin_proxy_disable_askpass and vim.g.gin_proxy_disable_askpass ~= 0

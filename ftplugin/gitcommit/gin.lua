@@ -1,0 +1,1 @@
+require("gin.editor").aliases()

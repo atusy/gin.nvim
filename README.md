@@ -156,3 +156,8 @@ whether to apply; `g:gin_proxy_apply_without_confirm = 1` applies without asking
 Asynchronous Gin commands also route Git credential prompts through masked
 Neovim input; `g:gin_proxy_disable_askpass = 1` retains the configured askpass.
 Terminal inheritance and synchronous/action integration are still being ported.
+
+With filetype plugins enabled, gitcommit/gitrebase buffers receive `:Accept`
+(`:wq`) and `:Cancel` (`:cq`) aliases unless those commands already exist.
+`g:gin_proxy_disable_accept_and_cancel_aliases = 1` disables these aliases.
+Proxy editor buffers retain their request-specific `:Apply` and `:Cancel`.
