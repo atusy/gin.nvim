@@ -1,6 +1,6 @@
 local H = require("tests.helpers")
 local cwd = vim.fn.getcwd()
-local root
+local root, other, original_start
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
@@ -18,6 +18,14 @@ local T = MiniTest.new_set({
       vim.cmd.cd(root)
     end,
     post_case = function()
+      if original_start then
+        require("gin.git").start = original_start
+        original_start = nil
+      end
+      if other then
+        H.cleanup(other)
+        other = nil
+      end
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
@@ -97,6 +105,57 @@ T["leaving a repository clears cached component values"] = function()
     true
   )
   MiniTest.expect.equality(require("gin.component.branch").ascii(), "")
+  MiniTest.expect.equality(require("gin.component.traffic").ascii(), "")
+end
+T["late results from another repository cannot replace current components"] = function()
+  local component = require("gin.component")
+  local branch = require("gin.component.branch")
+  local worktree = require("gin.component.worktree")
+  branch.ascii()
+  other = H.repo()
+  H.git(other, "switch", "--orphan", "new-context")
+  local git = require("gin.git")
+  original_start = git.start
+  local held = {}
+  git.start = function(args, opts, callback)
+    if args[1] == "rev-list" and opts.cwd == vim.uv.fs_realpath(root) then
+      return original_start(args, opts, function(result)
+        held[#held + 1] = function()
+          callback(result)
+        end
+      end)
+    end
+    return original_start(args, opts, callback)
+  end
+  component.refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return #held > 0
+    end, 10),
+    true
+  )
+  vim.cmd.cd(other)
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "new-context"
+    end, 10),
+    true
+  )
+  for _, release in ipairs(held) do
+    release()
+  end
+  local drained = false
+  vim.schedule(function()
+    drained = true
+  end)
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return drained
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(branch.ascii(), "new-context")
+  MiniTest.expect.equality(worktree.full(), vim.uv.fs_realpath(other))
   MiniTest.expect.equality(require("gin.component.traffic").ascii(), "")
 end
 return T

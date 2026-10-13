@@ -206,5 +206,7 @@ and emit debounced GinComponentPost events on changes. A generation check ignore
 stale results after context changes. Tests currently prove ASCII/Unicode output
 for a repository with diverged upstream history and the published worktree path.
 Command-event refresh covers detached, unborn and no-upstream branches; leaving
-a repository clears cached values. Cross-repository races still need direct
-coverage; legacy Vimscript component function names are not installed.
+a repository clears cached values. A controlled late Git response from a previous
+repository cannot replace the new context; disabling generation guards makes
+that regression test fail. Legacy Vimscript component function names are not
+installed.
