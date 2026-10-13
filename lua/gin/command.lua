@@ -1,4 +1,6 @@
 local M = {}
+local post_timer
+local post_generation = 0
 
 function M.arguments(kind, args)
   local function configured(suffix)
@@ -45,7 +47,23 @@ function M.parse(args, allowed)
 end
 
 function M.post()
-  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost", modeline = false })
+  post_generation = post_generation + 1
+  local generation = post_generation
+  if post_timer and not post_timer:is_closing() then
+    post_timer:stop()
+    post_timer:close()
+  end
+  post_timer = vim.defer_fn(function()
+    if generation ~= post_generation then
+      return
+    end
+    post_timer = nil
+    vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost", modeline = false })
+  end, 100)
+end
+
+function M.post_pending()
+  return post_timer ~= nil
 end
 
 function M.execute(opts)

@@ -1,16 +1,26 @@
 local M = {}
 
 function M.drain()
-  local done = false
-  vim.schedule(function()
-    done = true
-  end)
-  assert(
-    vim.wait(1000, function()
-      return done
-    end, 10),
-    "scheduled callbacks must finish"
-  )
+  local command = require("gin.command")
+  repeat
+    assert(
+      vim.wait(2000, function()
+        return not command.post_pending()
+      end, 10),
+      "command completion event must finish"
+    )
+    local done = false
+    vim.schedule(function()
+      done = true
+    end)
+    assert(
+      vim.wait(1000, function()
+        return done
+      end, 10),
+      "scheduled callbacks must finish"
+    )
+  -- A queued process callback can schedule a post event during this drain.
+  until not command.post_pending()
 end
 
 function M.git(cwd, ...)
@@ -41,6 +51,7 @@ function M.repo()
 end
 
 function M.cleanup(root)
+  M.drain()
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if
       vim.uri_decode(vim.api.nvim_buf_get_name(buf)):find(root, 1, true)

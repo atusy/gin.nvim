@@ -253,7 +253,9 @@ EVENTS                                                             *gin-events*
 
                                                         *GinCommandPost*
 User GinCommandPost
-    Emitted after a successful Gin command and any configured processor.
+    Successful commands schedule this event 100ms after the latest completion.
+    Completions within that interval are combined into one event. ++wait waits
+    for the command and processor; the event and view refresh happen afterward.
     List views and components use it to refresh. Gin retains eventignore=all
     from dispatch even if the option is restored before asynchronous completion.
 

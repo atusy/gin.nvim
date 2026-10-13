@@ -25,10 +25,32 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["successful command bursts publish one deferred completion event"] = function()
+  local command = require("gin.command")
+  for _ = 1, 3 do
+    command.finish({ code = 0, stdout = "", stderr = "" }, {}, { silent = true })
+  end
+  MiniTest.expect.equality(events, 0)
+  MiniTest.expect.equality(
+    vim.wait(1000, function()
+      return events == 1
+    end, 10),
+    true
+  )
+  command.finish({ code = 0, stdout = "", stderr = "" }, {}, { silent = true })
+  MiniTest.expect.equality(events, 1)
+  MiniTest.expect.equality(
+    vim.wait(1000, function()
+      return events == 2
+    end, 10),
+    true
+  )
+end
 T["Gin wait executes a Git command and emits its completion event"] = function()
   vim.fn.writefile({ "literal" }, root .. "/space name")
   vim.cmd([[Gin ++wait add -- space\ name]])
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "space name\n")
+  H.drain()
   MiniTest.expect.equality(events, 1)
 end
 T["Gin dispatches asynchronously unless wait is requested"] = function()
@@ -71,10 +93,12 @@ T["Gin wait returns processed output and rejects processor failures"] = function
     smods = { silent = true },
   })
   MiniTest.expect.equality(result.stdout, "?? FILE\n")
+  H.drain()
   MiniTest.expect.equality(events, 1)
   MiniTest.expect.error(function()
     vim.cmd("Gin ++wait ++processor=false status")
   end, "processor exited")
+  H.drain()
   MiniTest.expect.equality(events, 1)
 end
 T["asynchronous Gin waits for processor completion before publishing success"] = function()
@@ -233,6 +257,7 @@ T["Gin wait displays progress while Git is still running"] = function()
   MiniTest.expect.equality(ok, true)
   MiniTest.expect.equality(live, true)
   MiniTest.expect.equality(result.stdout, "waiting\nfinished\n")
+  H.drain()
   MiniTest.expect.equality(events, 1)
   MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
 end
@@ -408,6 +433,7 @@ T["Gin processors receive no implicit process deadline"] = function()
   assert(ok, result)
   MiniTest.expect.equality(result.code, 0)
   MiniTest.expect.equality(deadline, false)
+  H.drain()
   MiniTest.expect.equality(events, 1)
 end
 return T

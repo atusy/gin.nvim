@@ -1048,5 +1048,14 @@ focus and a real file write. Existing action tests await scheduled refreshes
 before inspecting view contents or issuing a second action on the new rows.
 Reload also saves/restores each displaying window's view: normal `:edit` resets
 positions before Lua replaces the contents, so the existing multiple-window
-status cursor regression remains covered. The event debounce interval and
-broader reload/URI compatibility audit remain separate from these fixtures.
+status cursor regression remains covered. Broader reload/URI compatibility
+is not established by these fixtures.
+
+`GinCommandPost` now follows the pinned 100ms trailing debounce. A new success
+replaces the previous timer; a generation check also rejects an older callback
+already queued on the main loop. A fixture verifies that one completion burst
+publishes one delayed event and a later burst publishes another. `++wait`
+still returns after the command/processor finishes, before this deferred event.
+The internal pending-state query lets tests wait for actual notification
+completion and drain scheduled reloads before inspecting or deleting fixtures.
+Broader reload/URI contracts remain subject to the migration audit.
