@@ -7,10 +7,11 @@ function M.output(name, progress)
   local args = { "diff", "--color=always" }
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
     if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
-      local prefix = key:sub(1, 1) == "-" and "" or "--"
+      local short = #key == 1
+      local prefix = key:sub(1, 1) == "-" and "" or short and "-" or "--"
       local values = parsed.params[key]
       for _, value in ipairs(type(values) == "table" and values or { values }) do
-        args[#args + 1] = prefix .. key .. (value ~= "" and "=" .. value or "")
+        args[#args + 1] = prefix .. key .. (value ~= "" and (short and "" or "=") .. value or "")
       end
     end
   end
@@ -65,7 +66,11 @@ function M.command(opts)
       path_mode = true
     elseif arg:sub(1, 1) == "-" then
       local key, value = arg:match("^%-%-([^=]+)=(.*)$")
-      key = key or arg:match("^%-%-(.+)$") or arg
+      key = key or arg:match("^%-%-(.+)$")
+      if not key then
+        key, value = arg:match("^%-([a-zA-Z0-9])(.*)$")
+        key = key or arg
+      end
       value = value or ""
       if options.flags[key] == nil then
         options.flags[key] = value

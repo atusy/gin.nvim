@@ -1097,3 +1097,11 @@ order and restores them on read. A real Git fixture combines `--diff-filter=M`
 and `--diff-filter=A` and checks both modified and added file diffs against Git,
 including a buffer reload. This does not establish legacy URI-format parity or
 complete short-flag parsing parity; those remain part of the migration audit.
+
+GinDiff now separates each short flag's name from its attached value, matching
+denops std v7's flag representation. Previously `-U5 -U0` became two distinct
+URI keys and sorting reversed their effect. A real Git fixture verifies zero
+context for both `-U5 -U0` and the equivalent parsed spelling `-U5 --U=0`, before
+and after reload. Reverse diff jumps recognize the normalized `R` key while
+retaining support for existing Lua URIs with `-R`. General malformed-argument
+and legacy URI compatibility remain unverified.

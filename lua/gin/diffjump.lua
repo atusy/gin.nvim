@@ -5,7 +5,7 @@ function M.prefixes(params)
     return { old = "", new = "" }
   end
   local prefixes = { old = params["src-prefix"] or "a/", new = params["dst-prefix"] or "b/" }
-  if params["-R"] ~= nil or params.reverse ~= nil then
+  if params.R ~= nil or params["-R"] ~= nil or params.reverse ~= nil then
     prefixes.old, prefixes.new = prefixes.new, prefixes.old
   end
   return prefixes
@@ -77,7 +77,7 @@ local function revisions(parsed)
     old = rev ~= "" and rev or cached and "HEAD" or "INDEX"
     new = cached and "INDEX" or "WORKTREE"
   end
-  if params["-R"] ~= nil or params.reverse ~= nil then
+  if params.R ~= nil or params["-R"] ~= nil or params.reverse ~= nil then
     old, new = new, old
   end
   return old, new

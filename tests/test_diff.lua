@@ -58,6 +58,23 @@ T["GinDiff retains repeated filters across reloads"] = function()
     vim.cmd.edit()
   end
 end
+T["GinDiff keeps short flag values in command order"] = function()
+  vim.fn.writefile({ "before", "base", "after" }, root .. "/sub/file")
+  H.git(root, "add", "sub/file")
+  vim.fn.writefile({ "before", "working", "after" }, root .. "/sub/file")
+  local expected = H.git(root, "diff", "--no-color", "-U5", "-U0", "--", "sub/file")
+  MiniTest.expect.equality(expected:find("\n before\n", 1, true), nil)
+  for _, flags in ipairs({ "-U5 -U0", "-U5 --U=0" }) do
+    vim.cmd("GinDiff " .. flags .. " -- sub/file")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        expected
+      )
+      vim.cmd.edit()
+    end
+  end
+end
 T["file diff actions honor persistent flags and retain the selected path"] = function()
   vim.fn.writefile({ "base" }, root .. "/sub/%target")
   H.git(root, "add", "sub/%target")
