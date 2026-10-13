@@ -43,6 +43,14 @@ T["log does not select a hexadecimal prefix inside a display word"] = function()
   require("gin.action").call(buf, "reset:soft", { 2, 2 })
   MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")), second)
 end
+T["reflog only selects hashes at the start of a display row"] = function()
+  vim.cmd("GinReflog --format=%H%n%x20%x20%x20%x20%P")
+  local buf = vim.api.nvim_get_current_buf()
+  local entries = require("gin.log").candidates(buf, { 1, 99 })
+  MiniTest.expect.equality(entries, { { commit = second }, { commit = first } })
+  require("gin.action").call(buf, "reset:soft", { 2, 2 })
+  MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")), second)
+end
 for _, kind in ipairs({ "Log", "Reflog" }) do
   T[kind .. " reset actions stream progress while retaining the index and working tree"] = function()
     vim.cmd("Gin" .. kind .. " --oneline")

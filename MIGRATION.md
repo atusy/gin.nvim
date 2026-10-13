@@ -1006,3 +1006,10 @@ For example, `%H_suffix` display rows no longer become actionable commit IDs.
 A real Git fixture verifies that a reset action on such a row leaves HEAD
 unchanged. This fixes the default boundary rule; custom regex overrides remain
 open in the configuration audit above.
+
+Reflog candidates now use the pinned reflog rule, which starts at column one,
+instead of stripping graph/header prefixes as the log parser does. A real
+`GinReflog --format` fixture includes an indented parent hash and verifies both
+the exact selected entries and that resetting the indented row leaves HEAD
+unchanged. The view is identified by its URI, so changing its filetype does
+not change action targets.
