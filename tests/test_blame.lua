@@ -131,4 +131,28 @@ T["unloading a blame pane removes its companions and preserves other buffers"] =
     )
   end
 end
+T["selecting attribution follows a renamed file to its source commit"] = function()
+  H.git(root, "mv", "sub/file.lua", "sub/renamed.lua")
+  H.git(root, "commit", "-m", "rename")
+  vim.cmd("GinBlame renamed.lua")
+  local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(nav))
+  MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { second, "sub/file.lua" })
+  MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), nav)
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 4)
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
+  require("gin.blame").switch_commit()
+  parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(file))
+  MiniTest.expect.equality(parsed.params.commitish, second .. "^")
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, 0, -1, false),
+    { "", "one", "two", "three" }
+  )
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), file)
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 3)
+end
 return T

@@ -93,14 +93,15 @@ function M.update_detail(buf, lnum)
   vim.b[detail].gin_blame_detail_last_commit = commit
 end
 
-function M.read(buf, name)
+function M.read(buf, name, output)
   local parsed = uri.parse(name)
   local path =
     require("gin.edit").path(parsed.root, assert(parsed.fragment, "GinBlame requires a path"))
-  local output = git.run(
-    { "blame", "--line-porcelain", parsed.params.commitish or "HEAD", "--", path },
-    { cwd = parsed.root }
-  ).stdout
+  output = output
+    or git.run(
+      { "blame", "--line-porcelain", parsed.params.commitish or "HEAD", "--", path },
+      { cwd = parsed.root }
+    ).stdout
   local result = M.parse(output)
   local content, navlines, map, reverse = {}, {}, {}, {}
   local previous
@@ -196,12 +197,89 @@ function M.read(buf, name)
           M.update_detail(target, vim.api.nvim_win_get_cursor(0)[1])
         end,
       })
+      vim.keymap.set(
+        "n",
+        "<Plug>(gin-blame-switch-commit)",
+        M.switch_commit,
+        { buffer = target, silent = true }
+      )
+      if
+        not vim.g.gin_blame_disable_default_mappings
+        or vim.g.gin_blame_disable_default_mappings == 0
+      then
+        vim.keymap.set(
+          "n",
+          "<CR>",
+          "<Plug>(gin-blame-switch-commit)",
+          { buffer = target, remap = true, silent = true }
+        )
+      end
       vim.b[target].gin_blame_result = result
       vim.b[target].gin_blame_line_map = map
       vim.b[target].gin_blame_file_line_to_physical = reverse
       vim.wo[win].scrollbind, vim.wo[win].cursorbind, vim.wo[win].cursorline = true, true, true
     end
   end
+end
+
+local function filename(value)
+  if value:sub(1, 1) ~= '"' then
+    return value
+  end
+  local escapes = { a = "\a", b = "\b", t = "\t", n = "\n", v = "\v", f = "\f", r = "\r" }
+  local result, index = {}, 2
+  while index < #value do
+    local char = value:sub(index, index)
+    if char == "\\" then
+      index = index + 1
+      local octal = value:sub(index, index + 2)
+      if octal:match("^[0-7][0-7][0-7]$") then
+        char, index = string.char(tonumber(octal, 8)), index + 2
+      else
+        char = value:sub(index, index)
+        char = escapes[char] or char
+      end
+    end
+    result[#result + 1], index = char, index + 1
+  end
+  return table.concat(result)
+end
+
+function M.switch_commit()
+  local current = vim.api.nvim_get_current_buf()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local line = (vim.b[current].gin_blame_line_map or {})[row]
+  if type(line) ~= "table" then
+    return
+  end
+  local parsed = uri.parse(vim.api.nvim_buf_get_name(current))
+  local revision, path = line.commitSha, filename(line.metadata.filename)
+  if (parsed.params.commitish or "HEAD") == revision then
+    revision = revision .. "^"
+    local previous = line.metadata.previous and line.metadata.previous:match("^%x+ (.*)$")
+    path = previous and filename(previous) or parsed.fragment
+  end
+  -- Resolve Git output before changing any buffers so a missing parent/path
+  -- leaves the current view usable.
+  local output =
+    git.run({ "blame", "--line-porcelain", revision, "--", path }, { cwd = parsed.root }).stdout
+  local file, nav, detail =
+    vim.b[current].gin_blame_file_bufnr,
+    vim.b[current].gin_blame_nav_bufnr,
+    vim.b[current].gin_blame_detail_bufnr
+  local win = vim.api.nvim_get_current_win()
+  local params = vim.tbl_extend("force", parsed.params, { commitish = revision })
+  for scheme, buf in pairs({ ginblame = file, ginblamenav = nav, ginblamedetail = detail }) do
+    vim.api.nvim_buf_set_name(buf, uri.format(scheme, parsed.root, params, path))
+  end
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
+  M.read(file, vim.api.nvim_buf_get_name(file), output)
+  local physical = vim.b[file].gin_blame_file_line_to_physical[line.originalLineNumber] or 1
+  for _, buf in ipairs({ file, nav }) do
+    vim.api.nvim_win_set_cursor(vim.fn.bufwinid(buf), { physical, 0 })
+  end
+  vim.api.nvim_set_current_win(win)
+  M.update_detail(current, physical)
 end
 
 function M.read_nav(buf)
