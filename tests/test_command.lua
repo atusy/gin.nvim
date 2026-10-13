@@ -392,4 +392,22 @@ for _, wait in ipairs({ true, false }) do
     MiniTest.expect.equality(events, 0)
   end
 end
+T["Gin processors receive no implicit process deadline"] = function()
+  local system, deadline = vim.system, nil
+  vim.system = function(args, opts, callback)
+    if args[1] == "cat" then
+      deadline = opts.timeout or false
+    end
+    return system(args, opts, callback)
+  end
+  local ok, result = pcall(require("gin.command").execute, {
+    fargs = { "++wait", "++processor=cat", "--version" },
+    smods = { silent = true },
+  })
+  vim.system = system
+  assert(ok, result)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(deadline, false)
+  MiniTest.expect.equality(events, 1)
+end
 return T

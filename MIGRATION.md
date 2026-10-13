@@ -56,18 +56,18 @@ compatibility audit. The completion checklist above remains unchanged.
 
 | Lua route | Live output | Proxy handling | Current deadline |
 | --- | --- | --- | --- |
-| `command.execute`, including `++wait` | Both Git channels | Editor/askpass environment and scheduled RPCs | No Git deadline; processor 30 seconds |
-| `git.run` with progress for views and mutations | Stderr or both channels as selected by the caller | Editor/askpass environment and scheduled RPCs, including processors | Normally 30 seconds |
+| `command.execute`, including `++wait` | Both Git channels | Editor/askpass environment and scheduled RPCs | None |
+| `git.run` with progress for views and mutations | Stderr or both channels as selected by the caller | Editor/askpass environment and scheduled RPCs, including processors | Explicit caller timeout only |
 | Patch and Chaperon panes | Through GinEdit/GinBuffer | Inherits those executors | Inherits those executors |
-| Internal `git.run` queries | Captured | No automatic proxy setup; blocking wait | Normally 30 seconds |
-| Component `git.start` queries | Captured | Asynchronous callbacks; no automatic proxy setup | Normally 30 seconds |
+| Internal `git.run` queries | Captured | No automatic proxy setup; blocking wait | Explicit caller timeout only |
+| Component `git.start` queries | Captured | Asynchronous callbacks; no automatic proxy setup | Explicit caller timeout only |
 
 Remaining direct queries include repository discovery, browse URL/ref resolution,
 diff merge-base lookup, branch color configuration, index-mode lookup and fixup
 parent detection. Upstream also separates captured internal process execution
 from its indicator executor (for example finder and component queries). This
-inventory does not establish full compatibility for those queries. Deadlines,
-manual keyboard interaction during synchronous waits, custom indicator APIs and
+inventory does not establish full compatibility for those queries. Manual
+keyboard interaction during synchronous waits, custom indicator APIs and
 the wider command/URI contracts remain open audit items.
 
 ## Validation rules
@@ -962,3 +962,11 @@ process. Separate real credential-fill fixtures reproduced missing askpass
 variables in both `++wait` and asynchronous commands and now verify successful
 prompt responses through the processor output. This closes the missing
 environment path identified by the execution inventory above.
+
+Implicit 30-second deadlines have been removed from Git and processor launches,
+matching the pinned process/executor implementations. Explicit Lua-call timeouts
+remain supported, including the existing real timeout-failure fixtures. Launch
+boundary tests run real Git/processors and verify no default deadline is passed.
+Separate long-running checks completed a Git alias after 31.02 seconds and a Gin
+output processor after 31.32 seconds. These slow checks are kept outside the
+routine suite; the current execution table and help reflect the new policy.

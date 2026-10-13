@@ -7,12 +7,7 @@ local M = {}
 ---@return vim.SystemObj
 function M.start(args, opts, callback)
   opts = opts or {}
-  local timeout = opts.timeout
-  if timeout == nil then
-    timeout = 30000
-  elseif timeout == false then
-    timeout = nil
-  end
+  local timeout = opts.timeout or nil
   local cmd = { "git", "--no-pager", "--literal-pathspecs", "--no-optional-locks" }
   vim.list_extend(cmd, args)
   local streams = {}
@@ -104,7 +99,7 @@ function M.run(args, opts)
       cwd = opts.cwd,
       env = opts.env,
       stdin = result.stdout,
-      timeout = opts.timeout or 30000,
+      timeout = opts.timeout or nil,
     }
     if opts.progress then
       result = wait_for(function(done)

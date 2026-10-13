@@ -130,7 +130,6 @@ function M.execute(opts)
             cwd = root,
             env = env,
             stdin = result.stdout,
-            timeout = 30000,
           },
           vim.schedule_wrap(function(processed)
             finish(processed, "processor")

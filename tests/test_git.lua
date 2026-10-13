@@ -54,6 +54,23 @@ T["timed out commands report failure"] = function()
   )
   MiniTest.expect.equality(result.code, 124)
 end
+T["Git and processors receive no implicit process deadline"] = function()
+  local system, deadlines = vim.system, {}
+  vim.system = function(args, opts, callback)
+    deadlines[#deadlines + 1] = opts.timeout or false
+    return system(args, opts, callback)
+  end
+  local ok, result = pcall(require("gin.git").run, { "--version" }, {
+    cwd = root,
+    processor = { "cat" },
+    progress = true,
+  })
+  vim.system = system
+  assert(ok, result)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(result.stdout:find("git version", 1, true) ~= nil, true)
+  MiniTest.expect.equality(deadlines, { false, false })
+end
 T["processors receive Git stdout in the repository directory"] = function()
   vim.fn.writefile({ "hello" }, root .. "/file")
   local result = require("gin.git").run(

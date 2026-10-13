@@ -242,10 +242,9 @@ User GinComponentPost
 LIMITATIONS                                                   *gin-limitations*
 
 The migration is incomplete. See MIGRATION.md for the detailed audit status.
-Synchronous Git reads/actions and output processors normally have a 30-second
-timeout. Gin commands, including ++wait, do not use that Git process timeout.
-++wait services proxy requests and progress while waiting; manual interactive
-editing during the wait remains unverified.
+Git processes and output processors have no implicit time limit. Gin ++wait
+and synchronous buffer operations service proxy requests and progress while
+waiting; manual interactive editing during the wait remains unverified.
 
 The upstream g:gin_log_parse_pattern, g:gin_reflog_parse_pattern,
 g:gin_tag_parse_pattern and g:gin_stash_parse_pattern settings are not yet
