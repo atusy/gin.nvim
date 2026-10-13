@@ -52,8 +52,11 @@ function M.read(buf, name)
     local tracking = fields[5] ~= ""
         and (" [" .. fields[5] .. (fields[6] ~= "" and ": " .. fields[6]:sub(2, -2) or "") .. "]")
       or ""
+    local linked = row.worktree and row.head ~= "*"
+    local marker = linked and "+" or row.head
+    local location = linked and (" (" .. row.worktree .. ")") or ""
     local display = format and table.concat(fields, "\0", 9)
-      or row.head .. " " .. target .. " " .. row.commit .. tracking .. " " .. fields[4]
+      or marker .. " " .. target .. " " .. row.commit .. location .. tracking .. " " .. fields[4]
     for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
       rows[#rows + 1] = row
       lines[#lines + 1] = line

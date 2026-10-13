@@ -652,3 +652,11 @@ errors still propagate to the caller without a success event. Fixtures verify
 a real commit accepted through the editor proxy while waiting and a Git command
 that requires receipt of its progress output before it can finish. User-driven
 interactive editor input during ++wait remains unverified.
+
+The default GinBranch display now includes Git's + marker and parenthesized
+path for branches checked out in another worktree. The existing move fixture
+compares a filtered row with native branch -vv output before and after reload
+and after moving the worktree, including upstream tracking information. It
+also checks that the current branch omits its own worktree path. Action targets
+continue to come from the same structured Git record as the display. Column
+alignment and default branch color parity remain pending.

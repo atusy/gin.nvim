@@ -122,12 +122,25 @@ T["orphan creation switches to an unborn branch"] = function()
   MiniTest.expect.equality(H.git(root, "ls-files"), "")
 end
 T["move relocates a linked worktree without renaming its branch"] = function()
+  H.git(root, "branch", "--set-upstream-to=main", "topic")
   H.git(root, "worktree", "add", root .. "/linked", "topic")
   vim.cmd("GinBranch topic")
+  local function expect_display(pattern)
+    MiniTest.expect.equality(
+      table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+      H.git(root, "branch", "--list", "-vv", "--no-color", "--", pattern)
+    )
+  end
+  expect_display("topic")
+  vim.cmd.edit()
+  expect_display("topic")
   prompt_action("move", { 1, 1 }, root .. "/moved")
   MiniTest.expect.equality(vim.fn.isdirectory(root .. "/linked"), 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/moved/file"), { "base" })
   MiniTest.expect.equality(H.git(root .. "/moved", "branch", "--show-current"), "topic\n")
+  expect_display("topic")
+  vim.cmd("GinBranch main")
+  expect_display("main")
   H.git(root, "worktree", "remove", root .. "/moved")
 end
 T["new force resets an existing branch to the selected starting ref"] = function()
