@@ -49,4 +49,47 @@ for _, view in ipairs({ "GinLog --oneline", "GinReflog --oneline", "GinTag", "Gi
     end
   end
 end
+
+for _, view in ipairs({
+  "GinBranch",
+  "GinLog --oneline",
+  "GinReflog --oneline",
+  "GinTag",
+  "GinStash",
+}) do
+  T[view .. " visual choice and repeat preserve ranges"] = function()
+    H.git(root, "commit", "--allow-empty", "-m", "second")
+    H.git(root, "branch", "topic")
+    H.git(root, "tag", "one", "HEAD^")
+    H.git(root, "tag", "two")
+    if view == "GinStash" then
+      for _, value in ipairs({ "one", "two" }) do
+        vim.fn.writefile({ value }, root .. "/file")
+        H.git(root, "stash", "push", "-m", value)
+      end
+    end
+    vim.cmd(view)
+    local calls = {}
+    require("gin.action").define(vim.api.nvim_get_current_buf(), "capture", function(_, range)
+      calls[#calls + 1] = range
+    end)
+    local input = vim.ui.input
+    vim.ui.input = function(_, callback)
+      callback("capture")
+    end
+    local ok, err = pcall(function()
+      vim.api.nvim_feedkeys("ggVja", "mx", false)
+      MiniTest.expect.equality(calls, { { 1, 2 } })
+      vim.api.nvim_feedkeys(
+        vim.api.nvim_replace_termcodes("<Esc>ggV.", true, false, true),
+        "mx",
+        false
+      )
+      MiniTest.expect.equality(calls, { { 1, 2 }, { 1, 1 } })
+    end)
+    vim.ui.input = input
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "mx", false)
+    assert(ok, err)
+  end
+end
 return T

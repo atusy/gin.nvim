@@ -682,4 +682,12 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
     MiniTest.expect.equality(plain:find(":sparkles: :+1:", 1, true) ~= nil, true)
   end
 end
+
+T["visual Enter shows the last selected commit"] = function()
+  vim.cmd("GinLog --oneline")
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("ggVj<CR>", true, false, true), "mx", false)
+  local output = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(output:find(first, 1, true) ~= nil, true)
+  MiniTest.expect.equality(output:find("+first", 1, true) ~= nil, true)
+end
 return T

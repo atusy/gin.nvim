@@ -380,3 +380,9 @@ application and restoration with filetype plugins enabled.
 Diff-fold setup explicitly enables folding so a diff/show window inherited from
 a list view still builds usable folds. The diff regression fixture starts with
 folding disabled; the existing tag-to-show test also exercises this transition.
+
+Default choice/repeat mappings now include Visual mode in branch, log, reflog,
+tag and stash views. Show Enter also includes Visual mode in the four history
+and object views; branch switching remains Normal-only as upstream specifies.
+Key-driven fixtures verify range capture and repeat against a new selection in
+all five views, plus a two-commit visual show from log.

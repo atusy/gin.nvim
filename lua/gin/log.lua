@@ -329,7 +329,7 @@ function M.read(buf, name)
       yy = "yank:commit",
     }) do
       vim.keymap.set(
-        "n",
+        (key == "a" or key == "." or key == "<CR>") and { "n", "x" } or "n",
         key,
         "<Plug>(gin-action-" .. name .. ")",
         { buffer = buf, remap = true, nowait = true }

@@ -294,7 +294,7 @@ function M.read(buf, name)
       yy = "yank:branch",
     }) do
       vim.keymap.set(
-        "n",
+        (key == "a" or key == ".") and { "n", "x" } or "n",
         key,
         "<Plug>(gin-action-" .. name .. ")",
         { buffer = buf, remap = true, nowait = true }
