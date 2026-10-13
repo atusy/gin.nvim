@@ -21,6 +21,7 @@ Currently implemented:
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
   status. `<<` stages the current line or visual range; `>>` unstages it.
   `<Plug>(gin-action-stage)` and `<Plug>(gin-action-unstage)` are also available.
+  `dd` opens a smart diff, `pp` opens a patch tab, and `==` stashes the selection.
   `<CR>` opens the working file, `yy` yanks its absolute path (register prefixes
   work), `a` chooses an action, `.` repeats the chosen action, and `?` shows help.
   The edit actions include `edit:cached`, `edit:HEAD`, and their `:split`,
@@ -30,6 +31,15 @@ Currently implemented:
   paths are repository-relative. Writing the index buffer updates Git's index
   while preserving the working file. `:read {ginedit-URI}` inserts its content
   into another buffer. Encoding and fileformat options are accepted.
+- `:GinDiff [++worktree=path] [++opener=...] [flags] [commitish] [-- paths...]`
+  displays a Git comparison. `--cached` compares the index; revision ranges are
+  supported. Paths are repository-relative. Diff jumping/folding is still pending.
+- `:GinPatch [++no-head] [++no-worktree] [path]` opens HEAD, index, and working-file
+  diff panes, focusing the index. The optional path is relative to cwd and defaults
+  to the current file. In the index pane, `dor` gets the working hunk and `dol`
+  gets the HEAD hunk; `:write` saves the result to the index. `do` gets the right
+  pane when available, otherwise the left. `dp` puts the hunk into the working
+  pane. Other panes use `do`/`dp` with the index where applicable.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 Commands locate the repository from the current buffer before trying cwd.

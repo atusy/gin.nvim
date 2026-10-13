@@ -38,6 +38,10 @@ to prove an action produces the intended Git state.
 ## Current implementation evidence
 
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
+- `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
+  status target selection.
+- `tests/test_patch.lua`: single-hunk staging/unstaging, subdirectory/current-file
+  paths, omitted panes, mapping lifecycle and status patch tabs.
 - `tests/test_edit.lua`: revision reads, direct index writes, executable mode, absent
   working files, clean filters, BOM/CRLF, no-EOL, empty blobs, failed writes,
   addressed/empty-buffer reads and filename expansion.
@@ -49,7 +53,8 @@ to prove an action produces the intended Git state.
 - `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes and split modifiers.
 - `tests/test_status.lua`: display, staging/unstaging, empty selection, deletion,
   rename, newline/magic/dash paths, path filtering, visual range, event refresh,
-  action repeat, local/cached edit navigation and named-register path yanks.
+  action repeat, local/cached edit navigation, named-register path yanks, restore
+  including conflict sides/markers, add/removal, stash/keep-index and intent-to-add.
 
 Gin, GinBuffer and GinStatus remain unchecked above because their full option,
 UI and action scope is still incomplete. No full upstream parity claim is made.
@@ -65,6 +70,13 @@ writes; binary/encoding edge cases and full upstream option parity remain to be
 verified. Index writes use hash-object/update-index with the existing file mode
 and clean filters, avoiding temporary replacement of working files.
 
-Next work: complete the remaining status actions, then implement diff/patch,
-conflict handling and the remaining parsed views with direct Git-state tests. Audit every pinned command, option, mapping, event and component
+GinDiff now displays working-tree, cached and revision comparisons and backs the
+status diff actions. Its read handler, processor/encoding options, navigation and
+folding still need implementation. GinPatch provides three/two-pane diff editing
+with index write-back and status actions; remaining option and visual-range
+compatibility needs an audit. The checklist stays open until those checks finish.
+
+Next work: diff navigation/folding, conflict handling and the remaining parsed
+views with direct Git-state tests. Complete the remaining status browse/echo/
+chaperon actions as their supporting modules become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.
