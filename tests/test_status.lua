@@ -200,4 +200,15 @@ for _, variant in ipairs({ "ours", "theirs", "conflict:merge", "conflict:diff3" 
     )
   end
 end
+T["add intent-to-add and rm affect only the index"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  vim.cmd.GinStatus()
+  local buf = vim.api.nvim_get_current_buf()
+  require("gin.action").call(buf, "add:intent-to-add", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files"), "file\n")
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
+  require("gin.action").call(buf, "rm", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files"), "")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
+end
 return T

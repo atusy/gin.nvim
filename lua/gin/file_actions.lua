@@ -17,6 +17,10 @@ function M.setup(buf, gather)
       require("gin.command").finish(result, {}, {})
     end)
   end
+  define_git("add", { "add", "--ignore-errors", "--force" })
+  define_git("add:intent-to-add", { "add", "--ignore-errors", "--force", "--intent-to-add" })
+  define_git("rm", { "rm", "--quiet", "--ignore-unmatch", "--cached" })
+  define_git("rm:force", { "rm", "--quiet", "--ignore-unmatch", "--cached", "--force" })
   for name, flags in pairs({
     restore = { "--ignore-unmerged" },
     ["restore:staged"] = { "--ignore-unmerged", "--staged" },
