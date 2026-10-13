@@ -534,3 +534,8 @@ upstream does. It inherits modeline suppression, comment settings and the
 runtime's undo behavior rather than duplicating those settings. A filetype
 fixture checks application and undo; diff fold setup and jump mappings remain
 owned by their existing Lua modules.
+
+Blame source and attribution windows now enable winfixbuf, as in the pinned
+Blame ftplugins. A real view fixture verifies that ordinary :edit cannot replace
+either pane and that protection survives reload, commit selection and history
+navigation. Tests reset this window-local setting after forced teardown.

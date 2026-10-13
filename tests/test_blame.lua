@@ -21,6 +21,7 @@ local T = MiniTest.new_set({
       vim.g.gin_edit_persistent_args = nil
       vim.cmd.tabonly({ bang = true })
       vim.cmd.only({ bang = true })
+      vim.wo.winfixbuf = false
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
@@ -396,5 +397,29 @@ T["blame uses edit argument settings with explicit arguments replacing defaults"
   end
   MiniTest.expect.equality(vim.g.gin_edit_default_args, defaults)
   MiniTest.expect.equality(vim.g.gin_edit_persistent_args, persistent)
+end
+T["blame panes reject unrelated buffers across reload and history navigation"] = function()
+  vim.fn.writefile({ "unrelated" }, root .. "/other")
+  vim.cmd("GinBlame file.lua")
+  local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+  local function check()
+    for _, buf in ipairs({ nav, file }) do
+      local win = vim.fn.bufwinid(buf)
+      vim.api.nvim_win_call(win, function()
+        MiniTest.expect.error(function()
+          vim.cmd.edit(root .. "/other")
+        end, "winfixbuf")
+        MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+      end)
+    end
+  end
+  check()
+  vim.cmd.edit()
+  check()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").switch_commit()
+  check()
+  require("gin.blame").navigate_history("older")
+  check()
 end
 return T

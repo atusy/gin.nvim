@@ -241,6 +241,7 @@ function M.read(buf, name, output)
       end,
     })
     if target ~= detail then
+      vim.wo[win].winfixbuf = true
       vim.bo[target].modifiable = true
       vim.bo[target].fileencoding, vim.bo[target].fileformat = encoding, ff
       vim.bo[target].modified = false

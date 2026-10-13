@@ -95,8 +95,10 @@ COMMANDS                                                        *gin-commands*
     Open synchronized attribution, committed content and commit details.
     <CR> follows the line's source commit and historical filename; selecting
     that commit again visits its parent. <C-O>/<C-I> traverse visited revisions.
-    Reloading source or attribution refreshes the panes. Closing a pane closes
-    its companions. Supports ++worktree, ++opener, ++enc, ++ff and ++emojify.
+    Source and attribution windows use winfixbuf to prevent accidental buffer
+    replacement. Reloading source or attribution refreshes the panes.
+    Closing a pane closes its companions. Supports ++worktree, ++opener,
+    ++enc, ++ff and ++emojify.
     Emoji rendering affects commit summaries in attribution and details,
     preserving authors, message bodies and literal source text.
 
