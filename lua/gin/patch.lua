@@ -1,5 +1,18 @@
 local M = {}
 
+local function reset_mappings(buf)
+  for _, mode in ipairs({ "n", "x" }) do
+    for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
+      if
+        mapping.lhs:match("^<Plug>%(gin%-diff[getpu]+")
+        or (mapping.rhs or ""):match("^<Plug>%(gin%-diff[getpu]+")
+      then
+        vim.keymap.del(mode, mapping.lhs, { buffer = buf })
+      end
+    end
+  end
+end
+
 local function bind(buf, name, command, target, default, disabled)
   vim.keymap.set({ "n", "x" }, "<Plug>(gin-" .. name .. ")", function()
     local range = vim.fn.mode() ~= "n" and require("gin.action").range() or nil
@@ -53,6 +66,13 @@ function M.open(root, path, options)
       { opener = "vsplit", smods = { split = "botright" } }
     )
     windows[#windows + 1] = vim.api.nvim_get_current_win()
+  end
+  reset_mappings(index)
+  if head then
+    reset_mappings(head)
+  end
+  if worktree then
+    reset_mappings(worktree)
   end
   local disabled = vim.g.gin_patch_disable_default_mappings
   disabled = disabled ~= nil and disabled ~= false and disabled ~= 0

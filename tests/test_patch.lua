@@ -57,4 +57,11 @@ T["GinPatch defaults to the current file and can omit HEAD"] = function()
   vim.api.nvim_feedkeys("do", "mx", false)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, 1, false), { "changed first" })
 end
+T["reopening patch with fewer panes removes stale directional mappings"] = function()
+  vim.cmd("GinPatch file")
+  vim.cmd("only!")
+  vim.cmd("GinPatch ++no-head file")
+  MiniTest.expect.equality(vim.fn.maparg("dol", "n"), "")
+  MiniTest.expect.equality(vim.fn.maparg("<Plug>(gin-diffget-l)", "n"), "")
+end
 return T
