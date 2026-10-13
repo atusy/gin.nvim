@@ -873,3 +873,12 @@ SGR color sequences, following the pinned executor's ANSI-free error messages.
 Four real-process fixtures reproduce colored errors and check plain reporting;
 unchecked Git/processor results retain the original stderr bytes and exit code.
 This covers SGR color removal, not the remaining general ANSI/CSI audit.
+
+CSI removal now uses the grammar from `lambdalisue/deno-ansi-escape-code`
+`v1.0.0` (`csi.ts`, `parser.ts`), the dependency family imported by the pinned
+upstream. Shared stripping covers plain output, insertion, errors and progress;
+the decoration parser removes non-SGR CSI without changing the active colors.
+Fixtures cover erase/cursor/private/intermediate sequences, every streaming byte
+boundary and UTF-8 highlight columns. Non-CSI escapes and unmatched sequences
+remain literal, as in that parser. This does not establish complete SGR attribute
+or terminal-emulation parity.

@@ -80,7 +80,7 @@ local function with_progress(args, opts)
 end
 
 function M.error_message(result, source)
-  local message = (result.stderr or ""):gsub("\27%[[%d;]*m", "")
+  local message = require("gin.csi").strip(result.stderr or "")
   return ("%s exited %d: %s"):format(source, result.code, vim.trim(message))
 end
 

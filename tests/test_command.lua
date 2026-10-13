@@ -376,7 +376,7 @@ for _, wait in ipairs({ true, false }) do
     local ok, result = pcall(require("gin.command").execute, {
       fargs = vim.list_extend(wait and { "++wait" } or {}, {
         "-c",
-        [[alias.fail=!printf '\033[31mbroken\033[m\n' >&2; exit 7]],
+        [[alias.fail=!printf '\033[2K\033[31mbroken\033[m\n' >&2; exit 7]],
         "fail",
       }),
       smods = { silent = true },

@@ -25,7 +25,7 @@ function M.replace(buf, lines, root, filetype)
 end
 
 function M.lines(output)
-  output = output:gsub("\r\n", "\n"):gsub("\27%[[%d;]*m", "")
+  output = require("gin.csi").strip(output:gsub("\r\n", "\n"))
   if output:sub(-1) == "\n" then
     output = output:sub(1, -2)
   end
@@ -90,7 +90,7 @@ function M.insert_output(buf, name, output)
     { "enc", "encoding", "ff", "fileformat" }
   )
   if output ~= "" then
-    local lines = require("gin.edit").decode(output:gsub("\27%[[%d;]*m", ""), options)
+    local lines = require("gin.edit").decode(require("gin.csi").strip(output), options)
     if require("gin.uri").parse(name).params.emojify ~= nil then
       lines = vim.tbl_map(require("gin.emoji").emojify, lines)
     end

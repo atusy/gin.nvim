@@ -1,4 +1,19 @@
 local T = MiniTest.new_set()
+T["CSI stripping preserves ordinary text and non-CSI escape sequences"] = function()
+  local text = "é\27]0;title\7\27[ 2K\27["
+  MiniTest.expect.equality(require("gin.csi").strip(text), text)
+end
+T["non-color CSI is removed without resetting colors or shifting byte columns"] = function()
+  local plain, marks = require("gin.ansi").parse({ "\27[31mé\27[2K赤\27[?25l!\27[m." })
+  MiniTest.expect.equality(plain, { "é赤!." })
+  MiniTest.expect.equality(#marks, 3)
+  MiniTest.expect.equality(
+    { marks[1][2], marks[1][3], marks[2][2], marks[2][3], marks[3][2], marks[3][3] },
+    { 0, 2, 2, 5, 5, 6 }
+  )
+  MiniTest.expect.equality(marks[1][4], marks[2][4])
+  MiniTest.expect.equality(marks[2][4], marks[3][4])
+end
 T["ANSI highlights survive colorscheme changes with the current terminal palette"] = function()
   local ansi = require("gin.ansi")
   local old = vim.g.terminal_color_1

@@ -183,7 +183,7 @@ function M.finish(result, options, mods)
   elseif ff ~= "unix" then
     output = output:gsub("\r\n", "\n")
   end
-  output = output:gsub("\27%[[%d;]*m", "")
+  output = require("gin.csi").strip(output)
   if output ~= "" and not mods.silent then
     vim.api.nvim_echo({ { output:gsub("\n$", ""), "None" } }, true, {})
   end

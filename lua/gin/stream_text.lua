@@ -1,4 +1,5 @@
 local M = {}
+local csi = require("gin.csi")
 
 function M.decoder()
   local pending = ""
@@ -10,7 +11,7 @@ function M.decoder()
     end
     local text = pending .. data
     pending = ""
-    local escape = text:find("\27%[[%d;]*$") or text:find("\27$")
+    local escape = text:find(csi.partial) or text:find("\27$")
     if escape then
       pending, text = text:sub(escape), text:sub(1, escape - 1)
     end
@@ -28,7 +29,7 @@ function M.decoder()
     if width and #text - start + 1 < width then
       pending, text = text:sub(start) .. pending, text:sub(1, start - 1)
     end
-    return (text:gsub("\27%[[%d;]*m", ""))
+    return csi.strip(text)
   end
 end
 

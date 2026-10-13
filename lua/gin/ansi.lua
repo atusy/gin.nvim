@@ -151,13 +151,17 @@ function M.parse(lines)
       column = column + #text
     end
     while true do
-      local first, last, sequence = line:find("\27%[([%d;]*)m", offset)
+      local first, last = line:find(require("gin.csi").pattern, offset)
       if not first then
         append(line:sub(offset))
         break
       end
       append(line:sub(offset, first - 1))
-      state, offset = update(state, sequence), last + 1
+      local sequence = line:sub(first, last):match("^\27%[([%d;]*)m$")
+      if sequence then
+        state = update(state, sequence)
+      end
+      offset = last + 1
     end
     plain[row] = table.concat(parts)
   end

@@ -59,4 +59,15 @@ T["EOF replaces incomplete UTF-8 and discards incomplete ANSI"] = function()
   end)
   MiniTest.expect.equality(output, { "�" })
 end
+T["progress removes general CSI across every byte boundary"] = function()
+  local text = "before\27[2K\27[?25l\27[1;2H\27[!pafter"
+  for split = 1, #text - 1 do
+    local output = capture(function(indicator)
+      indicator.write(nil, text:sub(1, split))
+      indicator.write(nil, text:sub(split + 1))
+      indicator.write(nil, nil)
+    end)
+    MiniTest.expect.equality(table.concat(output), "beforeafter")
+  end
+end
 return T
