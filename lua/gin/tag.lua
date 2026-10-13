@@ -25,13 +25,21 @@ function M.read(buf, name)
       args[#args + 1] = flag
     end
   end
-  args[#args + 1] = "--format=%(refname:strip=2)%00%(objectname)%00" .. format .. "%00"
+  -- A per-read boundary keeps NULs in the requested display out of the metadata.
+  local boundary = vim.fn.sha256(vim.fn.tempname())
+  args[#args + 1] = "--format=%00"
+    .. boundary
+    .. "%00%(refname:strip=2)%00%(objectname)%00"
+    .. format
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
   local rows, lines = {}, {}
-  for tag, commit, display in
-    git.run(args, { cwd = parsed.root }).stdout:gmatch("([^%z]+)%z([^%z]+)%z([^%z]*)%z\n")
-  do
+  local records = vim.split(git.run(args, { cwd = parsed.root }).stdout, "\0" .. boundary .. "\0", {
+    plain = true,
+  })
+  for i = 2, #records do
+    local tag, commit, display = records[i]:match("^([^%z]+)%z([^%z]+)%z(.*)\n$")
+    assert(tag and commit and display, "Invalid tag record")
     for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
       rows[#rows + 1] = { tag = tag, commit = commit }
       lines[#lines + 1] = line

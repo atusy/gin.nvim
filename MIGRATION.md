@@ -416,5 +416,8 @@ format. The default display includes the creator date, matching the pinned
 upstream format. Private ref/object fields retain action targets across custom
 display formats, sorting and reloads; multiline displays map each line to its
 ref and range actions deduplicate those refs. Real Git tests check exact display
-and selected deletion. Custom parse-pattern settings and formats containing NUL
-bytes remain under audit.
+and selected deletion. Custom parse-pattern settings remain under audit.
+
+Tag records use a per-read boundary so NUL bytes and newlines in custom display
+formats do not become action metadata. A regression fixture checks the exact
+binary-containing lines after reload and verifies deletion of the selected ref.

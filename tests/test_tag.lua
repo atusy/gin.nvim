@@ -145,4 +145,16 @@ T["multiline tag formats select each displayed ref once"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 3, 4 })
   MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
 end
+T["NUL bytes in tag formats cannot replace action metadata"] = function()
+  vim.cmd("GinTag --format=%(refname:short)%00%0a%(subject)%00end")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "light\0",
+    "initial\0end",
+    "release\0",
+    "release notes\0end",
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 3, 4 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
+end
 return T
