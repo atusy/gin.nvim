@@ -4,9 +4,12 @@ local action = require("gin.action")
 local git = require("gin.git")
 
 local function candidates(buf, range)
-  local result, rows = {}, vim.b[buf].gin_stashes or {}
+  local result, rows, seen = {}, vim.b[buf].gin_stashes or {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
-    result[#result + 1] = rows[i]
+    if not seen[rows[i].stash] then
+      result[#result + 1] = rows[i]
+      seen[rows[i].stash] = true
+    end
   end
   return result
 end
@@ -22,13 +25,27 @@ end
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "stash", "list", "--color=never" }
-  vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  args[#args + 1] = "--format=%gd%x00%H%x00%s"
+  local format = "%gd: %s"
+  for _, arg in ipairs(parsed.fragment and vim.json.decode(parsed.fragment) or {}) do
+    if arg:sub(1, 9) == "--format=" then
+      format = arg:sub(10)
+    else
+      args[#args + 1] = arg
+    end
+  end
+  local boundary = vim.fn.sha256(vim.fn.tempname())
+  args[#args + 1] = "--format=%x00" .. boundary .. "%x00%gd%x00%H%x00" .. format
   local rows, lines = {}, {}
-  for line in git.run(args, { cwd = parsed.root }).stdout:gmatch("[^\n]+") do
-    local fields = vim.split(line, "\0", { plain = true })
-    rows[#rows + 1] = { stash = fields[1], commit = fields[2] }
-    lines[#lines + 1] = fields[1] .. ": " .. fields[3]
+  local records = vim.split(git.run(args, { cwd = parsed.root }).stdout, "\0" .. boundary .. "\0", {
+    plain = true,
+  })
+  for i = 2, #records do
+    local stash, commit, display = records[i]:match("^([^%z]+)%z([^%z]+)%z(.*)\n$")
+    assert(stash and commit and display, "Invalid stash record")
+    for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
+      rows[#rows + 1] = { stash = stash, commit = commit }
+      lines[#lines + 1] = line
+    end
   end
   require("gin.buffer").replace_output(
     buf,

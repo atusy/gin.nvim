@@ -433,3 +433,10 @@ requested Git arguments without adding view decorations or private parsing
 formats, matching the pinned read implementations. Twelve integration cases
 cover custom output, emoji conversion, encoding, insertion marks, destination
 options, empty output and failed Git commands with no FileReadPost event.
+
+GinStash now honors explicit --format while retaining private stash selectors
+and commit IDs. Per-read record boundaries preserve embedded NULs and multiline
+display text; range candidates deduplicate lines from the same stash. Real Git
+fixtures filter to an older stash, reload, and verify pop:index restores its
+worktree and index content while retaining the newer stash. Named pretty formats,
+graph/patch output and custom parse-pattern settings remain under audit.

@@ -91,4 +91,30 @@ T["stash decoding options survive reload and preserve pop targets"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "encoded content" })
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
+T["custom stash formats preserve filtered pop targets across reload"] = function()
+  vim.cmd("GinStash --format=%s --grep=older")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "On main: older" })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "pop:index", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
+  MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%s"), "On main: newer\n")
+end
+T["multiline stash formats retain metadata through embedded NUL bytes"] = function()
+  vim.cmd("GinStash --format=%gd%x00%n%s")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "stash@{0}\0",
+    "On main: newer",
+    "stash@{1}\0",
+    "On main: older",
+  })
+  local buf = vim.api.nvim_get_current_buf()
+  require("gin.action").call(buf, "yank:stash", { 3, 4 })
+  MiniTest.expect.equality(vim.fn.getreg('"'), "stash@{1}")
+  require("gin.action").call(buf, "pop:index", { 4, 4 })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
+  MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%s"), "On main: newer\n")
+end
 return T
