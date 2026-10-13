@@ -44,6 +44,8 @@ to prove an action produces the intended Git state.
   forced reset, orphan branches, cancellation, rename, linked-worktree moves,
   worktree creation, orphan checkouts, command-driven refresh, event cleanup,
   merge ancestry, ff-only rejection, rebase replay/exec and instant-drop history.
+- `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
+  deletion, named-register yanks and detached checkout.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection, working/index/revision jumps, reverse and three-dot
@@ -113,3 +115,7 @@ selected starting ref; the pinned implementation omits it and fails that case.
 
 Branch merge actions now support ff/no-ff/ff-only. Tests bypass the commit editor
 using a fixture-local configuration; editor proxy integration remains pending.
+
+GinTag now provides listing, show/delete/switch/yank actions and command-driven
+refresh. Browse/echo, show variants, custom format/parser options, encoding and
+emoji handling still require implementation or compatibility checks.
