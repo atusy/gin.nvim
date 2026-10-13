@@ -75,6 +75,9 @@ function M.insert_output(buf, name, output)
   )
   if output ~= "" then
     local lines = require("gin.edit").decode(output:gsub("\27%[[%d;]*m", ""), options)
+    if require("gin.uri").parse(name).params.emojify ~= nil then
+      lines = vim.tbl_map(require("gin.emoji").emojify, lines)
+    end
     local after = vim.fn.line("'[")
     local empty = vim.api.nvim_buf_line_count(buf) == 1
       and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
@@ -106,6 +109,7 @@ function M.command(opts)
     "opener",
     "filetype",
     "monochrome",
+    "emojify",
     "processor",
     "diffjump",
     "difffold",
@@ -119,6 +123,7 @@ function M.command(opts)
   local name = uri.format("gin", root, {
     filetype = options.filetype or "gin-buffer",
     monochrome = options.monochrome and "" or nil,
+    emojify = options.emojify and "" or nil,
     processor = options.processor,
     diffjump = options.diffjump,
     difffold = options.difffold and "" or nil,

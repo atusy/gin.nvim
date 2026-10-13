@@ -330,3 +330,7 @@ highlight span calculation and leaves unknown/image-only names literal.
 Fixtures cover reload, opt-in behavior, commit selection, compound Unicode
 sequences and overlapping name delimiters. Other emojify views/actions remain
 pending.
+
+GinBuffer accepts ++emojify and stores it in the URI for reload and addressed
+reads. A colored Git-log fixture verifies the converted text, exact ANSI byte
+span after conversion, and insertion between existing destination lines.

@@ -130,4 +130,31 @@ T["GinBuffer renders Git colors as highlights and monochrome omits them"] = func
   vim.cmd("GinBuffer ++monochrome status --short")
   MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
 end
+
+T["GinBuffer emojify preserves color positions across reload and read"] = function()
+  H.git(root, "commit", "--allow-empty", "-m", "initial")
+  vim.cmd("GinBuffer ++emojify log -1 --color=always --format=%C(red):sparkles:%C(reset)tail")
+  local name = vim.api.nvim_buf_get_name(0)
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "✨tail" })
+    local marks = vim.api.nvim_buf_get_extmarks(
+      0,
+      vim.api.nvim_create_namespace("gin_ansi"),
+      0,
+      -1,
+      { details = true }
+    )
+    MiniTest.expect.equality(#marks, 1)
+    MiniTest.expect.equality(marks[1][3], 0)
+    MiniTest.expect.equality(marks[1][4].end_col, #"✨")
+    vim.cmd.edit()
+  end
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.cmd("1read " .. vim.fn.fnameescape(name))
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "before", "✨tail", "after" }
+  )
+end
 return T
