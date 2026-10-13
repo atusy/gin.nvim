@@ -1241,3 +1241,12 @@ and used the marker as part of the final branch pattern. A real repository
 fixture applies a custom format and multiple patterns, verifies reloads, then
 switches the selected branch. The refreshed view retains its filter and marks
 the selected ref as current; both original branches remain present.
+
+Legacy GinBlame paths now normalize backslash separators before reading and
+saving history, matching the pinned reader. A real Git fixture restores a
+revision different from HEAD using a path with spaces, plus, Japanese text,
+and a literal dollar; verifies emojified details and attribution; reloads both
+file and navigation panes without adding windows; and follows attribution then
+returns through history without changing HEAD or the working tree. Native Lua
+URI filenames retain literal backslashes. Restoring an upstream navigation pane
+from its legacy buffer variables remains unaudited.

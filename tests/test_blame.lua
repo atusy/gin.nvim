@@ -60,6 +60,59 @@ T["blame opens synchronized attribution and committed content from a subdirector
   end
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "dirty" })
 end
+T["legacy blame paths survive reload and history navigation"] = function()
+  local path = "sub/space + 日本語$.lua"
+  H.git(root, "mv", "sub/file.lua", path)
+  H.git(root, "commit", "-m", ":sparkles: rename")
+  local revision = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  H.git(root, "checkout", "--detach", first)
+  local name = "ginblame://"
+    .. root
+    .. ";commitish="
+    .. revision
+    .. "&emojify=#"
+    .. path:gsub("/", "\\")
+  local file = require("gin.buffer").open(name, { opener = "tabedit" })
+  local nav, detail = vim.b[file].gin_blame_nav_bufnr, vim.b[file].gin_blame_detail_bufnr
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  MiniTest.expect.equality(#windows, 3)
+  local function restored()
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(file, 0, -1, false),
+      { "", "one", "", "changed", "", "three" }
+    )
+    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[4].commitSha, second)
+    local lines = vim.api.nvim_buf_get_lines(detail, 0, -1, false)
+    MiniTest.expect.equality(lines[1], "commit " .. revision)
+    MiniTest.expect.equality(table.concat(lines, "\n"):find("✨ rename", 1, true) ~= nil, true)
+    MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  end
+  restored()
+  for _, target in ipairs({ file, nav }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
+    vim.cmd.edit()
+    H.drain()
+    restored()
+  end
+  -- Start from the legacy file URI so its path is saved in the history entry.
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(file))
+  MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { second, "sub/file.lua" })
+  require("gin.blame").navigate_history("older")
+  parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(file))
+  MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { revision, path })
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 4)
+  MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  require("gin.blame").navigate_history("newer")
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(file)).params.commitish,
+    second
+  )
+  MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")), first)
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+end
 T["blame and commit detail stream stderr without displaying porcelain data"] = function()
   local trace, echo = vim.env.GIT_TRACE, vim.api.nvim_echo
   local output = {}

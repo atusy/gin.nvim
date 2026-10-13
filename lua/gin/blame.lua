@@ -3,6 +3,14 @@ local git = require("gin.git")
 local uri = require("gin.uri")
 local buffer = require("gin.buffer")
 
+local function parse_name(name)
+  local parsed = uri.parse(name)
+  if parsed.legacy and parsed.fragment then
+    parsed.fragment = parsed.fragment:gsub("\\", "/")
+  end
+  return parsed
+end
+
 function M.highlights()
   vim.api.nvim_set_hl(0, "GinBlameLineNumber", { default = true, link = "LineNr" })
   vim.api.nvim_set_hl(0, "GinBlameTime", { default = true, fg = "#87afaf", ctermfg = 109 })
@@ -119,7 +127,7 @@ function M.update_detail(buf, lnum)
   if not detail or not vim.api.nvim_buf_is_loaded(detail) then
     return
   end
-  local parsed = uri.parse(vim.api.nvim_buf_get_name(buf))
+  local parsed = parse_name(vim.api.nvim_buf_get_name(buf))
   local line = (vim.b[buf].gin_blame_line_map or {})[lnum]
   local commit = lnum == 1 and (parsed.params.commitish or "HEAD")
     or (type(line) == "table" and line.commitSha)
@@ -136,7 +144,7 @@ function M.update_detail(buf, lnum)
 end
 
 function M.read(buf, name, output)
-  local parsed = uri.parse(name)
+  local parsed = parse_name(name)
   local path =
     require("gin.edit").path(parsed.root, assert(parsed.fragment, "GinBlame requires a path"))
   output = output
@@ -360,7 +368,7 @@ function M.switch_commit()
   if type(line) ~= "table" then
     return
   end
-  local parsed = uri.parse(vim.api.nvim_buf_get_name(current))
+  local parsed = parse_name(vim.api.nvim_buf_get_name(current))
   local revision, path = line.commitSha, filename(line.metadata.filename)
   if (parsed.params.commitish or "HEAD") == revision then
     revision = revision .. "^"
@@ -399,7 +407,7 @@ function M.navigate_history(direction)
   local entry = history[index]
   visit(
     current,
-    uri.parse(vim.api.nvim_buf_get_name(current)),
+    parse_name(vim.api.nvim_buf_get_name(current)),
     entry.commitish,
     entry.filename,
     entry.physicalLine,
