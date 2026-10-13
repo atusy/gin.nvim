@@ -116,6 +116,23 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
     end
   end
 end
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " formats parsed flag names and empty values"] = function()
+    vim.cmd(command .. " --n=2 -n1 --no-decorate= --format=%H")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { second })
+      vim.cmd.edit()
+    end
+    local name = vim.api.nvim_buf_get_name(0)
+    vim.cmd.enew()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", second, "after" }
+    )
+  end
+end
 for _, kind in ipairs({ "log", "reflog" }) do
   T["legacy " .. kind .. " URI restores selection for reads reloads and actions"] = function()
     H.git(root, "switch", "--detach", first)

@@ -1310,3 +1310,11 @@ verify that --no-decorate followed by --decorate=full suppresses decorations in
 the displayed and reloaded view, while :read retains the original flag order
 and inserts full ref decorations. A literal --decorate=full pathspec after --
 remains a path. Malformed flag syntax and other default merges remain under audit.
+
+The shared native flag-grouping path now formats parsed names and values through
+the same serializer as legacy URI reads. One-character long names become short
+flags (for example --n=2 becomes -n2), and empty long values omit the equals sign.
+Real Git log/reflog fixtures mix --n=2 with -n1 and use --no-decorate=, checking
+selected output on open, reload and insertion. Previously the empty boolean
+value reached Git unchanged and failed. Malformed flag-name parsing remains
+outside this normalization coverage.

@@ -14,22 +14,28 @@ function M.format(key, values)
   return result
 end
 
----Group flag arguments by first-seen name, retaining each name's value order.
+---Group and format flag arguments by first-seen name and ordered values.
 ---@param args string[] Flag arguments only, without a path separator.
 ---@return string[]
 function M.group(args)
   local groups, order = {}, {}
   for _, arg in ipairs(args) do
-    local key = arg:match("^%-%-([^=]+)") or arg:sub(2, 2)
+    local key, value = arg:match("^%-%-([^=]+)=(.*)$")
+    if not key then
+      key, value = arg:match("^%-%-(.+)$"), ""
+    end
+    if not key then
+      key, value = arg:sub(2, 2), arg:sub(3)
+    end
     if not groups[key] then
       groups[key] = {}
       order[#order + 1] = key
     end
-    table.insert(groups[key], arg)
+    table.insert(groups[key], value)
   end
   local result = {}
   for _, key in ipairs(order) do
-    vim.list_extend(result, groups[key])
+    vim.list_extend(result, M.format(key, groups[key]))
   end
   return result
 end
