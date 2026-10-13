@@ -116,4 +116,18 @@ T["custom command mappings receive captured action ranges"] = function()
   action.call(buf, "custom", { 2, 3 })
   MiniTest.expect.equality(captured, { 2, 3 })
 end
+T["expression action mappings execute their returned keys"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local captured
+  action.setup(buf)
+  action.define(buf, "capture", function(_, range)
+    captured = range
+  end)
+  vim.keymap.set("n", "<Plug>(gin-action-custom)", function()
+    return "<Plug>(gin-action-capture)"
+  end, { buffer = buf, expr = true })
+  action.call(buf, "custom", { 2, 4 })
+  MiniTest.expect.equality(captured, { 2, 4 })
+end
 return T

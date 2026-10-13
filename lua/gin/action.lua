@@ -85,11 +85,11 @@ function M.call(buf, name, range)
     local entry = actions[buf] and actions[buf][name]
     if entry and mapping.callback == entry.dispatch then
       return entry.callback(buf, vim.deepcopy(range))
-    elseif mapping.callback then
+    elseif mapping.callback and mapping.expr == 0 then
       return mapping.callback()
     end
     local target = (mapping.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$")
-    if target then
+    if target and mapping.expr == 0 then
       return M.call(buf, target, range)
     end
     vim.api.nvim_feedkeys(

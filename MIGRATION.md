@@ -460,3 +460,7 @@ overrides, and custom Ex mappings receive the captured selection range. Tests
 cover alias discovery, overridden callbacks, range propagation and restoration
 after callback errors. Complete mapping/help customization parity remains under
 audit.
+
+Expression action mappings run through Neovim's mapping engine so their returned
+key sequences execute with the captured action range. A callback-expression
+fixture resolves another action and verifies the propagated selection.
