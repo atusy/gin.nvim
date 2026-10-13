@@ -106,7 +106,10 @@ Currently implemented:
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
-selected candidate metadata as JSON.
+selected candidate metadata as JSON. `browse` opens selected files or refs;
+`:commit`, `:permalink`, and `:yank` suffixes select URL and copy behavior.
+Set `g:gin_browse_persistent_args = { "--no-browser" }` to print URLs instead
+of opening them.
 
 Commands locate the repository from the current buffer before trying cwd.
 `++worktree` explicitly selects a repository. Filenames use Vim's command

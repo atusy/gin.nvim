@@ -59,7 +59,8 @@ to prove an action produces the intended Git state.
   and jumps from shown content to historical files.
 - `tests/test_browse.lua`: encoded file URLs, ranges, permalinks, host-specific
   home/commit routes, current-file named-register yanking without a browser,
-  ancestry-based remote selection, origin preference and explicit overrides.
+  ancestry-based remote selection, origin preference, explicit overrides,
+  status browse from subdirectories and selected-history commit URLs.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases, mapping help and JSON echo selection.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection, working/index/revision jumps, reverse and three-dot
@@ -168,5 +169,8 @@ compatibility remains part of the final action audit.
 
 GinBrowse supports file/tree/home/commit URLs, explicit remotes, aliases, ranges
 and permalinks. Provider routes were checked against deno-git-browse v1.0.1
-(the minimum version referenced by pinned vim-gin). PR lookup, view browse actions and full URL edge-case parity remain
+(the minimum version referenced by pinned vim-gin). PR lookup and full URL edge-case parity remain
 pending. Browser opening uses vim.ui.open and was not launched by the tests.
+
+Shared browse actions now support file/ref, commit, permalink and yank variants
+in implemented candidate views. PR variants remain pending lookup support.
