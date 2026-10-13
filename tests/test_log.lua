@@ -298,4 +298,45 @@ T["tag alias creates an annotated tag with the edited message on the selection"]
     "release notes\n\n"
   )
 end
+T["signed force tags replace a ref with a verifiable SSH signature"] = function()
+  local key = root .. "/.git/signing-key"
+  local generated =
+    vim.system({ "ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key }):wait(5000)
+  MiniTest.expect.equality(generated.code, 0)
+  vim.fn.writefile(
+    { "gin@example.invalid " .. vim.fn.readfile(key .. ".pub")[1] },
+    root .. "/.git/allowed-signers"
+  )
+  H.git(root, "config", "gpg.format", "ssh")
+  H.git(root, "config", "user.signingkey", key)
+  H.git(root, "config", "gpg.ssh.allowedSignersFile", root .. "/.git/allowed-signers")
+  H.git(root, "tag", "signed", second)
+  vim.cmd("GinLog --oneline")
+  local done = false
+  local event = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    once = true,
+    callback = function()
+      done = true
+    end,
+  })
+  tag_action("tag:sign:force", "signed")
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "signed release" })
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return done
+    end, 10),
+    true
+  )
+  pcall(vim.api.nvim_del_autocmd, event)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "signed^{}"), first .. "\n")
+  H.git(root, "verify-tag", "signed")
+end
 return T

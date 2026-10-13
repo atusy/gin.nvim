@@ -59,7 +59,8 @@ Currently implemented:
   Merge and rebase variants work as in GinBranch, targeting
   the selected commit.
   `tag`/`tag:annotate` edits an annotated tag message; `tag:annotate:force`
-  replaces an existing tag. Signed tags and fixup amend/reword remain pending.
+  replaces an existing tag. `tag:sign` and `tag:sign:force` use Git's signing
+  configuration. Fixup amend/reword actions remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
   actions, including show and reset for commits no longer in normal history.
 - `:GinStash [flags]` lists saved changes. Actions include `apply`, `pop`, their

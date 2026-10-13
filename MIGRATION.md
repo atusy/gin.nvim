@@ -149,7 +149,7 @@ actual HEAD, index and worktree state rather than only command output.
 
 GinLog lightweight tag creation and force replacement are implemented.
 Annotated tag actions and the default tag alias now use the editor proxy.
-Signed tags remain pending signing integration.
+Signed tag actions use the same proxy with Git signing configuration.
 
 GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
 selected parent (or --root), correcting the pinned double-parent traversal.
@@ -269,5 +269,6 @@ interactive exec execution and rewritten ancestry. Broader conflict and
 cancellation coverage remains pending.
 
 The annotated-tag fixture verifies the edited message, tag object type and peeled
-target commit. Annotated force replacement is exposed; its direct coverage and
-signed variants remain pending.
+target commit. Signed force replacement is verified with an ephemeral SSH key,
+including Git verify-tag and the peeled target. Other signing backends and
+annotated-force-specific coverage remain pending.
