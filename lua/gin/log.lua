@@ -68,6 +68,20 @@ function M.read(buf, name)
       )
     end
   end
+  for _, mode in ipairs({ "", "soft", "hard", "merge", "keep" }) do
+    action.define(buf, "reset" .. (mode ~= "" and ":" .. mode or ""), function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      local args = { "reset", "--quiet" }
+      if mode ~= "" then
+        args[#args + 1] = "--" .. mode
+      end
+      args[#args + 1] = row.commit
+      require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
+    end)
+  end
   action.define(buf, "yank:commit", function(target, range)
     local values = {}
     for _, row in ipairs(M.candidates(target, range)) do

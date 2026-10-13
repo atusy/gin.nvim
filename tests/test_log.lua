@@ -97,4 +97,29 @@ T["revert mainline one removes the merged branch changes"] = function()
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/side"), 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end
+for _, spec in ipairs({
+  { action = "reset", indexed = false, present = true },
+  { action = "reset:soft", indexed = true, present = true },
+  { action = "reset:hard", indexed = false, present = false },
+  { action = "reset:merge", indexed = false, present = false },
+  { action = "reset:keep", indexed = false, present = false },
+}) do
+  T[spec.action .. " changes HEAD, index and worktree according to its mode"] = function()
+    vim.cmd("GinLog --oneline")
+    require("gin.action").call(vim.api.nvim_get_current_buf(), spec.action, { 2, 2 })
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), first .. "\n")
+    MiniTest.expect.equality(H.git(root, "ls-files", "--", "two") ~= "", spec.indexed)
+    MiniTest.expect.equality(vim.fn.filereadable(root .. "/two") == 1, spec.present)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/one"), { "first" })
+  end
+end
+T["reset keep rejects overwriting an uncommitted change"] = function()
+  vim.fn.writefile({ "local change" }, root .. "/two")
+  vim.cmd("GinLog --oneline")
+  MiniTest.expect.error(function()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "reset:keep", { 2, 2 })
+  end, "git exited")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "local change" })
+end
 return T
