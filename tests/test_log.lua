@@ -55,4 +55,13 @@ T["default and graph formats identify commit headers"] = function()
     MiniTest.expect.equality(first:sub(1, #rows[2].commit), rows[2].commit)
   end
 end
+T["branch log action opens the selected branch history in a split"] = function()
+  H.git(root, "branch", "older", first)
+  vim.cmd("GinBranch older")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "log:split", { 1, 1 })
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+  MiniTest.expect.equality(vim.bo.filetype, "gin-log")
+  local rows = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 999 })
+  MiniTest.expect.equality(rows, { { commit = first } })
+end
 return T

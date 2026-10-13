@@ -238,6 +238,14 @@ function M.read(buf, name)
       end
     end)
   end
+  for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
+    action.define(buf, "log:" .. opener, function(target, range)
+      for _, row in ipairs(M.candidates(target, range)) do
+        require("gin.log").open(parsed.root, { row.target }, { opener = opener })
+      end
+    end)
+  end
+  action.alias(buf, "log", "log:edit")
   for _, field in ipairs({ "branch", "target", "commit" }) do
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}
