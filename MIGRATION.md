@@ -485,3 +485,12 @@ when explicit arguments replace the defaults. Invalid booleans, dictionaries
 and list elements fail with the setting name before opening a view. A real
 status fixture verifies persistent worktree selection, explicit-argument
 precedence and unchanged configuration arrays.
+
+Asynchronous Gin commands now echo live stdout/stderr without adding progress
+chunks to message history. The Git runner retains complete binary-safe output
+for final reporting and processors. The indicator restores command-line height
+after idle output and restores options after the last concurrent command closes;
+silent commands suppress it. Tests gate a real Git alias until progress is
+observed, verify final output/events, and cover silent and concurrent lifecycles.
+Streaming for synchronous commands and buffer reads, custom indicator APIs and
+chunk-boundary decoding remain under audit.

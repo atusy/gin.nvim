@@ -94,10 +94,22 @@ function M.execute(opts)
     end
     M.finish(result, options, opts.smods)
   end
-  return require("gin.git").start(
+  local env = require("gin.editor").environment()
+  local indicator = not opts.smods.silent and require("gin.indicator").open() or nil
+  local ok, process = pcall(
+    require("gin.git").start,
     args,
-    { cwd = root, env = require("gin.editor").environment(), timeout = false },
+    {
+      cwd = root,
+      env = env,
+      timeout = false,
+      on_stdout = indicator and indicator.write,
+      on_stderr = indicator and indicator.write,
+    },
     vim.schedule_wrap(function(result)
+      if indicator then
+        indicator.close()
+      end
       if result.code ~= 0 or not options.processor or options.processor == "" then
         finish(result, "git")
         return
@@ -120,6 +132,13 @@ function M.execute(opts)
       end
     end)
   )
+  if not ok then
+    if indicator then
+      indicator.close()
+    end
+    error(process, 0)
+  end
+  return process
 end
 
 function M.finish(result, options, mods)

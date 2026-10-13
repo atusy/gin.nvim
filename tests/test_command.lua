@@ -211,4 +211,110 @@ for _, view in ipairs({ "GinDiff", "GinLog --oneline" }) do
     MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "sub changed" })
   end
 end
+T["Gin displays progress before exit and retains final output"] = function()
+  local echo, output = vim.api.nvim_echo, {}
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.api.nvim_echo = function(chunks, history)
+    output[#output + 1] = { text = chunks[1][1], history = history }
+  end
+  local ok, err = pcall(function()
+    local process = require("gin.command").execute({
+      fargs = {
+        "-c",
+        [[alias.progress=!printf 'early\n'; printf 'warning\n' >&2; while test ! -f .git/release; do sleep 0.01; done; printf 'finished\n']],
+        "progress",
+      },
+      smods = {},
+    })
+    local live = vim.wait(1000, function()
+      for _, item in ipairs(output) do
+        if not item.history and item.text:find("early", 1, true) then
+          return true
+        end
+      end
+      return false
+    end, 10)
+    local pending = not process:is_closing()
+    vim.fn.writefile({}, root .. "/.git/release")
+    local result = process:wait(5000)
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return events == 1
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(live, true)
+    MiniTest.expect.equality(pending, true)
+    MiniTest.expect.equality(result.stdout, "early\nfinished\n")
+    MiniTest.expect.equality(result.stderr, "warning\n")
+    MiniTest.expect.equality(output[#output], { text = "early\nfinished\nwarning", history = true })
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+end
+T["silent asynchronous commands do not display progress"] = function()
+  local echo, calls = vim.api.nvim_echo, 0
+  vim.api.nvim_echo = function()
+    calls = calls + 1
+  end
+  local ok, err = pcall(function()
+    local process = require("gin.command").execute({
+      fargs = { "-c", "alias.progress=!printf 'quiet\\n'", "progress" },
+      smods = { silent = true },
+    })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return events == 1
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(process:wait(1000).stdout, "quiet\n")
+    MiniTest.expect.equality(calls, 0)
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+end
+T["concurrent progress indicators restore options after the last close"] = function()
+  local indicator = require("gin.indicator")
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.o.more, vim.o.cmdheight = true, 1
+  local first, second = indicator.open(), indicator.open()
+  local ok, err = pcall(function()
+    first.write(nil, "one\ntwo\nthree\n")
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return vim.o.cmdheight == 3
+      end, 10),
+      true
+    )
+    first.close()
+    MiniTest.expect.equality(vim.o.more, false)
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return vim.o.cmdheight == 1
+      end, 10),
+      true
+    )
+    second.close()
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { true, 1 })
+    first.close()
+    first.write(nil, "stale\nmessage\n")
+    local drained = false
+    vim.schedule(function()
+      drained = true
+    end)
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return drained
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { true, 1 })
+  end)
+  first.close()
+  second.close()
+  vim.o.more, vim.o.cmdheight = more, height
+  assert(ok, err)
+end
 return T
