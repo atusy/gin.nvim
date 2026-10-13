@@ -14,8 +14,7 @@ local function candidates(buf, range)
   return selected
 end
 
-function M.read(buf, name)
-  local parsed = uri.parse(name)
+local function output(parsed)
   local args = { "tag", "--list", "--color=never" }
   local format = "%(objectname:short) %(refname:short) %(creatordate:short) %(subject)"
   for _, flag in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
@@ -45,13 +44,13 @@ function M.read(buf, name)
       lines[#lines + 1] = line
     end
   end
-  require("gin.buffer").replace_output(
-    buf,
-    table.concat(lines, "\n") .. (#lines > 0 and "\n" or ""),
-    parsed.root,
-    "gin-tag",
-    parsed.params
-  )
+  return table.concat(lines, "\n") .. (#lines > 0 and "\n" or ""), rows
+end
+
+function M.read(buf, name)
+  local parsed = uri.parse(name)
+  local text, rows = output(parsed)
+  require("gin.buffer").replace_output(buf, text, parsed.root, "gin-tag", parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_tags = rows
   action.setup(buf, candidates)
