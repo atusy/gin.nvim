@@ -47,4 +47,15 @@ T["extended ANSI colors and resets use UTF-8 byte columns"] = function()
   )
   vim.api.nvim_buf_delete(buf, { force = true })
 end
+T["ANSI groups retain upstream color and attribute names"] = function()
+  local plain, marks = require("gin.ansi").parse({
+    "\27[1;3;4;7;9;31;48;2;1;2;3mX\27[0m \27[38;2;10;11;12mY\27[0m \27[2mZ",
+  })
+  MiniTest.expect.equality(plain, { "X Y Z" })
+  MiniTest.expect.equality({ marks[1][4], marks[2][4], marks[3][4] }, {
+    "GinColorF1B010203BoldInverseItalicStrikeUnderline",
+    "GinColorF0a0b0c",
+    "Comment",
+  })
+end
 return T

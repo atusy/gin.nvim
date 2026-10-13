@@ -111,6 +111,28 @@ local function update(state, sequence)
   return state
 end
 
+local function highlight_name(state)
+  local parts = { "GinColor" }
+  for _, entry in ipairs({ { "fg", "F" }, { "bg", "B" } }) do
+    local key, prefix = entry[1], entry[2]
+    if state[key] then
+      parts[#parts + 1] = prefix .. (state["cterm" .. key] or state[key]:sub(2))
+    end
+  end
+  for _, entry in ipairs({
+    { "bold", "Bold" },
+    { "reverse", "Inverse" },
+    { "italic", "Italic" },
+    { "strikethrough", "Strike" },
+    { "underline", "Underline" },
+  }) do
+    if state[entry[1]] then
+      parts[#parts + 1] = entry[2]
+    end
+  end
+  return table.concat(parts)
+end
+
 function M.parse(lines)
   local plain, marks = {}, {}
   for row, line in ipairs(lines) do
@@ -120,7 +142,7 @@ function M.parse(lines)
       if #text > 0 and next(state) then
         local name = "Comment"
         if not state.dim then
-          name = "GinColor" .. vim.fn.sha256(vim.inspect(state)):sub(1, 16)
+          name = highlight_name(state)
           highlights[name] = vim.deepcopy(state)
           vim.api.nvim_set_hl(0, name, state)
         end

@@ -567,3 +567,10 @@ precedence. A UTF-8/CRLF fixture reloads each pane with encoding/fileformat
 overrides, verifies both synchronized buffers and literal UTF-8 author metadata,
 and returns to the unchanged URI defaults on an ordinary reload. Other builtin
 read options and complete decoding compatibility remain under audit.
+
+ANSI decoration groups now use the pinned GinColor naming order for indexed/RGB
+foreground and background colors plus bold, inverse, italic, strike and
+underline attributes. Dim text continues to use Comment. A regression fixture
+checks the exact public group names; existing fixtures verify color attributes,
+UTF-8 byte spans, reset handling and restoration after ColorScheme. Complete
+ANSI sequence compatibility and read-event behavior remain under audit.
