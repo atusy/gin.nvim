@@ -15,14 +15,37 @@ function M.candidates(buf, range)
   return selected
 end
 
+local function arguments(parsed)
+  if not parsed.legacy then
+    return parsed.params.args and vim.json.decode(parsed.params.args) or {},
+      parsed.fragment and uri.split(parsed.fragment) or {}
+  end
+  local flags = {}
+  for _, key in ipairs(parsed.param_order) do
+    local values = parsed.params[key]
+    for _, value in ipairs(type(values) == "table" and values or { values }) do
+      flags[#flags + 1] = (#key == 1 and "-" or "--")
+        .. key
+        .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
+    end
+  end
+  return flags,
+    parsed.fragment and vim.split(
+      parsed.fragment:gsub("%$$", ""),
+      " ",
+      { plain = true, trimempty = true }
+    ) or {}
+end
+
 function M.read(buf, name)
   local parsed = uri.parse(name)
+  local flags, patterns = arguments(parsed)
   local args = { "branch", "--list", "-vv", "--color=always" }
   local format, all
   local verbose = 2
   local colored = true
   local objectname = "%(objectname:short)"
-  for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
+  for _, arg in ipairs(flags) do
     if arg:sub(1, 9) == "--format=" then
       format = arg:sub(10)
     else
@@ -58,7 +81,7 @@ function M.read(buf, name)
     .. "%00%(subject)%00%(upstream:short)%00%(upstream:track)%00%(worktreepath)%00%(symref)%00"
     .. (format or "")
   args[#args + 1] = "--"
-  vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
+  vim.list_extend(args, patterns)
   local output = git.run(args, { cwd = parsed.root, progress = true }).stdout
   local colors = {}
   local defaults = {

@@ -32,6 +32,24 @@ T["branch view lists refs and switches the selected branch"] = function()
   H.drain()
   MiniTest.expect.equality(vim.b.gin_branches[2].head, "*")
 end
+T["legacy branch URIs retain display flags and filtered action targets"] = function()
+  local name = "ginbranch://" .. root .. ";format=%25%28refname%3Ashort%29#missing%2A top%2A$"
+  require("gin.buffer").open(name, {})
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "topic" })
+    MiniTest.expect.equality(vim.b.gin_branches[1].target, "topic")
+    vim.cmd.edit()
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 1, 1 })
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "topic" })
+  MiniTest.expect.equality(vim.b.gin_branches[1].head, "*")
+  MiniTest.expect.equality(
+    H.git(root, "branch", "--list", "--format=%(refname:short)"),
+    "main\ntopic\n"
+  )
+end
 T["default branch columns align names by display width"] = function()
   H.git(root, "branch", "long-branch-name")
   H.git(root, "branch", "日本語")

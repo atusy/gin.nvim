@@ -1234,3 +1234,10 @@ using skip/count flags and a custom format, verifies reload and insertion, then
 applies the visible row with its index. Its original `stash@{1}` reference is
 retained: the working file and index receive the older content, and both stash
 object IDs remain unchanged. Custom stash parser overrides remain outstanding.
+
+Legacy GinBranch now restores ordered flag parameters and removes the pattern
+list's trailing marker before splitting it. Previously it ignored display flags
+and used the marker as part of the final branch pattern. A real repository
+fixture applies a custom format and multiple patterns, verifies reloads, then
+switches the selected branch. The refreshed view retains its filter and marks
+the selected ref as current; both original branches remain present.
