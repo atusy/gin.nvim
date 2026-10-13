@@ -52,8 +52,57 @@ function M.read(buf, name)
     vim.bo[buf][key] = value
   end
   vim.bo[buf].modified = false
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].buftype = "nowrite"
+  local readonly = parsed.params.commitish and parsed.params.commitish ~= ""
+  vim.bo[buf].modifiable = not readonly
+  vim.bo[buf].buftype = readonly and "nowrite" or "acwrite"
+end
+
+function M.encode(buf)
+  local ff = vim.bo[buf].fileformat
+  local separator = ff == "dos" and "\r\n" or ff == "mac" and "\r" or "\n"
+  local data = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), separator)
+  if vim.bo[buf].endofline or (vim.bo[buf].fixendofline and not vim.bo[buf].binary) then
+    data = data .. separator
+  end
+  if vim.bo[buf].bomb then
+    data = "\239\187\191" .. data
+  end
+  local encoding = vim.bo[buf].fileencoding
+  if encoding ~= "" and encoding ~= "utf-8" and encoding ~= "utf8" then
+    data = vim.fn.iconv(data, "utf-8", encoding)
+  end
+  return data
+end
+
+function M.write(buf, name)
+  local parsed = uri.parse(name)
+  assert(
+    not parsed.params.commitish or parsed.params.commitish == "",
+    "Cannot write a revision buffer"
+  )
+  local path = M.path(parsed.root, assert(parsed.fragment, "GinEdit requires a path"))
+  local records = git.run({ "ls-files", "--stage", "-z", "--", path }, { cwd = parsed.root }).stdout
+  local mode
+  for record in records:gmatch("([^%z]+)%z") do
+    local candidate, stage, filename = record:match("^(%d+) %x+ (%d)\t(.*)$")
+    if stage == "0" and filename == path then
+      mode = candidate
+    end
+  end
+  assert(mode, "Path has no stage-zero index entry: " .. path)
+  local hash = vim.trim(
+    git.run(
+      { "hash-object", "-w", "--stdin", "--path=" .. path },
+      { cwd = parsed.root, stdin = M.encode(buf) }
+    ).stdout
+  )
+  git.run(
+    { "update-index", "-z", "--index-info" },
+    { cwd = parsed.root, stdin = mode .. " " .. hash .. "\t" .. path .. "\0" }
+  )
+  vim.bo[buf].modified = false
+  vim.api.nvim_exec_autocmds("BufWritePost", { buffer = buf, modeline = false })
+  require("gin.command").post()
 end
 
 function M.open(root, path, options)

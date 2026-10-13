@@ -29,4 +29,14 @@ T["GinEdit reads an immutable revision using repository-relative paths"] = funct
   MiniTest.expect.equality(vim.bo.buftype, "nowrite")
   MiniTest.expect.equality(vim.bo.filetype, "lua")
 end
+T["writing GinEdit changes only the index from a subdirectory"] = function()
+  vim.cmd("GinEdit sub/file.lua")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "index" })
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "edited index" })
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "edited index\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+  MiniTest.expect.equality(vim.bo.modified, false)
+end
 return T
