@@ -31,6 +31,7 @@ for kind, spec in pairs({
   T[kind .. " syntax identifies native list fields"] = function()
     vim.api.nvim_buf_set_lines(0, 0, -1, false, { spec.line })
     vim.bo.syntax = "gin-" .. kind
+    vim.cmd("redraw!")
     for text, suffix in pairs(spec.groups) do
       local column = assert(spec.line:find(text, 1, true))
       MiniTest.expect.equality(
@@ -40,5 +41,32 @@ for kind, spec in pairs({
     end
     MiniTest.expect.equality(vim.b.current_syntax, "gin_" .. kind)
   end
+end
+T["blame navigation highlights line time author and summary"] = function()
+  local times = { "just now", "2 days ago", "in 3 months" }
+  local lines = {}
+  for _, time in ipairs(times) do
+    lines[#lines + 1] = " 12 " .. time .. "\tGin Test\tcommit summary"
+  end
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+  vim.bo.syntax = "gin-blame-nav"
+  vim.cmd("redraw!")
+  for row, line in ipairs(lines) do
+    for text, suffix in pairs({
+      ["12"] = "LineNumber",
+      [times[row]] = "Time",
+      ["Gin Test"] = "Author",
+      ["commit summary"] = "Summary",
+    }) do
+      MiniTest.expect.equality(
+        vim.fn.synIDattr(vim.fn.synID(row, assert(line:find(text, 1, true)), 1), "name"),
+        "GinBlame" .. suffix
+      )
+    end
+  end
+  MiniTest.expect.equality(vim.b.current_syntax, "gin_blame_nav")
+  MiniTest.expect.equality(vim.api.nvim_get_hl(0, { name = "GinBlameTime" }).fg, 0x87afaf)
+  local author = vim.api.nvim_get_hl(0, { name = "GinBlameAuthor" })
+  MiniTest.expect.equality({ author.fg, author.bold, author.ctermfg }, { 0xffaf5f, true, 215 })
 end
 return T

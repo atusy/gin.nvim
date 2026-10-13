@@ -773,3 +773,9 @@ branch and reflog action matching use chained groups/highlight offsets so the
 fields are actually highlighted in Neovim; current_syntax is set after clearing
 definitions. Custom formats outside the native layouts are not inferred by
 these rules. The syntax directory is included in formatter checks.
+
+GinBlame navigation now has a Lua syntax file for the pinned line-number,
+relative-time, author and summary groups. It retains the specified GUI/terminal
+time and author colors and bold author text. Syntax-engine fixtures cover
+just-now, past and future relative times, names with spaces, and highlight
+attributes. Divider signs continue to use the existing independent renderer.
