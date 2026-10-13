@@ -221,7 +221,8 @@ EVENTS                                                             *gin-events*
                                                         *GinCommandPost*
 User GinCommandPost
     Emitted after a successful Gin command and any configured processor.
-    List views and components use it to refresh.
+    List views and components use it to refresh. Gin retains eventignore=all
+    from dispatch even if the option is restored before asynchronous completion.
 
                                                         *GinComponentPost*
 User GinComponentPost

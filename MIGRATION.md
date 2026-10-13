@@ -591,3 +591,9 @@ GinEdit URI insertion now applies explicit :read encoding/fileformat overrides,
 matching the pinned edit/read.ts option path. The fixture reads UTF-8 bytes with
 an explicit Unix format over Latin-1/DOS URI defaults, checks addressed insertion
 and marks, and verifies destination options plus literal ANSI bytes are retained.
+
+Gin command completion now retains an eventignore=all snapshot from dispatch,
+matching the pinned bare-command executor. Restoring eventignore while Git is
+running no longer causes an unintended GinCommandPost. A real asynchronous Git
+config command verifies successful mutation and completion without the event;
+existing ordinary-command fixtures still require successful event delivery.

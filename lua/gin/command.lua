@@ -73,6 +73,7 @@ end
 function M.execute(opts)
   local options, args =
     M.parse(opts.fargs, { "wait", "worktree", "processor", "enc", "encoding", "ff", "fileformat" })
+  options.eventignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
   local root = require("gin.worktree").current(options.worktree)
   if options.wait then
     local result = require("gin.git").run(args, { cwd = root, processor = options.processor })
@@ -157,7 +158,9 @@ function M.finish(result, options, mods)
   if output ~= "" and not mods.silent then
     vim.api.nvim_echo({ { output:gsub("\n$", ""), "None" } }, true, {})
   end
-  M.post()
+  if not options.eventignore_all then
+    M.post()
+  end
   return result
 end
 

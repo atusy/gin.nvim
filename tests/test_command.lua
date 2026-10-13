@@ -317,4 +317,29 @@ T["concurrent progress indicators restore options after the last close"] = funct
   vim.o.more, vim.o.cmdheight = more, height
   assert(ok, err)
 end
+T["asynchronous commands retain eventignore all from dispatch"] = function()
+  local previous = vim.o.eventignore
+  vim.o.eventignore = "all"
+  local result
+  local ok, err = pcall(function()
+    require("gin.command").execute({
+      fargs = { "config", "gin.event-test", "written" },
+      smods = { silent = true },
+      on_exit = function(value)
+        result = value
+      end,
+    })
+  end)
+  vim.o.eventignore = previous
+  assert(ok, err)
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return result ~= nil
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(H.git(root, "config", "gin.event-test"), "written\n")
+  MiniTest.expect.equality(events, 0)
+end
 return T
