@@ -72,6 +72,20 @@ function M.setup(buf, gather)
     action.alias(buf, "diff:" .. source, "diff:" .. source .. ":edit")
   end
   action.alias(buf, "diff", "diff:smart")
+  for _, variant in ipairs({ "both", "head", "worktree" }) do
+    action.define(buf, "patch:" .. variant, function(target, range)
+      local root = vim.b[target].gin_worktree
+      local entries = gather(target, range)
+      for _, entry in ipairs(entries) do
+        require("gin.patch").open(root, entry.path, {
+          opener = "tabedit",
+          ["no-head"] = variant == "worktree",
+          ["no-worktree"] = variant == "head",
+        })
+      end
+    end)
+  end
+  action.alias(buf, "patch", "patch:both")
   for _, spec in ipairs({ { "yank:path", "path" }, { "yank:path:orig", "orig_path" } }) do
     action.define(buf, spec[1], function(target, range)
       local values = {}

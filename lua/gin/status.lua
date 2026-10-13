@@ -200,6 +200,7 @@ function M.mappings(buf)
       [">>"] = "unstage",
       ["=="] = "stash",
       dd = "diff:smart",
+      pp = "patch",
       a = "choice",
       ["<CR>"] = "edit",
       ["."] = "repeat",

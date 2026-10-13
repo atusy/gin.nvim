@@ -16,7 +16,8 @@ local T = MiniTest.new_set({
       dofile(old_cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
-      vim.cmd("only!")
+      vim.cmd("silent! tabonly!")
+      vim.cmd("silent! only!")
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(old_cwd)
       H.cleanup(root)
@@ -70,5 +71,15 @@ T["reopening patch preserves user mappings to its Plug actions"] = function()
   vim.cmd("only!")
   vim.cmd("GinPatch ++no-head file")
   MiniTest.expect.equality(vim.fn.maparg("Q", "n"), "<Plug>(gin-diffget)")
+end
+T["status patch action opens the selected file in a new tab"] = function()
+  vim.cmd.GinStatus()
+  local tabs = #vim.api.nvim_list_tabpages()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys("pp", "mx", false)
+  MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(vim.b.gin_path, "sub/file")
 end
 return T
