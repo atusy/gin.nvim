@@ -108,4 +108,14 @@ T["GinBuffer decoding options survive reload"] = function()
     vim.cmd.edit()
   end
 end
+T["GinBuffer processor survives reload and addressed reads"] = function()
+  vim.fn.writefile({ "hello" }, root .. "/file")
+  vim.cmd([[GinBuffer ++processor=tr\ a-z\ A-Z status --short]])
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "?? FILE" })
+  vim.cmd.enew()
+  vim.cmd("read " .. vim.fn.fnameescape(name))
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "?? FILE" })
+end
 return T

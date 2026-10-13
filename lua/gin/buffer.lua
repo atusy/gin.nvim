@@ -46,7 +46,10 @@ end
 function M.read(buf, name)
   local uri = require("gin.uri").parse(name)
   assert(uri.fragment, "Gin buffer requires command arguments")
-  local result = require("gin.git").run(require("gin.uri").split(uri.fragment), { cwd = uri.root })
+  local result = require("gin.git").run(
+    require("gin.uri").split(uri.fragment),
+    { cwd = uri.root, processor = uri.params.processor }
+  )
   M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
 end
 
@@ -75,20 +78,30 @@ end
 function M.insert(buf, name)
   local parsed = require("gin.uri").parse(name)
   assert(parsed.fragment, "Gin buffer requires command arguments")
-  local result =
-    require("gin.git").run(require("gin.uri").split(parsed.fragment), { cwd = parsed.root })
+  local result = require("gin.git").run(
+    require("gin.uri").split(parsed.fragment),
+    { cwd = parsed.root, processor = parsed.params.processor }
+  )
   M.insert_output(buf, name, result.stdout)
 end
 
 function M.command(opts)
-  local options, args = require("gin.command").parse(
-    opts.fargs,
-    { "worktree", "opener", "filetype", "monochrome", "enc", "encoding", "ff", "fileformat" }
-  )
+  local options, args = require("gin.command").parse(opts.fargs, {
+    "worktree",
+    "opener",
+    "filetype",
+    "monochrome",
+    "processor",
+    "enc",
+    "encoding",
+    "ff",
+    "fileformat",
+  })
   local root = require("gin.worktree").current(options.worktree)
   local uri = require("gin.uri")
   local name = uri.format("gin", root, {
     filetype = options.filetype or "gin-buffer",
+    processor = options.processor,
     enc = options.enc or options.encoding,
     ff = options.ff or options.fileformat,
   }, uri.join(args))

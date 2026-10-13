@@ -6,7 +6,7 @@ function M.output(name)
   local parsed = uri.parse(name)
   local args = { "diff" }
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
-    if key ~= "commitish" and key ~= "enc" and key ~= "ff" then
+    if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
       local prefix = key:sub(1, 1) == "-" and "" or "--"
       local value = parsed.params[key]
       args[#args + 1] = prefix .. key .. (value ~= "" and "=" .. value or "")
@@ -17,7 +17,8 @@ function M.output(name)
   end
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  return require("gin.git").run(args, { cwd = parsed.root }).stdout, parsed.root
+  return require("gin.git").run(args, { cwd = parsed.root, processor = parsed.params.processor }).stdout,
+    parsed.root
 end
 
 function M.read(buf, name)
@@ -32,6 +33,7 @@ function M.open(root, options)
   options = options or {}
   local params = vim.deepcopy(options.flags or {})
   params.commitish = options.commitish
+  params.processor = options.processor
   params.enc, params.ff = options.enc or options.encoding, options.ff or options.fileformat
   local paths = {}
   for _, path in ipairs(options.paths or {}) do
@@ -48,7 +50,7 @@ function M.command(opts)
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_diff_default_args or {}) or opts.fargs)
   local options, residue = require("gin.command").parse(
     args,
-    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+    { "worktree", "opener", "processor", "enc", "encoding", "ff", "fileformat" }
   )
   options.flags, options.paths = {}, {}
   local path_mode = false

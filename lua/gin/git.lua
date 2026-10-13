@@ -23,6 +23,21 @@ function M.run(args, opts)
   if opts.check ~= false and result.code ~= 0 then
     error(("git exited %d: %s"):format(result.code, vim.trim(result.stderr or "")), 0)
   end
+  if result.code == 0 and opts.processor and #opts.processor > 0 then
+    local processor = type(opts.processor) == "string" and require("gin.uri").split(opts.processor)
+      or opts.processor
+    result = vim
+      .system(processor, {
+        cwd = opts.cwd,
+        env = opts.env,
+        stdin = result.stdout,
+        timeout = opts.timeout or 30000,
+      })
+      :wait()
+    if opts.check ~= false and result.code ~= 0 then
+      error(("processor exited %d: %s"):format(result.code, vim.trim(result.stderr or "")), 0)
+    end
+  end
   return result
 end
 

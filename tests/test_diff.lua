@@ -181,4 +181,14 @@ T["GinDiff decodes requested encoding without forwarding it as a Git flag"] = fu
     vim.cmd.edit()
   end
 end
+T["GinDiff processes output on initial load and reload"] = function()
+  vim.cmd([[GinDiff ++processor=tr\ a-z\ A-Z -- sub/file]])
+  for _ = 1, 2 do
+    MiniTest.expect.equality(
+      vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), "+WORKING"),
+      true
+    )
+    vim.cmd.edit()
+  end
+end
 return T

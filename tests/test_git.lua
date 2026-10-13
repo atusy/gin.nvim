@@ -37,4 +37,27 @@ T["timed out commands report failure"] = function()
   )
   MiniTest.expect.equality(result.code, 124)
 end
+T["processors receive Git stdout in the repository directory"] = function()
+  vim.fn.writefile({ "hello" }, root .. "/file")
+  local result = require("gin.git").run(
+    { "status", "--short" },
+    { cwd = root, processor = { "tr", "a-z", "A-Z" } }
+  )
+  MiniTest.expect.equality(result.stdout, "?? FILE\n")
+  result = require("gin.git").run({ "status", "--short" }, { cwd = root, processor = { "pwd" } })
+  MiniTest.expect.equality(vim.trim(result.stdout), vim.uv.fs_realpath(root))
+end
+T["processor errors propagate and failed Git commands skip processors"] = function()
+  MiniTest.expect.error(function()
+    require("gin.git").run(
+      { "status" },
+      { cwd = root, processor = { "sh", "-c", "echo processor-failed >&2; exit 7" } }
+    )
+  end, "processor exited 7: processor%-failed")
+  local result = require("gin.git").run(
+    { "not-a-git-command" },
+    { cwd = root, processor = { "does-not-exist" }, check = false }
+  )
+  MiniTest.expect.equality(result.stderr:find("not%-a%-git%-command") ~= nil, true)
+end
 return T
