@@ -212,4 +212,29 @@ T["blame history restores filenames and positions in both directions"] = functio
     end
   end
 end
+T["new blame selections truncate forward history and failures preserve it"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  require("gin.blame").switch_commit()
+  require("gin.blame").navigate_history("older")
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").switch_commit()
+  local history = vim.b.gin_blame_history
+  MiniTest.expect.equality(#history, 3)
+  MiniTest.expect.equality(history[3].commitish, first)
+  require("gin.blame").navigate_history("newer")
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(nav)).params.commitish,
+    first
+  )
+  MiniTest.expect.error(function()
+    require("gin.blame").switch_commit()
+  end, "git exited")
+  MiniTest.expect.equality(vim.b.gin_blame_history, history)
+  MiniTest.expect.equality(vim.b.gin_blame_history_index, 3)
+  require("gin.blame").navigate_history("older")
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 2)
+end
 return T
