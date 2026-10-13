@@ -17,7 +17,7 @@ end
 
 function M.read(buf, name)
   local parsed = uri.parse(name)
-  local args = { "branch", "--list", "--no-color" }
+  local args = { "branch", "--list", "--color=always" }
   local format
   for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
     if arg:sub(1, 9) == "--format=" then

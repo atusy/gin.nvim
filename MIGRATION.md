@@ -631,3 +631,10 @@ Staging that filtered selection affects only the literal file. These cases
 already pass with the existing parser; no command implementation change was
 needed. The pinned status flag list and denops/std v7.0.0 short-flag parser
 were inspected during this audit.
+
+GinBranch now enables color output before user flags so %(color:...) atoms in
+custom formats render as highlights, as in the pinned buffer executor path.
+A fixture checks color spans across reload, selection-driven branch switching,
+explicit --no-color and unchanged repository configuration. Native default
+branch layout/color parity remains under audit; metadata stays independent of
+the formatted display.

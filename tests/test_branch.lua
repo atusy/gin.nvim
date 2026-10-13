@@ -474,4 +474,22 @@ T["branch decoding options survive reload and preserve switch targets"] = functi
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), commit)
 end
+T["custom branch colors preserve switch targets and explicit monochrome"] = function()
+  H.git(root, "config", "color.branch", "never")
+  local format = "--format=%(color:blue)%(refname:short)%(color:reset)"
+  vim.cmd("GinBranch " .. format)
+  local ns = vim.api.nvim_create_namespace("gin_ansi")
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "main", "topic" })
+    local marks = vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })
+    MiniTest.expect.equality(#marks, 2)
+    MiniTest.expect.equality(marks[2][4].hl_group, "GinColorF4")
+    vim.cmd.edit()
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+  vim.cmd("GinBranch --no-color " .. format)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
+  MiniTest.expect.equality(H.git(root, "config", "color.branch"), "never\n")
+end
 return T
