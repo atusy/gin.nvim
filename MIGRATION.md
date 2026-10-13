@@ -666,11 +666,14 @@ A fixture sets color.status=never and a custom untracked color, then verifies
 colored extmarks, plain visible text and unchanged config on open and reload.
 The full status suite consequently exercises action parsing with default colors.
 
-GinStatus no longer forces --untracked-files on every read. It now honors Git's
-configured visibility and default directory grouping, matching the pinned status
-argument list. A fixture checks grouped defaults, configured suppression on
-reload and explicit all-mode staging. The file-edit fixture requests all-mode
-explicitly because its subject is a file rather than an untracked directory.
+GinStatus does not force --untracked-files on every URI read: an explicit URI
+without visibility flags honors Git configuration and default directory grouping.
+The command entry point, however, supplies --untracked-files by default in the
+pinned status/command.ts before the URI reaches status/edit.ts. The earlier audit
+of only the reader missed this distinction. Lua now includes that command default
+in the URI, displaying individual untracked files even when Git configuration
+hides them. Separate fixtures cover flag-free URI reloads, command defaults,
+explicit no/normal/all overrides, and staging the selected nested file.
 
 Short status flag coverage now checks -u, -uno, -unormal and -uall on initial
 open and URI reload, plus the -- boundary before a literal -uall filename.

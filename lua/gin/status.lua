@@ -120,7 +120,7 @@ function M.command(opts)
     args,
     { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
   )
-  local flags, paths, path_mode = {}, {}, false
+  local flags, paths, path_mode = { ["untracked-files"] = "" }, {}, false
   local allowed =
     { "untracked-files", "ignore-submodules", "ignored", "renames", "no-renames", "find-renames" }
   for _, arg in ipairs(residue) do
