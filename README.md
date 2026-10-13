@@ -47,7 +47,8 @@ Currently implemented:
 - `:GinLog [flags] [revision] [-- paths...]` displays commit history. `<CR>`
   shows the selected commit; `yy` yanks its hash. Show actions support edit,
   split, vsplit, and tabedit destinations. Branch `log` actions open GinLog
-  at the selected ref with the same destination variants.
+  at the selected ref with the same destination variants. `cherry-pick` and
+  `revert` act on the selected commit; `:1`/`:2` variants select a merge parent.
 - `:GinTag [flags] [patterns...]` lists tags. `<CR>` shows the selected tag;
   `yy` yanks its name. Actions include `delete`, `switch:detach`, and
   `yank:commit`. `show:split`, `show:vsplit`, and `show:tabedit` choose the

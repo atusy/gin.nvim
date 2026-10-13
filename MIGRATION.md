@@ -45,7 +45,8 @@ to prove an action produces the intended Git state.
   worktree creation, orphan checkouts, command-driven refresh, event cleanup,
   merge ancestry, ff-only rejection, rebase replay/exec and instant-drop history.
 - `tests/test_log.lua`: history order, default/oneline/graph selection, revision
-  and path filters, reloads, show/yank actions and branch-to-log navigation.
+  and path filters, reloads, show/yank actions, branch-to-log navigation,
+  cherry-pick, ordinary revert and mainline revert.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -126,3 +127,8 @@ emoji handling still require implementation or compatibility checks.
 GinLog now displays history with revision/path filters, show/yank actions and
 command-driven refresh. Other commit actions, custom parsing, emoji/color and
 full option compatibility remain pending.
+
+GinLog cherry-pick/revert actions include parent-one/parent-two variants.
+Revert supplies --mainline only when selected, correcting the inverted condition
+in the pinned implementation. Tests use a fixture-local editor configuration;
+interactive editor proxy support is still pending.
