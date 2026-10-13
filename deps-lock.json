@@ -1,0 +1,4 @@
+{
+  "vim-gin": {"url": "https://github.com/lambdalisue/vim-gin", "commit": "24cce091cfa32c013bc53cf4ff8f721d6690cf24"},
+  "mini.nvim": {"url": "https://github.com/nvim-mini/mini.nvim", "commit": "0513ad9ada655a07af321c129b69dafaf9e63d80"}
+}
