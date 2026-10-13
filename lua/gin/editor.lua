@@ -37,7 +37,7 @@ function M.request(path)
       vim.b[buf].gin_editor_request = id
       vim.bo[buf].bufhidden, vim.bo[buf].swapfile = "hide", false
       local group = vim.api.nvim_create_augroup("gin_editor_" .. id, { clear = true })
-      local function finish(accept)
+      local function finish(accept, quitting)
         if accept then
           vim.api.nvim_buf_call(buf, function()
             vim.cmd.write()
@@ -48,7 +48,16 @@ function M.request(path)
         requests[id] = { done = true, accepted = accept }
         vim.api.nvim_del_augroup_by_id(group)
         vim.b[buf].gin_editor_request = nil
-        vim.api.nvim_buf_delete(buf, { force = true })
+        local function wipe()
+          if vim.api.nvim_buf_is_valid(buf) then
+            vim.api.nvim_buf_delete(buf, { force = true })
+          end
+        end
+        if quitting then
+          vim.schedule(wipe)
+        else
+          wipe()
+        end
       end
       vim.api.nvim_buf_create_user_command(buf, "Apply", function()
         finish(true)
@@ -56,6 +65,22 @@ function M.request(path)
       vim.api.nvim_buf_create_user_command(buf, "Cancel", function()
         finish(false)
       end, {})
+      vim.api.nvim_create_autocmd("QuitPre", {
+        group = group,
+        buffer = buf,
+        nested = true,
+        callback = function()
+          if
+            vim.g.gin_proxy_apply_without_confirm and vim.g.gin_proxy_apply_without_confirm ~= 0
+          then
+            finish(true, true)
+          else
+            local answer =
+              vim.fn.input({ prompt = "Do you want to apply changes? [Y/n] ", cancelreturn = "no" })
+            finish(answer == "" or vim.tbl_contains({ "y", "ye", "yes" }, answer:lower()), true)
+          end
+        end,
+      })
       vim.api.nvim_create_autocmd("BufWipeout", {
         group = group,
         buffer = buf,

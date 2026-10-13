@@ -236,6 +236,12 @@ file and releases Git, while Cancel returns failure. A real commit fixture
 verifies the edited message and committed content. The editor opener/disable
 settings are supported. Unlike the pinned global-environment proxy, this stage
 is scoped to asynchronous Gin children; synchronous calls, action/terminal
-integration, quit confirmation/aliases, askpass and client-disconnect lifecycle
+integration, editor aliases, askpass and client-disconnect lifecycle
 audits remain pending. Cancellation is verified to reject the commit, clear the
 draft message and retain staged content.
+
+Editor QuitPre handling now asks whether to apply, or applies automatically with
+g:gin_proxy_apply_without_confirm. Cleanup is deferred until the quit operation
+finishes so it does not close a different tab. A real commit verifies automatic
+apply-on-quit. Explicit prompt answers, failed writes and whole-editor shutdown
+still need lifecycle coverage.

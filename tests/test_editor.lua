@@ -14,6 +14,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.g.gin_proxy_apply_without_confirm = nil
       vim.cmd("silent! tabonly!")
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
@@ -79,5 +80,28 @@ T["Cancel rejects the commit and leaves staged content intact"] = function()
   )
   MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/.git/COMMIT_EDITMSG"), {})
+end
+T["quit applies a Git editor when confirmation is disabled"] = function()
+  vim.g.gin_proxy_apply_without_confirm = 1
+  local process = require("gin.command").execute({
+    fargs = { "commit" },
+    smods = { silent = true, emsg_silent = true },
+  })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "applied on quit" })
+  vim.cmd.quit()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "applied on quit\n")
 end
 return T

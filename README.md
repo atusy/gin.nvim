@@ -151,6 +151,7 @@ for plain output.
 Asynchronous `:Gin commit` opens Git's editor file in a new tab. Use buffer-local
 `:Apply` to write it and continue Git, or `:Cancel` to reject it. Set
 `g:gin_proxy_editor_opener` to choose another supported opener or
-`g:gin_proxy_disable_editor = 1` to retain Git's configured editor. Quit-time
-confirmation, terminal inheritance, askpass and synchronous/action integration
-are still being ported.
+`g:gin_proxy_disable_editor = 1` to retain Git's configured editor. Quitting asks
+whether to apply; `g:gin_proxy_apply_without_confirm = 1` applies without asking.
+Terminal inheritance, askpass and synchronous/action integration are still being
+ported.
