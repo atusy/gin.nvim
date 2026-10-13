@@ -36,9 +36,13 @@ function M.read(buf, name)
   local boundary = vim.fn.sha256(vim.fn.tempname())
   args[#args + 1] = "--format=%x00" .. boundary .. "%x00%gd%x00%H%x00" .. format
   local rows, lines = {}, {}
-  local records = vim.split(git.run(args, { cwd = parsed.root }).stdout, "\0" .. boundary .. "\0", {
-    plain = true,
-  })
+  local records = vim.split(
+    git.run(args, { cwd = parsed.root, progress = true }).stdout,
+    "\0" .. boundary .. "\0",
+    {
+      plain = true,
+    }
+  )
   for i = 2, #records do
     local stash, commit, display = records[i]:match("^([^%z]+)%z([^%z]+)%z(.*)\n$")
     assert(stash and commit and display, "Invalid stash record")

@@ -38,7 +38,7 @@ function M.read(buf, name)
   local args = kind == "reflog" and { "reflog", "show" } or { "log" }
   vim.list_extend(args, { "--decorate=short", "--color=always" })
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  local output = require("gin.git").run(args, { cwd = parsed.root }).stdout
+  local output = require("gin.git").run(args, { cwd = parsed.root, progress = true }).stdout
   require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   action.setup(buf, M.candidates)

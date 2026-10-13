@@ -59,7 +59,7 @@ function M.read(buf, name)
     .. (format or "")
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
-  local output = git.run(args, { cwd = parsed.root }).stdout
+  local output = git.run(args, { cwd = parsed.root, progress = true }).stdout
   local colors = {}
   local defaults = {
     current = "green",

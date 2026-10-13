@@ -838,3 +838,11 @@ the null stdout indicators in the pinned `command/edit/edit.ts` and
 `command/edit/read.ts`. Real Git trace output verifies delivery on both paths
 without echoing blob contents, while asserting the loaded content and restored
 editor options. Index writes and other executors still need a streaming audit.
+
+Diff, log, reflog, branch, tag, stash and status buffer reads now display stderr
+through the same progress lifecycle. Their pinned edit executors all delegate
+to `command/buffer/edit.ts`, which defaults to stderr-only progress. Seven real
+Git trace fixtures verify the corresponding commands are displayed, listing
+payload stays in the buffer, and editor options are restored. Shared diff/tag
+output helpers take an explicit progress option so their FileReadCmd paths keep
+their existing behavior pending the separate insertion audit.

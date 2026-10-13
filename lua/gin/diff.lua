@@ -2,7 +2,7 @@ local uri = require("gin.uri")
 local buffer = require("gin.buffer")
 local M = {}
 
-function M.output(name)
+function M.output(name, progress)
   local parsed = uri.parse(name)
   local args = { "diff", "--color=always" }
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
@@ -17,12 +17,15 @@ function M.output(name)
   end
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  return require("gin.git").run(args, { cwd = parsed.root, processor = parsed.params.processor }).stdout,
+  return require("gin.git").run(
+    args,
+    { cwd = parsed.root, processor = parsed.params.processor, progress = progress }
+  ).stdout,
     parsed.root
 end
 
 function M.read(buf, name)
-  local output, root = M.output(name)
+  local output, root = M.output(name, true)
   buffer.replace_output(buf, output, root, "gin-diff", uri.parse(name).params)
   vim.bo[buf].syntax = "diff"
   require("gin.diffjump").setup(buf)

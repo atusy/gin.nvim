@@ -14,7 +14,7 @@ local function candidates(buf, range)
   return selected
 end
 
-local function output(parsed)
+local function output(parsed, progress)
   local args = { "tag", "--list", "--color=never" }
   local format = "%(objectname:short) %(refname:short) %(creatordate:short) %(subject)"
   for _, flag in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
@@ -33,9 +33,13 @@ local function output(parsed)
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
   local rows, lines = {}, {}
-  local records = vim.split(git.run(args, { cwd = parsed.root }).stdout, "\0" .. boundary .. "\0", {
-    plain = true,
-  })
+  local records = vim.split(
+    git.run(args, { cwd = parsed.root, progress = progress }).stdout,
+    "\0" .. boundary .. "\0",
+    {
+      plain = true,
+    }
+  )
   for i = 2, #records do
     local tag, commit, display = records[i]:match("^([^%z]+)%z([^%z]+)%z(.*)\n$")
     assert(tag and commit and display, "Invalid tag record")
@@ -54,7 +58,7 @@ end
 
 function M.read(buf, name)
   local parsed = uri.parse(name)
-  local text, rows = output(parsed)
+  local text, rows = output(parsed, true)
   require("gin.buffer").replace_output(buf, text, parsed.root, "gin-tag", parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_tags = rows

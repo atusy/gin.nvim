@@ -67,7 +67,8 @@ function M.read(buf, name)
   end
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  local branch, entries, prefixes = M.parse(git.run(args, { cwd = parsed.root }).stdout)
+  local branch, entries, prefixes =
+    M.parse(git.run(args, { cwd = parsed.root, progress = true }).stdout)
   local lines = { branch or "## HEAD" }
   for _, entry in ipairs(entries) do
     entry.line = #lines + 1
