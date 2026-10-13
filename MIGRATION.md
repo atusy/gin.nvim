@@ -200,3 +200,10 @@ refreshes existing panes; unloading a pane removes its companions after the
 operation settles so reload does not trigger cleanup. Tests cover all three
 close paths and retention of an unrelated file buffer. Restoring missing panes
 from an independently opened navigation URI remains unaudited.
+
+Lua branch/traffic/worktree components now publish cached strings asynchronously
+and emit debounced GinComponentPost events on changes. A generation check ignores
+stale results after context changes. Tests currently prove ASCII/Unicode output
+for a repository with diverged upstream history and the published worktree path.
+Detached/unborn/no-upstream states, repository switching and lifecycle races still
+need direct coverage; legacy Vimscript component function names are not installed.

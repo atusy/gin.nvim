@@ -132,3 +132,12 @@ The rewrite is not a complete replacement yet. Other views and actions,
 interactive editor/askpass integration, color decorations, and components remain
 in the migration checklist. Tests currently run locally on Neovim 0.13 nightly;
 the stated minimum version has not yet been exercised.
+
+Statusline components are available as Lua functions:
+
+- `require("gin.component.branch").ascii()` / `.unicode()` show the branch and upstream.
+- `require("gin.component.traffic").ascii()` / `.unicode()` show ahead/behind counts.
+- `require("gin.component.worktree").name()` / `.full()` show the repository path.
+
+They return cached strings and update asynchronously on buffer/directory changes
+and `GinCommandPost`. Listen for `User GinComponentPost` to redraw your statusline.
