@@ -91,6 +91,28 @@ T["status chaperon opens the selected conflict in a new tab"] = function()
   MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
 end
+T["status chaperon honors persistent pane settings through conflict resolution"] = function()
+  vim.cmd.GinStatus()
+  local status = vim.api.nvim_get_current_buf()
+  local tabs = #vim.api.nvim_list_tabpages()
+  local previous = vim.g.gin_chaperon_persistent_args
+  vim.g.gin_chaperon_persistent_args = { "++no-ours", "++opener=split" }
+  local ok, err = pcall(function()
+    require("gin.action").call(status, "chaperon:both", { 2, 2 })
+    MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    vim.api.nvim_win_set_cursor(0, { 2, 0 })
+    vim.api.nvim_feedkeys("do", "mx", false)
+    vim.cmd.write()
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "before", "theirs", "after" })
+    MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged") ~= "", true)
+    vim.cmd("Gin ++wait add -- %:p")
+    MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged"), "")
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"), "before\ntheirs\nafter\n")
+  end)
+  vim.g.gin_chaperon_persistent_args = previous
+  assert(ok, err)
+end
 T["status theirs action resolves using its sole side"] = function()
   vim.cmd.GinStatus()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "chaperon:theirs", { 2, 2 })

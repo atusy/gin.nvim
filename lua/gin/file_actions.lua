@@ -99,11 +99,14 @@ function M.setup(buf, gather)
       local root = vim.b[target].gin_worktree
       local entries = gather(target, range)
       for _, entry in ipairs(entries) do
-        require("gin.chaperon").open(root, entry.path, {
-          opener = "tabedit",
-          ["no-ours"] = variant == "theirs",
-          ["no-theirs"] = variant == "ours",
-        })
+        local args = { "++worktree=" .. root, "++opener=tabedit" }
+        if variant == "theirs" then
+          args[#args + 1] = "++no-ours"
+        elseif variant == "ours" then
+          args[#args + 1] = "++no-theirs"
+        end
+        args[#args + 1] = root .. "/" .. entry.path
+        require("gin.chaperon").command({ fargs = args, smods = {} })
       end
     end)
   end

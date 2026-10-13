@@ -736,3 +736,11 @@ that persistent ++no-head yields two panes, the explicit tab opener overrides
 a persistent split opener, and applying one hunk changes only that part of the
 index while preserving the working file. The path remains anchored to the
 selected repository even when invoked from a subdirectory.
+
+Chaperon file actions likewise dispatch through GinChaperon's command handler,
+following action/chaperon.ts. A real merge-conflict fixture applies persistent
+++no-ours through the both action, verifies the explicit tab opener overrides
+a persistent split opener, resolves from the remaining theirs pane, then checks
+that only explicit staging clears unmerged index entries. The resulting staged
+blob is asserted. This completes the direct file edit/diff/patch/chaperon
+configuration-path fixes; other action families remain under audit.
