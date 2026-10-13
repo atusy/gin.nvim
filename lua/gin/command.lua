@@ -75,17 +75,19 @@ function M.execute(opts)
     M.parse(opts.fargs, { "wait", "worktree", "processor", "enc", "encoding", "ff", "fileformat" })
   options.eventignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
   local root = require("gin.worktree").current(options.worktree)
-  if options.wait then
-    local result = require("gin.git").run(args, { cwd = root, processor = options.processor })
-    M.finish(result, options, opts.smods)
-    return result
-  end
+  local completed, failure, cancelled, running
   local function report(message)
-    if not opts.smods.emsg_silent then
+    if options.wait then
+      failure = message
+    elseif not opts.smods.emsg_silent then
       vim.notify(message, vim.log.levels.ERROR)
     end
   end
   local function finish(result, source)
+    if cancelled then
+      return
+    end
+    completed = result
     if opts.on_exit then
       opts.on_exit(result)
     end
@@ -93,7 +95,10 @@ function M.execute(opts)
       report(("%s exited %d: %s"):format(source, result.code, vim.trim(result.stderr or "")))
       return
     end
-    M.finish(result, options, opts.smods)
+    local ok, err = pcall(M.finish, result, options, opts.smods)
+    if not ok then
+      report(tostring(err))
+    end
   end
   local env = require("gin.editor").environment()
   local indicator = not opts.smods.silent and require("gin.indicator").open() or nil
@@ -111,12 +116,15 @@ function M.execute(opts)
       if indicator then
         indicator.close()
       end
+      if cancelled then
+        return
+      end
       if result.code ~= 0 or not options.processor or options.processor == "" then
         finish(result, "git")
         return
       end
       local ok, err = pcall(function()
-        vim.system(
+        running = vim.system(
           require("gin.uri").split(options.processor),
           {
             cwd = root,
@@ -138,6 +146,27 @@ function M.execute(opts)
       indicator.close()
     end
     error(process, 0)
+  end
+  if options.wait then
+    running = process
+    -- Process scheduled callbacks and editor RPCs while the caller waits.
+    local done = vim.wait(2147483647, function()
+      return completed ~= nil or failure ~= nil
+    end, 10)
+    if not done then
+      cancelled = true
+      if not running:is_closing() then
+        running:kill(15)
+      end
+      if indicator then
+        indicator.close()
+      end
+      error("Gin wait interrupted", 0)
+    end
+    if failure then
+      error(failure, 0)
+    end
+    return completed
   end
   return process
 end

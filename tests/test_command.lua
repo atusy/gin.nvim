@@ -211,6 +211,31 @@ for _, view in ipairs({ "GinDiff", "GinLog --oneline" }) do
     MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "sub changed" })
   end
 end
+T["Gin wait displays progress while Git is still running"] = function()
+  local echo, live = vim.api.nvim_echo, false
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.api.nvim_echo = function(chunks, history)
+    if not history and chunks[1][1] == "waiting" then
+      live = true
+      vim.fn.writefile({}, root .. "/.git/release")
+    end
+  end
+  local ok, result = pcall(require("gin.command").execute, {
+    fargs = {
+      "++wait",
+      "-c",
+      [[alias.progress=!printf 'waiting\n'; n=0; while test ! -f .git/release; do n=$((n+1)); test "$n" -lt 200 || exit 1; sleep 0.01; done; printf 'finished\n']],
+      "progress",
+    },
+    smods = {},
+  })
+  vim.api.nvim_echo = echo
+  MiniTest.expect.equality(ok, true)
+  MiniTest.expect.equality(live, true)
+  MiniTest.expect.equality(result.stdout, "waiting\nfinished\n")
+  MiniTest.expect.equality(events, 1)
+  MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+end
 T["Gin displays progress before exit and retains final output"] = function()
   local echo, output = vim.api.nvim_echo, {}
   local more, height = vim.o.more, vim.o.cmdheight

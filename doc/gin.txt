@@ -20,7 +20,8 @@ COMMANDS                                                        *gin-commands*
 
 :Gin [++wait] [++worktree={path}] {git-arguments}                       *:Gin*
     Execute Git asynchronously and display live output. :silent suppresses
-    progress. ++wait waits synchronously for completion. Successful commands
+    progress. ++wait waits for completion while servicing proxy requests and
+    displaying progress. Successful commands
     emit |GinCommandPost|. ++processor={command} transforms stdout; processor
     failure prevents the success event.
 

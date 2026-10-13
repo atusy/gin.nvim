@@ -644,3 +644,11 @@ color.ui=always, explicit --color=always and --no-color, sorted custom formats
 across reload, and deletion of the selected tag. The existing implementation
 passes without changes; unlike GinBranch, the pinned tag executor explicitly
 opts out of forced color settings. Repository color configuration is preserved.
+
+Gin ++wait now shares the asynchronous Git execution path, including editor
+and askpass environment, live output, and postprocessing. Its wait processes
+scheduled callbacks and RPC requests instead of blocking them; Git and processor
+errors still propagate to the caller without a success event. Fixtures verify
+a real commit accepted through the editor proxy while waiting and a Git command
+that requires receipt of its progress output before it can finish. User-driven
+interactive editor input during ++wait remains unverified.

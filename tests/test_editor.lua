@@ -56,6 +56,30 @@ T["Gin commit waits for Apply and records the edited message"] = function()
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message from Neovim\n")
   MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
 end
+T["Gin wait services editor requests before returning the commit result"] = function()
+  local timer = vim.uv.new_timer()
+  timer:start(
+    10,
+    10,
+    vim.schedule_wrap(function()
+      if vim.b.gin_editor_request then
+        timer:stop()
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { "message while waiting" })
+        vim.cmd.Apply()
+      end
+    end)
+  )
+  local ok, result = pcall(require("gin.command").execute, {
+    fargs = { "++wait", "commit" },
+    smods = { silent = true },
+  })
+  timer:stop()
+  timer:close()
+  MiniTest.expect.equality(ok, true)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message while waiting\n")
+  MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+end
 T["synchronous editor failure preserves the index without a success event"] = function()
   local previous = vim.g.gin_proxy_disable_editor
   vim.g.gin_proxy_disable_editor = 1
