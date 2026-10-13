@@ -26,10 +26,12 @@ end
 
 function M.read(buf, name)
   local parsed = uri.parse(name)
-  local args = { "log", "--decorate=short", "--color=never" }
+  local kind = parsed.scheme == "ginreflog" and "reflog" or "log"
+  local args = kind == "reflog" and { "reflog", "show" } or { "log" }
+  vim.list_extend(args, { "--decorate=short", "--color=never" })
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
   local output = require("gin.git").run(args, { cwd = parsed.root }).stdout
-  require("gin.buffer").replace_output(buf, output, parsed.root, "gin-log", parsed.params)
+  require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   action.setup(buf)
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
@@ -144,7 +146,7 @@ function M.read(buf, name)
     end
     vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
   end)
-  local group = vim.api.nvim_create_augroup("gin_log_" .. buf, { clear = true })
+  local group = vim.api.nvim_create_augroup("gin_" .. kind .. "_" .. buf, { clear = true })
   vim.api.nvim_create_autocmd("User", {
     group = group,
     pattern = "GinCommandPost",
@@ -166,7 +168,10 @@ function M.read(buf, name)
       vim.api.nvim_del_augroup_by_id(group)
     end,
   })
-  if not vim.g.gin_log_disable_default_mappings or vim.g.gin_log_disable_default_mappings == 0 then
+  if
+    not vim.g["gin_" .. kind .. "_disable_default_mappings"]
+    or vim.g["gin_" .. kind .. "_disable_default_mappings"] == 0
+  then
     for key, name in pairs({
       a = "choice",
       ["."] = "repeat",
@@ -188,7 +193,7 @@ end
 function M.open(root, args, options)
   options = options or {}
   return require("gin.buffer").open(
-    uri.format("ginlog", root, {
+    uri.format("gin" .. (options.kind or "log"), root, {
       enc = options.enc or options.encoding,
       ff = options.ff or options.fileformat,
     }, vim.json.encode(args)),
@@ -196,14 +201,18 @@ function M.open(root, args, options)
   )
 end
 
-function M.command(opts)
-  local args = vim.deepcopy(vim.g.gin_log_persistent_args or {})
-  vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_log_default_args or {}) or opts.fargs)
+function M.command(opts, kind)
+  kind = kind or "log"
+  local args = vim.deepcopy(vim.g["gin_" .. kind .. "_persistent_args"] or {})
+  vim.list_extend(
+    args,
+    #opts.fargs == 0 and (vim.g["gin_" .. kind .. "_default_args"] or {}) or opts.fargs
+  )
   local options, residue = require("gin.command").parse(
     args,
     { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
   )
-  options.bang, options.smods = opts.bang, opts.smods
+  options.bang, options.smods, options.kind = opts.bang, opts.smods, kind
   return M.open(require("gin.worktree").current(options.worktree), residue, options)
 end
 

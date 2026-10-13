@@ -168,4 +168,21 @@ T["instant fixup folds staged changes into a root commit"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
   MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
 end
+T["reflog exposes commits removed from ordinary history and restores them"] = function()
+  H.git(root, "reset", "--hard", first)
+  vim.cmd.GinReflog()
+  MiniTest.expect.equality(vim.bo.filetype, "gin-reflog")
+  local rows = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 999 })
+  MiniTest.expect.equality(second:sub(1, #rows[2].commit), rows[2].commit)
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "reset:hard", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+end
+T["reflog ref selection and limit survive URI reload"] = function()
+  vim.cmd("GinReflog -n1 refs/heads/main")
+  vim.cmd.edit()
+  local rows = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 999 })
+  MiniTest.expect.equality(#rows, 1)
+  MiniTest.expect.equality(second:sub(1, #rows[1].commit), rows[1].commit)
+end
 return T
