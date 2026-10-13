@@ -1,4 +1,42 @@
 local T = MiniTest.new_set()
+for _, case in ipairs({
+  { 1, 22, "bold" },
+  { 3, 23, "italic" },
+  { 4, 24, "underline" },
+  { 7, 27, "reverse" },
+  { 9, 29, "strikethrough" },
+}) do
+  T["SGR " .. case[3] .. " resets independently of foreground color"] = function()
+    local plain, marks = require("gin.ansi").parse({
+      ("\27[31;%dmA\27[%dmB\27[39mC"):format(case[1], case[2]),
+    })
+    MiniTest.expect.equality(plain, { "ABC" })
+    MiniTest.expect.equality(#marks, 2)
+    local active = vim.api.nvim_get_hl(0, { name = marks[1][4], link = false })
+    local reset = vim.api.nvim_get_hl(0, { name = marks[2][4], link = false })
+    MiniTest.expect.equality(active[case[3]], true)
+    MiniTest.expect.equality(reset[case[3]], nil)
+    MiniTest.expect.equality({ active.ctermfg, reset.ctermfg }, { 1, 1 })
+    MiniTest.expect.equality({ marks[1][2], marks[1][3], marks[2][2], marks[2][3] }, { 0, 1, 1, 2 })
+  end
+end
+T["dim uses Comment and intensity reset restores the retained color without bold"] = function()
+  local plain, marks = require("gin.ansi").parse({ "\27[31;1;2mA\27[22mB\27[mC" })
+  MiniTest.expect.equality(plain, { "ABC" })
+  MiniTest.expect.equality(#marks, 2)
+  MiniTest.expect.equality(marks[1][4], "Comment")
+  local restored = vim.api.nvim_get_hl(0, { name = marks[2][4], link = false })
+  MiniTest.expect.equality(restored.ctermfg, 1)
+  MiniTest.expect.equality(restored.bold, nil)
+end
+T["unsupported and unknown SGR attributes leave supported attributes intact"] = function()
+  local plain, marks = require("gin.ansi").parse({ "\27[31;4mA\27[5;8;999mB\27[25;28mC\27[mD" })
+  MiniTest.expect.equality(plain, { "ABCD" })
+  MiniTest.expect.equality(#marks, 3)
+  for _, mark in ipairs(marks) do
+    MiniTest.expect.equality(mark[4], "GinColorF1Underline")
+  end
+end
 T["CSI stripping preserves ordinary text and non-CSI escape sequences"] = function()
   local text = "é\27]0;title\7\27[ 2K\27["
   MiniTest.expect.equality(require("gin.csi").strip(text), text)

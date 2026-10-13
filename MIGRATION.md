@@ -882,3 +882,12 @@ Fixtures cover erase/cursor/private/intermediate sequences, every streaming byte
 boundary and UTF-8 highlight columns. Non-CSI escapes and unmatched sequences
 remain literal, as in that parser. This does not establish complete SGR attribute
 or terminal-emulation parity.
+
+The SGR attribute audit now explicitly covers the five non-color styles rendered
+by upstream `highlightExprFromSgr`: bold, italic, underline, inverse and strike.
+Each has a runtime highlight assertion for activation and its independent reset
+while retaining foreground color. Further fixtures verify dim maps to Comment,
+intensity reset clears both dim and bold, and blink/conceal/unknown codes leave
+supported styling intact. Upstream parses blink/conceal but does not render them.
+These seven characterization cases pass without production changes; malformed
+and compound-reset sequences still need separate compatibility decisions.
