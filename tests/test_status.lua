@@ -413,4 +413,24 @@ T["status honors configured untracked visibility and explicit overrides"] = func
   require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
   MiniTest.expect.equality(H.git(root, "show", ":new/file"), "content\n")
 end
+T["short untracked flags survive reload and stop at the path separator"] = function()
+  vim.fn.mkdir(root .. "/new", "p")
+  vim.fn.writefile({ "nested" }, root .. "/new/file")
+  vim.fn.writefile({ "literal" }, root .. "/-uall")
+  for _, case in ipairs({
+    { "-uno", {} },
+    { "-unormal", { "?? -uall", "?? new/" } },
+    { "-uall", { "?? -uall", "?? new/file" } },
+    { "-u", { "?? -uall", "?? new/file" } },
+    { "-- -uall", { "?? -uall" } },
+  }) do
+    vim.cmd("GinStatus " .. case[1])
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "-uall\0")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/new/file"), { "nested" })
+end
 return T

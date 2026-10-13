@@ -31,10 +31,12 @@ COMMANDS                                                        *gin-commands*
 
 :GinStatus [options] [flags] [-- pathspecs]                       *:GinStatus*
     Display status using Git's untracked-file settings. Use --untracked-files=all
-    to list individual files inside untracked directories. << stages the
-    selected lines; >> unstages them. dd opens a smart diff, pp opens patch
-    panes, !! opens conflict panes, == stashes the
-    selection, <CR> opens the working file, and yy yanks its absolute path.
+    (or -uall) to list individual files inside untracked directories. << stages
+    the selected lines; >> unstages them. dd opens a smart diff, pp opens patch
+    panes, !! opens conflict panes, == stashes the selection, <CR> opens the
+    working file, and yy yanks its absolute path.
+    -uno hides untracked files; -unormal groups untracked directories. Put
+    option-like paths after --, for example :GinStatus -- -uall.
 
 :GinBranch [options] [flags] [patterns...]                       *:GinBranch*
     List branches. <CR> switches branches and yy yanks the branch name.

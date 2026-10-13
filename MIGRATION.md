@@ -624,3 +624,10 @@ configured visibility and default directory grouping, matching the pinned status
 argument list. A fixture checks grouped defaults, configured suppression on
 reload and explicit all-mode staging. The file-edit fixture requests all-mode
 explicitly because its subject is a file rather than an untracked directory.
+
+Short status flag coverage now checks -u, -uno, -unormal and -uall on initial
+open and URI reload, plus the -- boundary before a literal -uall filename.
+Staging that filtered selection affects only the literal file. These cases
+already pass with the existing parser; no command implementation change was
+needed. The pinned status flag list and denops/std v7.0.0 short-flag parser
+were inspected during this audit.
