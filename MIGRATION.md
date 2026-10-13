@@ -44,6 +44,8 @@ to prove an action produces the intended Git state.
   forced reset, orphan branches, cancellation, rename, linked-worktree moves,
   worktree creation, orphan checkouts, command-driven refresh, event cleanup,
   merge ancestry, ff-only rejection, rebase replay/exec and instant-drop history.
+- `tests/test_log.lua`: history order, default/oneline/graph selection, revision
+  and path filters, reloads, show/yank actions and branch-to-log navigation.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -107,7 +109,7 @@ become available. Audit every pinned command, option, mapping, event and compone
 before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
-actions, plus branch/worktree creation and moves. Log/browse and interactive rebase actions,
+actions, plus branch/worktree creation and moves. Browse and interactive rebase actions,
 complete option/display compatibility remain pending. Branch views refresh after
 GinCommandPost while preserving the current view.
 
@@ -120,3 +122,7 @@ using a fixture-local configuration; editor proxy integration remains pending.
 GinTag now provides listing, show/delete/switch/yank actions and command-driven
 refresh. Browse/echo, emoji show variants, custom format/parser options, encoding and
 emoji handling still require implementation or compatibility checks.
+
+GinLog now displays history with revision/path filters, show/yank actions and
+command-driven refresh. Other commit actions, custom parsing, emoji/color and
+full option compatibility remain pending.
