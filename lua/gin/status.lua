@@ -171,7 +171,7 @@ end
 
 function M.mappings(buf)
   local action = require("gin.action")
-  action.setup(buf)
+  action.setup(buf, M.candidates)
   for _, name in ipairs({ "stage", "unstage", "stage:intent-to-add", "unstage:intent-to-add" }) do
     action.define(buf, name, function(target, range)
       M.action(target, name, range)

@@ -43,4 +43,24 @@ T["aliases dispatch the target and help shows user mappings"] = function()
   MiniTest.expect.equality(help:find("capture:detail", 1, true), nil)
   MiniTest.expect.equality(action.help(buf, false):find("capture:detail", 1, true) ~= nil, true)
 end
+T["echo serializes selected candidates as JSON including escaped paths"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local selected = { { path = "line\nbreak", commit = "abcdef" } }
+  local observed_range
+  action.setup(buf, function(target, range)
+    MiniTest.expect.equality(target, buf)
+    observed_range = range
+    return selected
+  end)
+  local original, output = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    output = chunks[1][1]
+  end
+  local ok, err = pcall(action.call, buf, "echo", { 2, 3 })
+  vim.api.nvim_echo = original
+  assert(ok, err)
+  MiniTest.expect.equality(vim.json.decode(output), selected)
+  MiniTest.expect.equality(observed_range, { 2, 3 })
+end
 return T

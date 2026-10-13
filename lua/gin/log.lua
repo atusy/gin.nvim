@@ -33,7 +33,7 @@ function M.read(buf, name)
   local output = require("gin.git").run(args, { cwd = parsed.root }).stdout
   require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
-  action.setup(buf)
+  action.setup(buf, M.candidates)
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
     action.define(buf, "show:" .. opener, function(target, range)
       for _, row in ipairs(M.candidates(target, range)) do

@@ -49,7 +49,7 @@ function M.read(buf, name)
   end
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-branch")
   vim.b[buf].gin_branches = rows
-  action.setup(buf)
+  action.setup(buf, M.candidates)
   local group = vim.api.nvim_create_augroup("gin_branch_" .. buf, { clear = true })
   vim.api.nvim_create_autocmd("User", {
     group = group,

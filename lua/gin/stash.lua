@@ -25,7 +25,7 @@ function M.read(buf, name)
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-stash")
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_stashes = rows
-  action.setup(buf)
+  action.setup(buf, candidates)
   for _, variant in ipairs({ "apply", "apply:index", "pop", "pop:index", "drop" }) do
     action.define(buf, variant, function(target, range)
       local row = candidates(target, range)[1]

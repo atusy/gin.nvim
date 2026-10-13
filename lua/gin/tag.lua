@@ -27,7 +27,7 @@ function M.read(buf, name)
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-tag")
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_tags = rows
-  action.setup(buf)
+  action.setup(buf, candidates)
   local function run(args)
     require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
   end

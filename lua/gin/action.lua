@@ -85,7 +85,7 @@ function M.complete(lead)
   end, M.list(vim.api.nvim_get_current_buf()))
 end
 
-function M.setup(buf)
+function M.setup(buf, gather)
   if not actions[buf] then
     vim.api.nvim_create_autocmd("BufWipeout", {
       buffer = buf,
@@ -96,6 +96,13 @@ function M.setup(buf)
     })
   end
   actions[buf] = {}
+  if gather then
+    M.define(buf, "echo", function(target, range)
+      local selected = gather(target, range)
+      local output = #selected == 0 and "[]" or vim.json.encode(selected)
+      vim.api.nvim_echo({ { output, "None" } }, true, {})
+    end)
+  end
   M.define(buf, "choice", function(target, range)
     vim.ui.input(
       { prompt = "action: ", completion = "customlist,v:lua.require'gin.action'.complete" },
