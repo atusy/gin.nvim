@@ -55,14 +55,22 @@ function M.read(buf, name)
       end
     end)
   end
-  action.define(buf, "show", function(target, range)
-    for _, row in ipairs(candidates(target, range)) do
-      require("gin.buffer").open(
-        uri.format("gin", parsed.root, { filetype = "git" }, uri.join({ "show", row.tag })),
-        {}
-      )
-    end
-  end)
+  for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
+    action.define(buf, "show:" .. opener, function(target, range)
+      for _, row in ipairs(candidates(target, range)) do
+        require("gin.buffer").open(
+          uri.format(
+            "gin",
+            parsed.root,
+            { filetype = "git", diffjump = row.commit, difffold = "" },
+            uri.join({ "show", row.commit })
+          ),
+          { opener = opener }
+        )
+      end
+    end)
+  end
+  action.alias(buf, "show", "show:edit")
   for _, field in ipairs({ "tag", "commit" }) do
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}

@@ -14,6 +14,8 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.cmd("silent! tabonly!")
+      vim.cmd("silent! only!")
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
@@ -46,5 +48,37 @@ T["tag detach switches to the tagged commit"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "switch:detach", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), H.git(root, "rev-parse", "light"))
+end
+T["show split retains tag view and jumps to the shown revision"] = function()
+  vim.cmd("GinTag light")
+  local tag = vim.api.nvim_get_current_buf()
+  require("gin.action").call(tag, "show:split", { 1, 1 })
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+  MiniTest.expect.equality(vim.api.nvim_win_get_buf(vim.fn.bufwinid(tag)), tag)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local row
+  for i, line in ipairs(lines) do
+    if line == "+base" then
+      row = i
+    end
+  end
+  assert(row)
+  MiniTest.expect.equality(vim.fn.foldlevel(row), 1)
+  vim.api.nvim_win_set_cursor(0, { row, 0 })
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Plug>(gin-diffjump-smart)", true, false, true),
+    "mx",
+    false
+  )
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "base")
+  MiniTest.expect.equality(vim.bo.modifiable, false)
+end
+T["show tab opens the selected object in another tab"] = function()
+  vim.cmd("GinTag release")
+  local tabs = #vim.api.nvim_list_tabpages()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "show:tabedit", { 1, 1 })
+  MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+  local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(text:find("release notes", 1, true) ~= nil, true)
 end
 return T

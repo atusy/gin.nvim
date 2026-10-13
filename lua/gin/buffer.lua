@@ -51,6 +51,12 @@ function M.read(buf, name)
     { cwd = uri.root, processor = uri.params.processor }
   )
   M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
+  if uri.params.diffjump then
+    require("gin.diffjump").setup(buf)
+  end
+  if uri.params.difffold ~= nil then
+    require("gin.difffold").setup(buf)
+  end
 end
 
 function M.insert_output(buf, name, output)
@@ -92,6 +98,8 @@ function M.command(opts)
     "filetype",
     "monochrome",
     "processor",
+    "diffjump",
+    "difffold",
     "enc",
     "encoding",
     "ff",
@@ -102,6 +110,8 @@ function M.command(opts)
   local name = uri.format("gin", root, {
     filetype = options.filetype or "gin-buffer",
     processor = options.processor,
+    diffjump = options.diffjump,
+    difffold = options.difffold and "" or nil,
     enc = options.enc or options.encoding,
     ff = options.ff or options.fileformat,
   }, uri.join(args))

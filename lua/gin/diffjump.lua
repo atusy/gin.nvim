@@ -50,6 +50,9 @@ end
 
 local function revisions(parsed)
   local params = parsed.params
+  if params.diffjump then
+    return params.diffjump .. "^", params.diffjump
+  end
   local cached = params.cached ~= nil or params.staged ~= nil
   local rev = params.commitish or ""
   local old, new
