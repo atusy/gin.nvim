@@ -58,6 +58,31 @@ T["components asynchronously publish branch traffic and worktree values"] = func
   MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
   vim.api.nvim_del_autocmd(autocmd)
 end
+T["legacy statusline expressions use the Lua component cache"] = function()
+  local expression = "%{gin#component#branch#ascii()}|%{gin#component#traffic#ascii()}"
+  local function statusline()
+    return vim.api.nvim_eval_statusline(expression, {}).str
+  end
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return statusline() == "main -> origin/main|^1v1"
+        and vim.fn["gin#component#worktree#full"]() == vim.uv.fs_realpath(root)
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(vim.fn["gin#component#branch#unicode"](), "main → origin/main")
+  MiniTest.expect.equality(vim.fn["gin#component#traffic#unicode"](), "↑1↓1")
+  MiniTest.expect.equality(vim.fn["gin#component#worktree#name"](), vim.fs.basename(root))
+  MiniTest.expect.equality(vim.fn["gin#component#worktree#full"](), vim.uv.fs_realpath(root))
+  H.git(root, "switch", "-c", "legacy-topic")
+  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return statusline() == "legacy-topic|"
+    end, 10),
+    true
+  )
+end
 T["command events refresh no-upstream detached and unborn branches"] = function()
   local branch = require("gin.component.branch")
   local traffic = require("gin.component.traffic")

@@ -159,6 +159,10 @@ Statusline components are available as Lua functions:
 
 They return cached strings and update asynchronously on buffer/directory changes
 and `GinCommandPost`. Listen for `User GinComponentPost` to redraw your statusline.
+The original `gin#component#branch#ascii()` / `#unicode()`,
+`gin#component#traffic#ascii()` / `#unicode()`, and
+`gin#component#worktree#name()` / `#full()` functions are also available for
+existing Vimscript statusline expressions; they delegate to the same Lua cache.
 
 GinBuffer renders ANSI Git colors as Neovim highlights. Use `++monochrome` to
 skip forced Git coloring, especially with processors that transform raw text.

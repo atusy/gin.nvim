@@ -251,8 +251,12 @@ for a repository with diverged upstream history and the published worktree path.
 Command-event refresh covers detached, unborn and no-upstream branches; leaving
 a repository clears cached values. A controlled late Git response from a previous
 repository cannot replace the new context; disabling generation guards makes
-that regression test fail. Legacy Vimscript component function names are not
-installed.
+that regression test fail. The six public Vimscript component function names
+now delegate to these Lua implementations through minimal autoload wrappers.
+An integration fixture evaluates an actual legacy statusline expression,
+checks all six function results against a real diverged repository and verifies
+refresh after switching branches. These wrappers require no Denops runtime;
+internal component APIs and other legacy public APIs remain under audit.
 
 GinBuffer now forces Git color output by default and renders SGR attributes as
 Neovim highlights. `++monochrome` skips forced coloring and persists on reload.

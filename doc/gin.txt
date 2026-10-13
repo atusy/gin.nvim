@@ -256,6 +256,12 @@ Lua functions return cached strings and update asynchronously:
 
 Listen for |GinComponentPost| to redraw the statusline.
 
+Existing Vimscript statusline expressions can use these Lua-backed wrappers:
+    gin#component#branch#ascii() / gin#component#branch#unicode()
+    gin#component#traffic#ascii() / gin#component#traffic#unicode()
+    gin#component#worktree#name() / gin#component#worktree#full()
+They share the same asynchronous cache and events as the Lua functions.
+
 ==============================================================================
 EVENTS                                                             *gin-events*
 
