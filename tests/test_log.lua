@@ -577,4 +577,93 @@ for _, command in ipairs({ "cherry-pick", "revert" }) do
     assert(ok, err)
   end
 end
+
+for _, command in ipairs({ "cherry-pick", "revert" }) do
+  for _, recovery in ipairs({ "continue", "abort" }) do
+    T[command .. " conflict supports Gin " .. recovery] = function()
+      if command == "cherry-pick" then
+        H.git(root, "checkout", "-b", "target", first)
+      end
+      vim.fn.writefile({ "local version" }, root .. "/two")
+      H.git(root, "add", "two")
+      H.git(root, "commit", "-m", "local change")
+      local before = H.git(root, "rev-parse", "HEAD")
+      vim.cmd("GinLog --oneline " .. second)
+      local posts, message = 0, nil
+      local event = vim.api.nvim_create_autocmd("User", {
+        pattern = "GinCommandPost",
+        callback = function()
+          posts = posts + 1
+        end,
+      })
+      local notify = vim.notify
+      vim.notify = function(text)
+        message = text
+      end
+      local ok, err = pcall(function()
+        local process =
+          require("gin.action").call(vim.api.nvim_get_current_buf(), command, { 1, 1 })
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return message ~= nil
+          end, 10),
+          true
+        )
+        MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+        MiniTest.expect.equality(posts, 0)
+        MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), before)
+        local operation = command == "cherry-pick" and "CHERRY_PICK_HEAD" or "REVERT_HEAD"
+        MiniTest.expect.equality(H.git(root, "rev-parse", operation), second .. "\n")
+        MiniTest.expect.equality(H.git(root, "show", ":2:two"), "local version\n")
+        MiniTest.expect.equality(
+          H.git(root, "show", command == "cherry-pick" and ":3:two" or ":1:two"),
+          "second\n"
+        )
+        if recovery == "abort" then
+          vim.cmd("Gin " .. command .. " --abort")
+          MiniTest.expect.equality(
+            vim.wait(5000, function()
+              return posts == 1
+            end, 10),
+            true
+          )
+          MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), before)
+          MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "local version" })
+          MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+          MiniTest.expect.equality(vim.fn.filereadable(root .. "/.git/" .. operation), 0)
+          MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/sequencer"), 0)
+          return
+        end
+        vim.fn.writefile({ "resolved version" }, root .. "/two")
+        H.git(root, "add", "two")
+        vim.cmd("Gin " .. command .. " --continue")
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return vim.b.gin_editor_request ~= nil or posts == 1
+          end, 10),
+          true
+        )
+        if vim.b.gin_editor_request ~= nil then
+          vim.api.nvim_buf_set_lines(0, 0, -1, false, { "resolved " .. command })
+          vim.cmd.Apply()
+        end
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return posts == 1
+          end, 10),
+          true
+        )
+        MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), before)
+        MiniTest.expect.equality(H.git(root, "show", "HEAD:two"), "resolved version\n")
+        MiniTest.expect.equality(H.git(root, "show", "HEAD:one"), "first\n")
+        MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+        MiniTest.expect.equality(vim.fn.filereadable(root .. "/.git/" .. operation), 0)
+        MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/sequencer"), 0)
+      end)
+      vim.notify = notify
+      vim.api.nvim_del_autocmd(event)
+      assert(ok, err)
+    end
+  end
+end
 return T

@@ -299,3 +299,9 @@ credential fields through Git credential fill with terminal prompting disabled,
 use isolated dummy responses, and check the resulting parent, tree and status.
 They make no network requests. Ordinary pick/revert and mainline-one revert
 fixtures also wait for the returned process and check its exit status.
+
+Cherry-pick and revert recovery fixtures exercise real add/add and modify/delete
+conflicts. They check operation markers, index contents, unchanged HEAD and no
+success event after failure. Gin cherry-pick/revert --continue produces a child
+of the original HEAD with the resolved content; --abort restores the original
+files and HEAD. Both recovery paths clear operation state and emit the success event.
