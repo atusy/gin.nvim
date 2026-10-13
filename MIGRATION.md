@@ -1201,3 +1201,12 @@ argument escaping or stripping a dollar from GinEdit filenames. A real Git
 fixture reads a tracked filename containing a backslash and final dollar,
 reloads it, and inserts its contents with `:read` while preserving destination
 buffer options. Other command payload formats remain under audit.
+
+Legacy GinLog and GinReflog now restore flags and their commitish/ref selectors
+from URI parameters. GinLog's fragment is interpreted as a path array rather
+than Lua's argv array; filename expansion follows that same representation.
+Both view reads and `:read` use the restored arguments, while view decoration
+defaults retain upstream override ordering. Fixtures detach HEAD at a different
+commit, then verify the stored branch/path selection, full-hash formatting and
+limit, reloads, selected-commit show actions and insertion without changing the
+destination filetype. Other listing URI payloads and custom parsers remain open.

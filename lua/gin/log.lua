@@ -30,10 +30,47 @@ function M.candidates(buf, range)
   return result
 end
 
+local function arguments(parsed, display)
+  if not parsed.legacy then
+    return parsed.fragment and vim.json.decode(parsed.fragment) or {}
+  end
+  local args = {}
+  local selector = parsed.scheme == "ginreflog" and "ref" or "commitish"
+  local function flag(key)
+    local values = parsed.params[key]
+    for _, value in ipairs(type(values) == "table" and values or { values }) do
+      args[#args + 1] = (#key == 1 and "-" or "--")
+        .. key
+        .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
+    end
+  end
+  -- Upstream merges the decorate default before the supplied flag entries.
+  if display then
+    flag("decorate")
+  end
+  for _, key in ipairs(parsed.param_order) do
+    if key ~= selector and key ~= "emojify" and not (display and key == "decorate") then
+      flag(key)
+    end
+  end
+  local reflog = parsed.scheme == "ginreflog"
+  local revision = parsed.params[selector]
+  if revision then
+    args[#args + 1] = revision
+  end
+  if not reflog then
+    args[#args + 1] = "--"
+    for _, path in ipairs(parsed.fragment and vim.json.decode(parsed.fragment) or {}) do
+      args[#args + 1] = path:gsub("\\", "/")
+    end
+  end
+  return args
+end
+
 function M.insert(buf, name)
   local parsed = uri.parse(name)
   local args = parsed.scheme == "ginreflog" and { "reflog", "show" } or { "log" }
-  vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
+  vim.list_extend(args, arguments(parsed, false))
   local text = require("gin.git").run(args, { cwd = parsed.root, progress = "both" }).stdout
   require("gin.buffer").insert_output(buf, name, text)
 end
@@ -43,7 +80,7 @@ function M.read(buf, name)
   local kind = parsed.scheme == "ginreflog" and "reflog" or "log"
   local args = kind == "reflog" and { "reflog", "show" } or { "log" }
   vim.list_extend(args, { "--decorate=short", "--color=always" })
-  vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
+  vim.list_extend(args, arguments(parsed, true))
   local output = require("gin.git").run(args, { cwd = parsed.root, progress = true }).stdout
   require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
