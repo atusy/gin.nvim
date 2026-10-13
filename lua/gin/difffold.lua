@@ -1,4 +1,9 @@
-local M = {}
+local M = {
+  presets = {
+    ascii = { added = "[+]", deleted = "[-]", modified = "[.]", renamed = "[/]" },
+    nerdfont = { added = " ", deleted = " ", modified = " ", renamed = " " },
+  },
+}
 
 function M.sections(lines)
   local sections, current = {}, nil
@@ -60,12 +65,7 @@ function M.text()
   if deleted > 0 then
     stats[#stats + 1] = "-" .. deleted
   end
-  local prefixes = vim.tbl_extend("force", {
-    added = "[+]",
-    deleted = "[-]",
-    modified = "[.]",
-    renamed = "[/]",
-  }, vim.g.gin_difffold_prefixes or {})
+  local prefixes = vim.tbl_extend("force", M.presets.ascii, vim.g.gin_difffold_prefixes or {})
   return prefixes[kind] .. " " .. label .. " (" .. table.concat(stats, " ") .. ")"
 end
 

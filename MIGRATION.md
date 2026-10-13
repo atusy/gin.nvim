@@ -447,3 +447,9 @@ sorted selection after reload, multiline/NUL display, deduplicated deletion and
 deleting the selected remote ref through a custom display. Default layout
 alignment, other display flags and custom parse-pattern settings remain under
 audit.
+
+Diff fold prefix presets are published as g:gin#difffold#prefixes_ascii and
+g:gin#difffold#prefixes_nerdfont, with the pinned glyphs and spacing. Lua config
+can also use require('gin.difffold').presets. Integration fixtures select each
+published preset and check the rendered fold label; partial configuration still
+falls back to the ASCII values.

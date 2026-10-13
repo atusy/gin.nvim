@@ -292,4 +292,22 @@ T["custom slash prefixes preserve deleted-file markers"] = function()
   MiniTest.expect.equality(vim.bo.buftype, "acwrite")
   MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
 end
+for name, expected in pairs({
+  ascii = { added = "[+]", deleted = "[-]", modified = "[.]", renamed = "[/]" },
+  nerdfont = { added = " ", deleted = " ", modified = " ", renamed = " " },
+}) do
+  T["published fold prefix preset " .. name] = function()
+    local preset = vim.g["gin#difffold#prefixes_" .. name]
+    MiniTest.expect.equality(preset, expected)
+    local previous = vim.g.gin_difffold_prefixes
+    local ok, err = pcall(function()
+      vim.g.gin_difffold_prefixes = preset
+      vim.cmd("GinDiff -- sub/file")
+      vim.cmd("normal! zM")
+      MiniTest.expect.equality(vim.fn.foldtextresult(3), expected.modified .. " sub/file (+1 -1)")
+    end)
+    vim.g.gin_difffold_prefixes = previous
+    assert(ok, err)
+  end
+end
 return T

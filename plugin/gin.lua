@@ -2,6 +2,9 @@ if vim.g.loaded_gin then
   return
 end
 vim.g.loaded_gin = 1
+for name, prefixes in pairs(require("gin.difffold").presets) do
+  vim.g["gin#difffold#prefixes_" .. name] = prefixes
+end
 vim.api.nvim_create_user_command("Gin", function(opts)
   require("gin.command").execute(opts)
 end, { nargs = "*", bar = true })
