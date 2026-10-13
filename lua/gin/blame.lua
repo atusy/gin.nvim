@@ -116,6 +116,17 @@ function M.read(buf, name, output)
       { cwd = parsed.root }
     ).stdout
   local result = M.parse(output)
+  local encoding = parsed.params.enc or "utf-8"
+  local ff = parsed.params.ff or (output:find("\r\n", 1, true) and "dos" or "unix")
+  for _, line in ipairs(result.lines) do
+    -- Git metadata and paths are separate from the file's byte encoding.
+    if encoding ~= "utf-8" and encoding ~= "utf8" then
+      line.content = vim.fn.iconv(line.content, encoding, "utf-8")
+    end
+    if ff == "dos" then
+      line.content = line.content:gsub("\r$", "")
+    end
+  end
   local content, navlines, map, reverse, dividers = {}, {}, {}, {}, {}
   local previous
   local width = #tostring(#result.lines)
@@ -206,6 +217,10 @@ function M.read(buf, name, output)
       end,
     })
     if target ~= detail then
+      vim.bo[target].modifiable = true
+      vim.bo[target].fileencoding, vim.bo[target].fileformat = encoding, ff
+      vim.bo[target].modified = false
+      vim.bo[target].modifiable = false
       for _, sign in ipairs(signs[target]) do
         if sign.group ~= "gin_blame" then
           vim.fn.sign_place(sign.id, sign.group, sign.name, target, {
@@ -385,11 +400,18 @@ function M.read_nav(buf)
 end
 
 function M.command(opts)
-  local options, args = require("gin.command").parse(opts.fargs, { "worktree", "opener" })
+  local options, args = require("gin.command").parse(
+    opts.fargs,
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+  )
   assert(#args == 1 or #args == 2, "GinBlame expects [commitish] path")
   local root = require("gin.worktree").current(options.worktree)
   local path = require("gin.edit").path(root, vim.fn.fnamemodify(args[#args], ":p"))
-  local name = uri.format("ginblame", root, { commitish = #args == 2 and args[1] or nil }, path)
+  local name = uri.format("ginblame", root, {
+    commitish = #args == 2 and args[1] or nil,
+    enc = options.enc or options.encoding,
+    ff = options.ff or options.fileformat,
+  }, path)
   return buffer.open(
     name,
     { opener = options.opener or "tabedit", bang = opts.bang, smods = opts.smods }

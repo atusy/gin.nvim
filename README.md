@@ -112,8 +112,9 @@ Currently implemented:
   line to its source commit and historical filename; selecting that commit again
   visits its parent. `g:gin_blame_disable_default_mappings` disables the default
   key bindings. `<C-O>` and `<C-I>` move backward and forward through visited
-  revisions, restoring filenames and cursor positions. Encoding options and emoji
-  rendering are still being ported.
+  revisions, restoring filenames and cursor positions. `++enc`/`++encoding` and
+  `++ff`/`++fileformat` select file decoding and persist through navigation.
+  Emoji rendering is still being ported.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the

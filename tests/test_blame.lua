@@ -269,4 +269,29 @@ T["blame marks commit dividers and refreshes them after navigation"] = function(
     true
   )
 end
+T["blame retains encoding and fileformat options through reload and history"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) .. "\r", "second\r" }, root .. "/sub/file.lua")
+  H.git(root, "commit", "--author=José <jose@example.invalid>", "-am", "latin1 content")
+  vim.cmd("GinBlame ++enc=latin1 ++ff=dos file.lua")
+  local file = vim.b.gin_blame_file_bufnr
+  local function check()
+    MiniTest.expect.equality(vim.b[file].gin_blame_line_map[2].metadata.author, "José")
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(file, 0, -1, false),
+      { "", "café", "second" }
+    )
+    MiniTest.expect.equality(
+      { vim.bo[file].fileencoding, vim.bo[file].fileformat },
+      { "latin1", "dos" }
+    )
+  end
+  check()
+  vim.cmd.edit()
+  check()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").switch_commit()
+  check()
+  require("gin.blame").navigate_history("older")
+  check()
+end
 return T

@@ -192,8 +192,10 @@ tested. Back/forward history restores visited revisions, filenames and both pane
 cursors; selecting a new commit discards forward history after the current entry.
 Commit dividers use the Comment colors with strikethrough and refresh when the
 colorscheme changes. A dedicated sign group preserves unrelated plugin signs.
-Remaining blame work includes encoding/fileformat and emoji options, and broader
-parser/UI parity checks. Source/attribution reload now
+Encoding/fileformat options now persist in blame URIs through reload and history.
+A Latin-1/CRLF fixture verifies decoded source content while preserving UTF-8 Git
+author metadata. Multibyte encodings, BOMs, Mac line endings and raw URI cmdargs
+still need auditing. Emoji options and broader parser/UI parity checks remain. Source/attribution reload now
 refreshes existing panes; unloading a pane removes its companions after the
 operation settles so reload does not trigger cleanup. Tests cover all three
 close paths and retention of an unrelated file buffer. Restoring missing panes
