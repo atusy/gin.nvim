@@ -81,7 +81,6 @@ function M.read(buf, name)
           for _, row in ipairs(candidates(target, range)) do
             require("gin.buffer").open(
               uri.format("gin", parsed.root, {
-                filetype = "git",
                 diffjump = row.commit,
                 difffold = "",
                 emojify = emojify and "" or nil,

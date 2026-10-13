@@ -40,6 +40,7 @@ for _, view in ipairs({ "GinLog --oneline", "GinReflog --oneline", "GinTag", "Gi
         (opener == "split" or opener == "vsplit") and 2 or 1
       )
       for _ = 1, 2 do
+        MiniTest.expect.equality(vim.bo.filetype, "gin-buffer")
         local output = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
         MiniTest.expect.equality(output:find(commit, 1, true) ~= nil, true)
         MiniTest.expect.equality(output:find("✨ selected", 1, true) ~= nil, true)

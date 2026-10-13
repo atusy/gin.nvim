@@ -751,3 +751,10 @@ branch behind the current branch, applies --max-count=1, verifies the exact
 selected commit across reloads and checks explicit opener precedence. Named
 branches are passed as full refs to avoid Vim filename/option expansion;
 detached display labels use their recorded commit instead.
+
+Show actions from log/reflog, tag and stash views now retain GinBuffer's
+gin-buffer filetype instead of forcing git. This matches the pinned show action,
+which supplies diffjump/difffold but no filetype override, and allows the same
+FileType customizations as a normal GinBuffer. Existing opener/emojify fixtures
+now assert the filetype on open and reload across all four source views; their
+content and window-layout checks remain in place.
