@@ -199,6 +199,7 @@ function M.mappings(buf)
       ["<<"] = "stage",
       [">>"] = "unstage",
       ["=="] = "stash",
+      dd = "diff:smart",
       a = "choice",
       ["<CR>"] = "edit",
       ["."] = "repeat",

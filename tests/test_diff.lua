@@ -42,4 +42,12 @@ T["GinDiff compares an explicit revision range"] = function()
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
   MiniTest.expect.equality(content:find("working", 1, true), nil)
 end
+T["status smart diff selects the cached changes when both sides differ"] = function()
+  vim.cmd.GinStatus()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys("dd", "mx", false)
+  MiniTest.expect.equality(vim.bo.filetype, "gin-diff")
+  local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
+end
 return T

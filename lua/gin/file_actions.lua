@@ -53,6 +53,25 @@ function M.setup(buf, gather)
     action.alias(buf, "edit:" .. source, "edit:" .. source .. ":edit")
   end
   action.alias(buf, "edit", "edit:local")
+  for _, source in ipairs({ "local", "cached", "HEAD", "smart" }) do
+    for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
+      action.define(buf, "diff:" .. source .. ":" .. opener, function(target, range)
+        local root = vim.b[target].gin_worktree
+        local entries = gather(target, range)
+        for _, entry in ipairs(entries) do
+          local cached = source == "cached" or (source == "smart" and entry.xy:sub(1, 1) ~= " ")
+          require("gin.diff").open(root, {
+            opener = opener,
+            paths = { entry.path },
+            flags = cached and { cached = "" } or {},
+            commitish = source == "HEAD" and "HEAD" or nil,
+          })
+        end
+      end)
+    end
+    action.alias(buf, "diff:" .. source, "diff:" .. source .. ":edit")
+  end
+  action.alias(buf, "diff", "diff:smart")
   for _, spec in ipairs({ { "yank:path", "path" }, { "yank:path:orig", "orig_path" } }) do
     action.define(buf, spec[1], function(target, range)
       local values = {}
