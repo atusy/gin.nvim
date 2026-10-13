@@ -16,7 +16,7 @@ function M.candidates(buf, range)
   do
     local text = line:gsub("^[ *|\\/+%=<>%-]*", "")
     text = text:gsub("^commit [+%=<>%-]? ?", "")
-    local commit = text:match("^(%x+)%f[%X]") or text:match("^(%x+)$")
+    local commit = text:match("^([a-fA-F0-9]+)%f[^a-zA-Z0-9_]")
     if commit and #commit >= 4 then
       result[#result + 1] = { commit = commit }
     end

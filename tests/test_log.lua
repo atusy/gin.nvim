@@ -36,6 +36,13 @@ T["log preserves history order and yanks selected commits"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), entries[1].commit)
 end
+T["log does not select a hexadecimal prefix inside a display word"] = function()
+  vim.cmd("GinLog --format=%H_suffix")
+  local buf = vim.api.nvim_get_current_buf()
+  MiniTest.expect.equality(require("gin.log").candidates(buf, { 1, 99 }), {})
+  require("gin.action").call(buf, "reset:soft", { 2, 2 })
+  MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")), second)
+end
 for _, kind in ipairs({ "Log", "Reflog" }) do
   T[kind .. " reset actions stream progress while retaining the index and working tree"] = function()
     vim.cmd("Gin" .. kind .. " --oneline")

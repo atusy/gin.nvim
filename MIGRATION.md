@@ -999,3 +999,10 @@ Lua API without legacy Vimscript name shims.
 The handler is explicitly removed before `:edit`: Neovim 0.10 otherwise
 re-enters a Lua `once` callback during the nested BufEnter event. The same five
 fixtures pass on the minimum supported Neovim 0.10.0.
+
+The log/reflog candidate parser now requires the ASCII word boundary used by
+the pinned JavaScript parser, rather than accepting any non-hex character.
+For example, `%H_suffix` display rows no longer become actionable commit IDs.
+A real Git fixture verifies that a reset action on such a row leaves HEAD
+unchanged. This fixes the default boundary rule; custom regex overrides remain
+open in the configuration audit above.
