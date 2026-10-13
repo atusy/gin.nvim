@@ -129,7 +129,7 @@ argument syntax: escape spaces with backslashes; `%:p` expands the current file.
 Git processes currently have a 30-second timeout.
 
 The rewrite is not a complete replacement yet. Other views and actions,
-interactive editor/askpass integration, color decorations, and components remain
+interactive editor/askpass integration, full decoration support, and compatibility audits remain
 in the migration checklist. Tests currently run locally on Neovim 0.13 nightly;
 the stated minimum version has not yet been exercised.
 
@@ -141,3 +141,6 @@ Statusline components are available as Lua functions:
 
 They return cached strings and update asynchronously on buffer/directory changes
 and `GinCommandPost`. Listen for `User GinComponentPost` to redraw your statusline.
+
+GinBuffer renders ANSI Git colors as Neovim highlights. Use `++monochrome` to
+skip forced Git coloring, especially with processors that transform raw text.

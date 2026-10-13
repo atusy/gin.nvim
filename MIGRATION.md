@@ -10,7 +10,7 @@ scope, not proof of complete upstream parity.
 - [x] Pin upstream and mini.nvim; headless mini.test harness.
 - [x] Git process execution and worktree discovery (files, subdirectories, symlinks, linked worktrees).
 - [ ] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events.
-- [ ] GinBuffer: command output buffers, URI reads, reload and command binding.
+- [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
 - [ ] GinStatus: status display, path selection and all status actions.
 - [ ] GinBranch, GinTag: parsed views and ref actions.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
@@ -210,3 +210,10 @@ a repository clears cached values. A controlled late Git response from a previou
 repository cannot replace the new context; disabling generation guards makes
 that regression test fail. Legacy Vimscript component function names are not
 installed.
+
+GinBuffer now forces Git color output by default and renders SGR attributes as
+Neovim highlights. `++monochrome` skips forced coloring and persists on reload.
+The processor fixture uses monochrome because uppercase conversion also changes
+ANSI control sequences. Command-post binding belongs to candidate views in the
+pinned source, not GinBuffer; the checklist has been corrected. Extended color,
+attribute reset, Unicode byte-offset and colorscheme behavior still need audits.

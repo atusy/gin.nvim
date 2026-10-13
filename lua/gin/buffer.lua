@@ -33,8 +33,10 @@ function M.lines(output)
 end
 
 function M.replace_output(buf, output, root, filetype, options)
-  local lines, decoded = require("gin.edit").decode(output:gsub("\27%[[%d;]*m", ""), options or {})
-  M.replace(buf, lines, root, filetype)
+  local lines, decoded = require("gin.edit").decode(output, options or {})
+  local plain, marks = require("gin.ansi").parse(lines)
+  M.replace(buf, plain, root, filetype)
+  require("gin.ansi").apply(buf, marks)
   vim.bo[buf].modifiable = true
   for key, value in pairs(decoded) do
     vim.bo[buf][key] = value
@@ -46,10 +48,14 @@ end
 function M.read(buf, name)
   local uri = require("gin.uri").parse(name)
   assert(uri.fragment, "Gin buffer requires command arguments")
-  local result = require("gin.git").run(
-    require("gin.uri").split(uri.fragment),
-    { cwd = uri.root, processor = uri.params.processor }
-  )
+  local args = {}
+  if uri.params.monochrome == nil then
+    for _, key in ipairs({ "branch", "diff", "status", "ui" }) do
+      vim.list_extend(args, { "-c", "color." .. key .. "=always" })
+    end
+  end
+  vim.list_extend(args, require("gin.uri").split(uri.fragment))
+  local result = require("gin.git").run(args, { cwd = uri.root, processor = uri.params.processor })
   M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
   if uri.params.diffjump then
     require("gin.diffjump").setup(buf)
@@ -109,6 +115,7 @@ function M.command(opts)
   local uri = require("gin.uri")
   local name = uri.format("gin", root, {
     filetype = options.filetype or "gin-buffer",
+    monochrome = options.monochrome and "" or nil,
     processor = options.processor,
     diffjump = options.diffjump,
     difffold = options.difffold and "" or nil,
