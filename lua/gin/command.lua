@@ -92,7 +92,7 @@ function M.execute(opts)
       opts.on_exit(result)
     end
     if result.code ~= 0 then
-      report(("%s exited %d: %s"):format(source, result.code, vim.trim(result.stderr or "")))
+      report(require("gin.git").error_message(result, source))
       return
     end
     local ok, err = pcall(M.finish, result, options, opts.smods)

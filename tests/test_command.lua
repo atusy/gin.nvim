@@ -367,4 +367,29 @@ T["asynchronous commands retain eventignore all from dispatch"] = function()
   MiniTest.expect.equality(H.git(root, "config", "gin.event-test"), "written\n")
   MiniTest.expect.equality(events, 0)
 end
+for _, wait in ipairs({ true, false }) do
+  T[(wait and "waiting" or "asynchronous") .. " command errors omit color codes"] = function()
+    local notify, message = vim.notify, nil
+    vim.notify = function(text)
+      message = text
+    end
+    local ok, result = pcall(require("gin.command").execute, {
+      fargs = vim.list_extend(wait and { "++wait" } or {}, {
+        "-c",
+        [[alias.fail=!printf '\033[31mbroken\033[m\n' >&2; exit 7]],
+        "fail",
+      }),
+      smods = { silent = true },
+    })
+    if not wait and ok then
+      vim.wait(3000, function()
+        return message ~= nil
+      end, 10)
+    end
+    vim.notify = notify
+    MiniTest.expect.equality(ok, not wait)
+    MiniTest.expect.equality(wait and result or message, "git exited 7: broken")
+    MiniTest.expect.equality(events, 0)
+  end
+end
 return T

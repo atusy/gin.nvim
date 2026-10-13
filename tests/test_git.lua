@@ -30,6 +30,23 @@ T["binary output retains NUL separators"] = function()
   local result = require("gin.git").run({ "status", "--porcelain", "-z" }, { cwd = root })
   MiniTest.expect.equality(result.stdout, "?? space name.txt\0")
 end
+for _, source in ipairs({ "git", "processor" }) do
+  T[source .. " errors strip color codes while unchecked results retain raw stderr"] = function()
+    local script = [[printf '\033[31mbroken\033[m\n' >&2; exit 7]]
+    local args = source == "git" and { "-c", "alias.fail=!" .. script, "fail" } or { "status" }
+    local opts = { cwd = root }
+    if source == "processor" then
+      opts.processor = { "sh", "-c", script }
+    end
+    local ok, err = pcall(require("gin.git").run, args, opts)
+    MiniTest.expect.equality(ok, false)
+    MiniTest.expect.equality(err, source .. " exited 7: broken")
+    opts.check = false
+    local result = require("gin.git").run(args, opts)
+    MiniTest.expect.equality(result.code, 7)
+    MiniTest.expect.equality(result.stderr, "\27[31mbroken\27[m\n")
+  end
+end
 T["timed out commands report failure"] = function()
   local result = require("gin.git").run(
     { "hash-object", "--stdin" },
