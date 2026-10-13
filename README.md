@@ -20,6 +20,8 @@ Currently implemented:
   into another buffer. `++worktree`, `++filetype`, and
   `++monochrome` are accepted; output is currently monochrome.
   `++enc`/`++encoding` and `++ff`/`++fileformat` select decoding and survive reloads.
+  `++processor=command\ args` transforms successful Git output through a command
+  run in the repository directory; processor errors fail the read.
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
   status. `<<` stages the current line or visual range; `>>` unstages it.
   `<Plug>(gin-action-stage)` and `<Plug>(gin-action-unstage)` are also available.
@@ -35,7 +37,8 @@ Currently implemented:
   while preserving the working file. `:read {ginedit-URI}` inserts its content
   into another buffer. Encoding and fileformat options are accepted.
 - `:GinDiff [++worktree=path] [++opener=...] [flags] [commitish] [-- paths...]`
-  displays a Git comparison. Encoding/fileformat options work as in GinBuffer.
+  displays a Git comparison. Encoding/fileformat and processor options work as
+  in GinBuffer.
   `--cached` compares the index; revision ranges are
   supported. Paths are repository-relative. `<CR>` jumps to the matching side of
   a changed line; `g<CR>` selects the old revision and `<C-g><CR>` the new one.

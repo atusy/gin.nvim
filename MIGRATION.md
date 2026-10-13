@@ -80,7 +80,7 @@ GinDiff now displays working-tree, cached and revision comparisons and backs the
 status diff actions. Jumps resolve working/index/revision targets, including the
 merge base for three-dot comparisons. File folds show status and change counts.
 Addressed reads support encoding/fileformat overrides; command buffers also retain encoding/fileformat options on reload.
-Processor support remains pending;
+Buffer/diff processors transform successful Git output and survive reloads/reads;
 combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
 with index write-back and status actions; remaining option and visual-range
 compatibility needs an audit. The checklist stays open until those checks finish.
@@ -92,7 +92,7 @@ compatibility still needs an audit. When there is no in-progress operation head,
 its dependent supplemental logs are omitted instead of running an invalid log
 command as upstream does.
 
-Next work: buffer/diff options and the remaining parsed views with direct
+Next work: remaining buffer/diff options, Gin command processors and parsed views with direct
 Git-state tests. Complete status browse/echo actions as their supporting modules
 become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.
