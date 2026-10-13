@@ -236,5 +236,6 @@ file and releases Git, while Cancel returns failure. A real commit fixture
 verifies the edited message and committed content. The editor opener/disable
 settings are supported. Unlike the pinned global-environment proxy, this stage
 is scoped to asynchronous Gin children; synchronous calls, action/terminal
-integration, quit confirmation/aliases, cancellation coverage, askpass and
-client-disconnect lifecycle audits remain pending.
+integration, quit confirmation/aliases, askpass and client-disconnect lifecycle
+audits remain pending. Cancellation is verified to reject the commit, clear the
+draft message and retain staged content.

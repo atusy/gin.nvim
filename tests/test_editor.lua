@@ -52,4 +52,32 @@ T["Gin commit waits for Apply and records the edited message"] = function()
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message from Neovim\n")
   MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
 end
+T["Cancel rejects the commit and leaves staged content intact"] = function()
+  local process = require("gin.command").execute({
+    fargs = { "commit" },
+    smods = { silent = true, emsg_silent = true },
+  })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "do not commit" })
+  vim.cmd.Cancel()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+  MiniTest.expect.equality(
+    require("gin.git").run({ "rev-parse", "--verify", "HEAD" }, { cwd = root, check = false }).code
+      ~= 0,
+    true
+  )
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/.git/COMMIT_EDITMSG"), {})
+end
 return T
