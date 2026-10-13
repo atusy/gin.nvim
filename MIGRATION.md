@@ -604,3 +604,11 @@ code. A real filename fixture verifies escaped display, staging through the
 selected action with the original path bytes, and unchanged working content.
 This retains the current JSON-style display quoting; complete upstream quoting
 and Git-config display compatibility remain under audit.
+
+Status parsing now separates color escapes in the two status columns from raw
+filename bytes. color.status=always previously corrupted selected paths. The
+renderer retains Git's configured status colors while actions use plain status
+codes and untouched filenames. Fixtures verify a custom blue/bold untracked
+style, staging and refreshed index status, plus control-bearing filenames with
+forced colors enabled. Default color forcing and other display flags remain
+under audit.

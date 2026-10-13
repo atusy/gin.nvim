@@ -3,16 +3,31 @@ local uri = require("gin.uri")
 local buffer = require("gin.buffer")
 local M = {}
 
----Read porcelain v1 with NUL termination, preserving all filename bytes.
+---Read NUL-terminated short status, preserving all filename bytes.
 function M.parse(output)
   local records = vim.split(output, "\0", { plain = true, trimempty = true })
-  local entries, branch, i = {}, nil, 1
+  local entries, prefixes, branch, i = {}, {}, nil, 1
   while i <= #records do
     local record = records[i]
     if record:sub(1, 2) == "##" then
       branch = record
     else
-      local entry = { xy = record:sub(1, 2), path = record:sub(4) }
+      -- Only the two status columns and their separator may contain Git colors.
+      -- Filename bytes after that separator must never be interpreted as ANSI.
+      local offset, columns = 1, {}
+      for column = 1, 3 do
+        while true do
+          local after = record:sub(offset):match("^\27%[[%d;]*m()")
+          if not after then
+            break
+          end
+          offset = offset + after - 1
+        end
+        columns[column] = record:sub(offset, offset)
+        offset = offset + 1
+      end
+      local entry = { xy = columns[1] .. columns[2], path = record:sub(offset) }
+      prefixes[entry.path] = record:sub(1, offset - 1)
       if entry.xy:find("[RC]") then
         i = i + 1
         entry.orig_path = records[i]
@@ -24,7 +39,7 @@ function M.parse(output)
   table.sort(entries, function(a, b)
     return a.path < b.path
   end)
-  return branch, entries
+  return branch, entries, prefixes
 end
 
 local function quote(path)
@@ -44,12 +59,11 @@ function M.read(buf, name)
   end
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
-  local branch, entries = M.parse(git.run(args, { cwd = parsed.root }).stdout)
+  local branch, entries, prefixes = M.parse(git.run(args, { cwd = parsed.root }).stdout)
   local lines = { branch or "## HEAD" }
   for _, entry in ipairs(entries) do
     entry.line = #lines + 1
-    lines[#lines + 1] = entry.xy
-      .. " "
+    lines[#lines + 1] = prefixes[entry.path]
       .. (entry.orig_path and quote(entry.orig_path) .. " -> " or "")
       .. quote(entry.path)
   end

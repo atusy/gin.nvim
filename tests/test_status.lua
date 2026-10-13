@@ -351,6 +351,7 @@ T["status refresh preserves cursor positions in every window showing the view"] 
   vim.cmd.close()
 end
 T["status quotes control bytes without changing the staged path"] = function()
+  H.git(root, "config", "color.status", "always")
   local path = "escape" .. string.char(27) .. "[31mname"
   vim.fn.writefile({ "literal" }, root .. "/" .. path)
   vim.cmd.GinStatus()
@@ -360,5 +361,23 @@ T["status quotes control bytes without changing the staged path"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), path .. "\0")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path), { "literal" })
+end
+T["status actions preserve paths when Git forces status colors"] = function()
+  H.git(root, "config", "color.status", "always")
+  H.git(root, "config", "color.status.untracked", "blue bold")
+  vim.fn.writefile({ "literal" }, root .. "/file")
+  vim.cmd.GinStatus()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "?? file" })
+  local marks = vim.api.nvim_buf_get_extmarks(
+    0,
+    vim.api.nvim_create_namespace("gin_ansi"),
+    { 1, 0 },
+    { 1, -1 },
+    { details = true }
+  )
+  MiniTest.expect.equality(marks[1][4].hl_group, "GinColorF4Bold")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "literal\n")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "A  file" })
 end
 return T
