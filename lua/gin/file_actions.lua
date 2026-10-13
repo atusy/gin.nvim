@@ -45,7 +45,7 @@ function M.setup(buf, gather)
           if source == "local" then
             require("gin.buffer").open(root .. "/" .. entry.path, { opener = opener })
           else
-            local args = { "++worktree=" .. root, "++opener=" .. opener }
+            local args = { "++opener=" .. opener }
             if source == "HEAD" then
               args[#args + 1] = "HEAD"
             end
@@ -66,7 +66,7 @@ function M.setup(buf, gather)
         local entries = gather(target, range)
         for _, entry in ipairs(entries) do
           local cached = source == "cached" or (source == "smart" and entry.xy:sub(1, 1) ~= " ")
-          local args = { "++worktree=" .. root, "++opener=" .. opener }
+          local args = { "++opener=" .. opener }
           if cached then
             args[#args + 1] = "--cached"
           elseif source == "HEAD" then
@@ -85,7 +85,7 @@ function M.setup(buf, gather)
       local root = vim.b[target].gin_worktree
       local entries = gather(target, range)
       for _, entry in ipairs(entries) do
-        local args = { "++worktree=" .. root, "++opener=tabedit" }
+        local args = { "++opener=tabedit" }
         if variant == "worktree" then
           args[#args + 1] = "++no-head"
         elseif variant == "head" then
@@ -102,7 +102,7 @@ function M.setup(buf, gather)
       local root = vim.b[target].gin_worktree
       local entries = gather(target, range)
       for _, entry in ipairs(entries) do
-        local args = { "++worktree=" .. root, "++opener=tabedit" }
+        local args = { "++opener=tabedit" }
         if variant == "theirs" then
           args[#args + 1] = "++no-ours"
         elseif variant == "ours" then

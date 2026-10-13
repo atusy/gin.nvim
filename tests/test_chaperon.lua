@@ -101,7 +101,7 @@ T["status chaperon honors persistent pane settings through conflict resolution"]
     MiniTest.expect.error(function()
       require("gin.action").call(status, "chaperon:both", { 2, 2 })
     end, "Duplicate Gin option: %+%+opener")
-    vim.g.gin_chaperon_persistent_args = { "++no-ours" }
+    vim.g.gin_chaperon_persistent_args = { "++no-ours", "++worktree=" .. root }
     require("gin.action").call(status, "chaperon:both", { 2, 2 })
     MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
     MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)

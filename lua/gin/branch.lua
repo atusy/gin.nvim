@@ -351,7 +351,7 @@ function M.read(buf, name)
         local ref = row.target:find(" ", 1, true) and row.commit
           or (row.remote and "refs/remotes/" or "refs/heads/") .. row.target
         require("gin.log").command({
-          fargs = { "++worktree=" .. parsed.root, "++opener=" .. opener, ref },
+          fargs = { "++opener=" .. opener, ref },
           smods = {},
         })
       end

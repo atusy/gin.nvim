@@ -1080,3 +1080,12 @@ opener precedence as compatible; edit/diff/log/patch/chaperon action fixtures
 now verify the duplicate error, then retain their content and Git-state checks
 with non-conflicting persistent arguments. Repeated Git flags and different
 option aliases are outside this same-name validation.
+
+File edit/diff/patch/chaperon actions, branch-log actions and shared browse
+actions no longer inject an extra `++worktree` argument. The pinned action
+dispatchers rely on buffer worktree discovery instead, allowing the destination
+command's persistent `++worktree` setting to apply without an artificial
+duplicate. Existing real-Git action fixtures now include that setting alongside
+encoding, diff/history filters or pane options; browse fixtures verify the
+resulting selected-path and selected-commit URLs. Explicit duplicate openers
+still fail, and file paths remain anchored to the selected buffer's repository.

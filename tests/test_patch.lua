@@ -47,7 +47,7 @@ T["status patch honors persistent pane settings and stages the chosen hunk"] = f
     MiniTest.expect.error(function()
       require("gin.action").call(status, "patch:both", { 2, 2 })
     end, "Duplicate Gin option: %+%+opener")
-    vim.g.gin_patch_persistent_args = { "++no-head" }
+    vim.g.gin_patch_persistent_args = { "++no-head", "++worktree=" .. root }
     require("gin.action").call(status, "patch:both", { 2, 2 })
     MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
     MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)

@@ -188,7 +188,7 @@ function M.setup(buf, gather)
     require("gin.action").define(buf, "browse" .. suffix, function(target, range)
       local root = vim.b[target].gin_worktree
       for _, row in ipairs(gather(target, range)) do
-        local args = { "++worktree=" .. root }
+        local args = {}
         if suffix:find(":yank", 1, true) then
           args[#args + 1] = "++yank=" .. vim.v.register
         end

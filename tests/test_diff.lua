@@ -58,7 +58,7 @@ T["file diff actions honor persistent flags and retain the selected path"] = fun
     MiniTest.expect.error(function()
       require("gin.action").call(status, "diff:local", { 2, 2 })
     end, "Duplicate Gin option: %+%+opener")
-    vim.g.gin_diff_persistent_args = { "--word-diff=plain" }
+    vim.g.gin_diff_persistent_args = { "--word-diff=plain", "++worktree=" .. root }
     for _, source in ipairs({ "local", "cached", "HEAD", "smart" }) do
       require("gin.action").call(status, "diff:" .. source, { 2, 2 })
       local args = { "diff", "--word-diff=plain", "--no-color" }

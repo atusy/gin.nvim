@@ -89,7 +89,7 @@ T["browse selects remotes by ancestry rather than the presence of any ref"] = fu
 end
 T["status browse action uses the selected repository-relative path"] = function()
   vim.fn.writefile({ "modified" }, root .. "/sub/space # file.md")
-  vim.g.gin_browse_persistent_args = { "--no-browser" }
+  vim.g.gin_browse_persistent_args = { "--no-browser", "++worktree=" .. root }
   vim.cmd.cd(root .. "/sub")
   vim.cmd.GinStatus()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:permalink:yank", { 2, 2 })
@@ -99,7 +99,7 @@ T["status browse action uses the selected repository-relative path"] = function(
   )
 end
 T["history browse commit action uses the selected commit"] = function()
-  vim.g.gin_browse_persistent_args = { "--no-browser" }
+  vim.g.gin_browse_persistent_args = { "--no-browser", "++worktree=" .. root }
   vim.cmd("GinLog --oneline")
   require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:commit:yank", { 1, 1 })
   MiniTest.expect.equality(vim.fn.getreg('"'), "https://github.com/owner/repo/commit/" .. hash)
