@@ -34,7 +34,30 @@ function M.execute(opts)
   local options, args =
     M.parse(opts.fargs, { "wait", "worktree", "enc", "encoding", "ff", "fileformat" })
   local root = require("gin.worktree").current(options.worktree)
-  local result = require("gin.git").run(args, { cwd = root })
+  if options.wait then
+    local result = require("gin.git").run(args, { cwd = root })
+    M.finish(result, options, opts.smods)
+    return result
+  end
+  return require("gin.git").start(
+    args,
+    { cwd = root },
+    vim.schedule_wrap(function(result)
+      if result.code ~= 0 then
+        if not opts.smods.emsg_silent then
+          vim.notify(
+            ("git exited %d: %s"):format(result.code, vim.trim(result.stderr or "")),
+            vim.log.levels.ERROR
+          )
+        end
+        return
+      end
+      M.finish(result, options, opts.smods)
+    end)
+  )
+end
+
+function M.finish(result, options, mods)
   local output = (result.stdout or "") .. (result.stderr or "")
   local encoding = options.enc or options.encoding
   if encoding then
@@ -43,7 +66,7 @@ function M.execute(opts)
   local ff = options.ff or options.fileformat
   output = ff == "mac" and output:gsub("\r", "\n") or output:gsub("\r\n", "\n")
   output = output:gsub("\27%[[%d;]*m", "")
-  if output ~= "" and not opts.smods.silent then
+  if output ~= "" and not mods.silent then
     vim.api.nvim_echo({ { output:gsub("\n$", ""), "None" } }, true, {})
   end
   M.post()

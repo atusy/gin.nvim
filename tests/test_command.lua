@@ -31,4 +31,16 @@ T["Gin wait executes a Git command and emits its completion event"] = function()
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "space name\n")
   MiniTest.expect.equality(events, 1)
 end
+T["Gin dispatches asynchronously unless wait is requested"] = function()
+  vim.fn.writefile({ "async" }, root .. "/async")
+  local process = require("gin.command").execute({ fargs = { "add", "--", "async" }, smods = {} })
+  MiniTest.expect.equality(type(process.wait), "function")
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return events == 1
+    end),
+    true
+  )
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "async\n")
+end
 return T
