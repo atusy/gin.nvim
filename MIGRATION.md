@@ -985,4 +985,17 @@ The public Lua `gin.util.worktree([path])` now corresponds to upstream
 The API fixture checks current-view context, an explicit subdirectory, failure
 without fallback for a missing explicit path, and string argument validation.
 Existing discovery fixtures cover linked worktrees and symlinks. Legacy
-Vimscript names and the public reload utility remain separate audit items.
+Vimscript names remain a separate audit item.
+
+The public Lua `gin.util.reload([bufnr])` now supplies the asynchronous reload
+utility corresponding to upstream `gin#util#reload` and denops std v7's
+buffer reload helper. It runs `:edit` in the current or another visible buffer,
+restoring the original window, and coalesces hidden-buffer requests into one
+nested, one-shot BufEnter handler. Modified buffers retain their edits and
+report errors through `vim.notify`; wiped buffers are skipped. Five fixtures
+cover asynchronous GinStatus refresh, visible-window focus, hidden-buffer
+coalescing, unsaved changes and a buffer wiped before execution. This adds the
+Lua API without legacy Vimscript name shims.
+The handler is explicitly removed before `:edit`: Neovim 0.10 otherwise
+re-enters a Lua `once` callback during the nested BufEnter event. The same five
+fixtures pass on the minimum supported Neovim 0.10.0.
