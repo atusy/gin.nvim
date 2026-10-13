@@ -63,4 +63,57 @@ T["echo serializes selected candidates as JSON including escaped paths"] = funct
   MiniTest.expect.equality(vim.json.decode(output), selected)
   MiniTest.expect.equality(observed_range, { 2, 3 })
 end
+T["user action aliases appear in choice and preserve explicit ranges"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local captured
+  action.setup(buf)
+  action.define(buf, "capture", function(_, range)
+    captured = range
+  end)
+  vim.keymap.set("n", "<Plug>(gin-action-custom)", "<Plug>(gin-action-capture)", {
+    buffer = buf,
+    remap = true,
+  })
+  MiniTest.expect.equality(vim.tbl_contains(action.list(buf), "custom"), true)
+  action.call(buf, "custom", { 2, 4 })
+  MiniTest.expect.equality(captured, { 2, 4 })
+end
+T["user callback overrides replace registered actions and restore ranges after errors"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "capture", function()
+    error("original callback must not run")
+  end)
+  local captured
+  vim.keymap.set("n", "<Plug>(gin-action-capture)", function()
+    captured = action.range()
+    error("user failure")
+  end, { buffer = buf })
+  local ok, err = pcall(action.call, buf, "capture", { 3, 5 })
+  MiniTest.expect.equality(ok, false)
+  MiniTest.expect.equality(tostring(err):find("user failure", 1, true) ~= nil, true)
+  MiniTest.expect.equality(captured, { 3, 5 })
+  MiniTest.expect.equality(action.range(), { 1, 1 })
+end
+T["custom command mappings receive captured action ranges"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local captured
+  action.setup(buf)
+  action.define(buf, "capture", function(_, range)
+    captured = range
+  end)
+  vim.keymap.set(
+    "n",
+    "<Plug>(gin-action-custom)",
+    "<Cmd>lua require('gin.action').call("
+      .. buf
+      .. ", 'capture', require('gin.action').range())<CR>",
+    { buffer = buf }
+  )
+  action.call(buf, "custom", { 2, 3 })
+  MiniTest.expect.equality(captured, { 2, 3 })
+end
 return T

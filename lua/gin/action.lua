@@ -1,7 +1,11 @@
 local M = {}
 local actions = {}
+local range_internal
 
 function M.range()
+  if range_internal then
+    return vim.deepcopy(range_internal)
+  end
   local line = vim.fn.line(".")
   local mode = vim.fn.mode()
   local other = mode == "n" and line or vim.fn.line("v")
@@ -10,10 +14,14 @@ end
 
 function M.define(buf, name, callback)
   assert(actions[buf], "Action buffer has not been initialized")
-  actions[buf][name] = callback
-  vim.keymap.set({ "n", "x" }, "<Plug>(gin-action-" .. name .. ")", function()
-    M.call(buf, name, M.range())
-  end, { buffer = buf, silent = true })
+  local dispatch = function()
+    return callback(buf, M.range())
+  end
+  actions[buf][name] = { callback = callback, dispatch = dispatch }
+  vim.keymap.set({ "n", "x" }, "<Plug>(gin-action-" .. name .. ")", dispatch, {
+    buffer = buf,
+    silent = true,
+  })
 end
 
 function M.alias(buf, name, target)
@@ -60,8 +68,6 @@ function M.help(buf, reduced)
 end
 
 function M.call(buf, name, range)
-  local callback = actions[buf] and actions[buf][name]
-  assert(callback, "Unknown Gin action: " .. name)
   if vim.api.nvim_get_current_buf() ~= buf then
     local windows = vim.fn.win_findbuf(buf)
     if #windows > 0 then
@@ -70,11 +76,46 @@ function M.call(buf, name, range)
       vim.api.nvim_set_current_buf(buf)
     end
   end
-  return callback(buf, vim.deepcopy(range))
+  local plug = "<Plug>(gin-action-" .. name .. ")"
+  local mapping = vim.fn.maparg(plug, "n", false, true)
+  assert(next(mapping), "Unknown Gin action: " .. name)
+  local previous = range_internal
+  range_internal = vim.deepcopy(range)
+  local ok, result = pcall(function()
+    local entry = actions[buf] and actions[buf][name]
+    if entry and mapping.callback == entry.dispatch then
+      return entry.callback(buf, vim.deepcopy(range))
+    elseif mapping.callback then
+      return mapping.callback()
+    end
+    local target = (mapping.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$")
+    if target then
+      return M.call(buf, target, range)
+    end
+    vim.api.nvim_feedkeys(
+      vim.api.nvim_replace_termcodes(plug .. "<Ignore>", true, false, true),
+      "mx",
+      false
+    )
+  end)
+  range_internal = previous
+  if not ok then
+    error(result, 0)
+  end
+  return result
 end
 
 function M.list(buf)
-  local names = vim.tbl_keys(actions[buf] or {})
+  local found = {}
+  local mappings = vim.api.nvim_get_keymap("n")
+  vim.list_extend(mappings, vim.api.nvim_buf_get_keymap(buf, "n"))
+  for _, mapping in ipairs(mappings) do
+    local name = mapping.lhs:match("^<Plug>%(gin%-action%-(.*)%)$")
+    if name then
+      found[name] = true
+    end
+  end
+  local names = vim.tbl_keys(found)
   table.sort(names)
   return names
 end

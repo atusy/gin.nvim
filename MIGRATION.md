@@ -453,3 +453,10 @@ g:gin#difffold#prefixes_nerdfont, with the pinned glyphs and spacing. Lua config
 can also use require('gin.difffold').presets. Integration fixtures select each
 published preset and check the rendered fold label; partial configuration still
 falls back to the ASCII values.
+
+Shared action discovery now includes user-defined global and buffer-local
+<Plug>(gin-action-...) mappings. Calls honor remapped aliases and callback
+overrides, and custom Ex mappings receive the captured selection range. Tests
+cover alias discovery, overridden callbacks, range propagation and restoration
+after callback errors. Complete mapping/help customization parity remains under
+audit.
