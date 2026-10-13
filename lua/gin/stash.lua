@@ -42,20 +42,28 @@ function M.read(buf, name)
     end)
   end
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
-    action.define(buf, "show:" .. opener, function(target, range)
-      for _, row in ipairs(candidates(target, range)) do
-        require("gin.buffer").open(
-          uri.format("gin", parsed.root, {
-            filetype = "git",
-            diffjump = row.commit,
-            difffold = "",
-          }, uri.join({ "show", row.commit })),
-          { opener = opener }
-        )
-      end
-    end)
+    for _, emojify in ipairs({ false, true }) do
+      action.define(
+        buf,
+        "show:" .. opener .. (emojify and ":emojify" or ""),
+        function(target, range)
+          for _, row in ipairs(candidates(target, range)) do
+            require("gin.buffer").open(
+              uri.format("gin", parsed.root, {
+                filetype = "git",
+                diffjump = row.commit,
+                difffold = "",
+                emojify = emojify and "" or nil,
+              }, uri.join({ "show", row.commit })),
+              { opener = opener }
+            )
+          end
+        end
+      )
+    end
   end
   action.alias(buf, "show", "show:edit")
+  action.alias(buf, "show:emojify", "show:edit:emojify")
   action.define(buf, "yank:stash", function(target, range)
     local values = {}
     for _, row in ipairs(candidates(target, range)) do

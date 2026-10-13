@@ -35,20 +35,28 @@ function M.read(buf, name)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   action.setup(buf, M.candidates)
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
-    action.define(buf, "show:" .. opener, function(target, range)
-      for _, row in ipairs(M.candidates(target, range)) do
-        require("gin.buffer").open(
-          uri.format("gin", parsed.root, {
-            filetype = "git",
-            diffjump = row.commit,
-            difffold = "",
-          }, uri.join({ "show", row.commit })),
-          { opener = opener }
-        )
-      end
-    end)
+    for _, emojify in ipairs({ false, true }) do
+      action.define(
+        buf,
+        "show:" .. opener .. (emojify and ":emojify" or ""),
+        function(target, range)
+          for _, row in ipairs(M.candidates(target, range)) do
+            require("gin.buffer").open(
+              uri.format("gin", parsed.root, {
+                filetype = "git",
+                diffjump = row.commit,
+                difffold = "",
+                emojify = emojify and "" or nil,
+              }, uri.join({ "show", row.commit })),
+              { opener = opener }
+            )
+          end
+        end
+      )
+    end
   end
   action.alias(buf, "show", "show:edit")
+  action.alias(buf, "show:emojify", "show:edit:emojify")
   for _, detach in ipairs({ false, true }) do
     action.define(buf, detach and "switch:detach" or "switch", function(target, range)
       local row = M.candidates(target, range)[1]

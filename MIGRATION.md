@@ -334,3 +334,9 @@ pending.
 GinBuffer accepts ++emojify and stores it in the URI for reload and addressed
 reads. A colored Git-log fixture verifies the converted text, exact ANSI byte
 span after conversion, and insertion between existing destination lines.
+
+Show actions now include show:emojify and all four show:{opener}:emojify
+variants in log, reflog, tag and stash views. Real-repository fixtures verify
+the selected commit, converted message, window/tab counts and reload behavior
+for every view/opener combination. Plain show actions retain their existing
+behavior.

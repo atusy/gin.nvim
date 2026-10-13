@@ -50,7 +50,9 @@ Currently implemented:
   are repository-relative, including when cwd is a subdirectory. `++emojify`
   renders GitHub emoji names in log/reflog output. `<CR>`
   shows the selected commit; `yy` yanks its hash. Show actions support edit,
-  split, vsplit, and tabedit destinations. Branch `log` actions open GinLog
+  split, vsplit, and tabedit destinations. `show:emojify` and
+  `show:{opener}:emojify` render emoji names from log, reflog, tag and stash views.
+  Branch `log` actions open GinLog
   at the selected ref with the same destination variants. `cherry-pick` and
   `revert` act on the selected commit; `:1`/`:2` variants select a merge parent.
   `reset`, `reset:soft`, `reset:hard`, `reset:merge`, and `reset:keep` reset
