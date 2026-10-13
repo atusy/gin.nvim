@@ -28,7 +28,8 @@ Currently implemented:
   `++processor=command\ args` transforms successful Git output through a command
   run in the repository directory; processor errors fail the read.
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
-  status. `<<` stages the current line or visual range; `>>` unstages it.
+  status with Git colors rendered as highlights. `<<` stages the current line
+  or visual range; `>>` unstages it.
   `<Plug>(gin-action-stage)` and `<Plug>(gin-action-unstage)` are also available.
   `dd` opens a smart diff, `pp` opens a patch tab, `!!` opens a conflict-resolution
   tab, and `==` stashes the selection.

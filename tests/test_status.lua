@@ -380,4 +380,24 @@ T["status actions preserve paths when Git forces status colors"] = function()
   MiniTest.expect.equality(H.git(root, "show", ":file"), "literal\n")
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "A  file" })
 end
+T["status enables display colors without changing repository configuration"] = function()
+  H.git(root, "config", "color.status", "never")
+  H.git(root, "config", "color.status.untracked", "magenta")
+  vim.fn.writefile({ "text" }, root .. "/file")
+  vim.cmd.GinStatus()
+  for _ = 1, 2 do
+    local marks = vim.api.nvim_buf_get_extmarks(
+      0,
+      vim.api.nvim_create_namespace("gin_ansi"),
+      { 1, 0 },
+      { 1, -1 },
+      { details = true }
+    )
+    MiniTest.expect.equality(#marks, 1)
+    MiniTest.expect.equality(marks[1][4].hl_group, "GinColorF5")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "?? file" })
+    MiniTest.expect.equality(H.git(root, "config", "color.status"), "never\n")
+    vim.cmd.edit()
+  end
+end
 return T

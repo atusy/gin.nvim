@@ -51,7 +51,16 @@ end
 
 function M.read(buf, name)
   local parsed = uri.parse(name)
-  local args = { "status", "--short", "--branch", "--ahead-behind", "--untracked-files", "-z" }
+  local args = {
+    "-c",
+    "color.status=always",
+    "status",
+    "--short",
+    "--branch",
+    "--ahead-behind",
+    "--untracked-files",
+    "-z",
+  }
   for key, value in pairs(parsed.params) do
     if key ~= "enc" and key ~= "ff" then
       args[#args + 1] = "--" .. key .. (value ~= "" and "=" .. value or "")

@@ -612,3 +612,9 @@ codes and untouched filenames. Fixtures verify a custom blue/bold untracked
 style, staging and refreshed index status, plus control-bearing filenames with
 forced colors enabled. Default color forcing and other display flags remain
 under audit.
+
+GinStatus now enables color.status=always for its display command, following the
+pinned status-to-buffer executor path. Repository configuration is unchanged.
+A fixture sets color.status=never and a custom untracked color, then verifies
+colored extmarks, plain visible text and unchanged config on open and reload.
+The full status suite consequently exercises action parsing with default colors.
