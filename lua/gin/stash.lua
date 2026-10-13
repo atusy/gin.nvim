@@ -167,13 +167,19 @@ function M.command(opts)
     args,
     { "worktree", "opener", "emojify", "enc", "encoding", "ff", "fileformat" }
   )
+  for _, arg in ipairs(residue) do
+    assert(
+      arg:match("^%-[a-zA-Z0-9]") or arg:match("^%-%-[a-zA-Z0-9-]"),
+      "GinStash does not accept positional arguments"
+    )
+  end
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(
     uri.format("ginstash", require("gin.worktree").current(options.worktree), {
       emojify = options.emojify and "" or nil,
       enc = options.enc or options.encoding,
       ff = options.ff or options.fileformat,
-    }, vim.json.encode(residue)),
+    }, vim.json.encode(require("gin.flags").group(residue))),
     options
   )
 end

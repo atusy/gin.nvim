@@ -32,6 +32,30 @@ T["stash apply index restores selected content and retains both stashes"] = func
   H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
+T["stash command groups flags without accepting positional arguments"] = function()
+  local stashes = H.git(root, "stash", "list", "--format=%H")
+  vim.cmd("GinStash --format=%s -n1 --max-count=2 -n1")
+  for _ = 1, 2 do
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "On main: newer", "On main: older" }
+    )
+    MiniTest.expect.equality(vim.b.gin_stashes[2].stash, "stash@{1}")
+    vim.cmd.edit()
+  end
+  local name = vim.api.nvim_buf_get_name(0)
+  for _, arg in ipairs({ "HEAD", "-- file", "-- --max-count=1" }) do
+    MiniTest.expect.error(function()
+      vim.cmd("GinStash " .. arg)
+    end, "GinStash does not accept positional arguments")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), name)
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "apply:index", { 2, 2 })
+  H.drain()
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
+  MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%H"), stashes)
+end
 T["legacy stash URIs restore filters and selected stash references"] = function()
   local stashes = H.git(root, "stash", "list", "--format=%H")
   local name = "ginstash://" .. root .. ";format=%25s&skip=1&max-count=2&max-count=1"

@@ -1286,3 +1286,10 @@ tag pattern, verifies the resulting selection on initial read and reload,
 inserts the filtered output into an ordinary Lua buffer without changing its
 filetype, then deletes only the selected annotated tag while preserving the
 lightweight tag. Log/reflog/stash native flag ordering remains under audit.
+
+GinStash command input now rejects positional arguments before opening a buffer
+and groups flags by first-seen name before saving its native URI. This follows
+the pinned stash command's parse/validation path. A real repository fixture
+mixes repeated -n and --max-count options, verifies both stash rows on open and
+reload, rejects a revision and arguments after -- without replacing the view,
+then applies the older stash with its index while preserving both stash objects.
