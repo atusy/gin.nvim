@@ -135,6 +135,55 @@ function M.read(buf, name)
       end)
     end)
   end
+  for _, variant in ipairs({ "worktree", "worktree:force", "worktree:orphan" }) do
+    action.define(buf, variant, function(target, range)
+      local row = M.candidates(target, range)[1]
+      local from = row and row.target or "HEAD"
+      local orphan = variant == "worktree:orphan"
+      vim.ui.input({
+        prompt = orphan and "New branch (orphan): " or ("New branch (from " .. from .. "): "),
+        default = not orphan and from or nil,
+      }, function(branch)
+        if not branch or branch == "" then
+          return
+        end
+        local common =
+          vim.trim(git.run({ "rev-parse", "--git-common-dir" }, { cwd = parsed.root }).stdout)
+        if common:sub(1, 1) ~= "/" then
+          common = parsed.root .. "/" .. common
+        end
+        local parent = vim.fs.dirname(vim.fs.normalize(common))
+        vim.ui.input({
+          prompt = "Worktree path (for " .. branch .. "): ",
+          default = parent .. "/.worktrees/" .. branch:gsub("[/\\]", "_"),
+          completion = "dir",
+        }, function(path)
+          if not path or path == "" then
+            return
+          end
+          if path:sub(1, 1) ~= "/" then
+            path = parsed.root .. "/" .. path
+          end
+          local args = { "worktree", "add" }
+          if variant == "worktree:force" then
+            args[#args + 1] = "--force"
+          end
+          if orphan then
+            args[#args + 1] = "--orphan"
+          end
+          if orphan or branch ~= from then
+            vim.list_extend(args, { "-b", branch })
+          end
+          vim.list_extend(args, { "--", path })
+          if not orphan then
+            args[#args + 1] = from
+          end
+          run(args)
+          vim.fn.chdir(path)
+        end)
+      end)
+    end)
+  end
   for _, field in ipairs({ "branch", "target", "commit" }) do
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}

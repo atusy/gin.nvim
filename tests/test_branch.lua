@@ -111,4 +111,46 @@ T["new force resets an existing branch to the selected starting ref"] = function
   MiniTest.expect.equality(H.git(root, "rev-parse", "topic"), H.git(root, "rev-parse", "main"))
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
 end
+local function worktree_action(action, branch, path)
+  local original, count = vim.ui.input, 0
+  vim.ui.input = function(_, done)
+    count = count + 1
+    if count == 1 then
+      done(branch)
+    else
+      done(path)
+    end
+  end
+  local ok, err =
+    pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), action, { 1, 1 })
+  vim.ui.input = original
+  assert(ok, err)
+end
+T["worktree creates a named branch from the selection and changes cwd"] = function()
+  vim.cmd("GinBranch topic")
+  worktree_action("worktree", "feature/new", root .. "/new tree")
+  MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root .. "/new tree"))
+  MiniTest.expect.equality(H.git(root .. "/new tree", "branch", "--show-current"), "feature/new\n")
+  MiniTest.expect.equality(
+    H.git(root, "rev-parse", "feature/new"),
+    H.git(root, "rev-parse", "topic")
+  )
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/new tree/file"), { "base" })
+  vim.cmd.cd(root)
+  H.git(root, "worktree", "remove", root .. "/new tree")
+end
+T["cancelling the worktree path creates neither branch nor directory"] = function()
+  vim.cmd("GinBranch topic")
+  worktree_action("worktree", "cancelled", nil)
+  MiniTest.expect.equality(H.git(root, "branch", "--list", "cancelled"), "")
+  MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root))
+end
+T["orphan worktree starts with an empty index"] = function()
+  vim.cmd.GinBranch()
+  worktree_action("worktree:orphan", "orphan", root .. "/orphan")
+  MiniTest.expect.equality(H.git(root .. "/orphan", "symbolic-ref", "HEAD"), "refs/heads/orphan\n")
+  MiniTest.expect.equality(H.git(root .. "/orphan", "ls-files"), "")
+  vim.cmd.cd(root)
+  H.git(root, "worktree", "remove", root .. "/orphan")
+end
 return T
