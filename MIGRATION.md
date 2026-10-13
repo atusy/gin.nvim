@@ -48,7 +48,7 @@ to prove an action produces the intended Git state.
   and path filters, reloads, show/yank actions, branch-to-log navigation,
   cherry-pick, ordinary/mainline revert, reset-mode HEAD/index/worktree effects
   keep-mode rejection of local changes, lightweight tag targets, forced tag
-  replacement and cancellation.
+  replacement, cancellation, fixup messages/trees and root-commit autosquash.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -141,3 +141,7 @@ actual HEAD, index and worktree state rather than only command output.
 GinLog lightweight tag creation and force replacement are implemented.
 Annotated/signed tag actions and the default annotated-tag alias remain pending
 editor/signing integration.
+
+GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
+selected parent (or --root), correcting the pinned double-parent traversal.
+Amend/reword variants remain pending editor integration.
