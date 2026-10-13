@@ -46,31 +46,33 @@ function M.start(args, opts, callback)
   end)
 end
 
+local function wait_for(start)
+  local completed
+  local process = start(vim.schedule_wrap(function(value)
+    completed = value
+  end))
+  -- Process progress and proxy requests before returning the completed output.
+  if not vim.wait(2147483647, function()
+    return completed ~= nil
+  end, 10) then
+    if not process:is_closing() then
+      process:kill(15)
+    end
+    error("Gin read interrupted", 0)
+  end
+  return completed
+end
+
 local function with_progress(args, opts)
   local indicator = require("gin.indicator").open()
   local ok, result = pcall(function()
-    local completed
     local stream_opts = vim.tbl_extend("force", opts, { on_stderr = indicator.write_stderr })
     if opts.progress == "both" then
       stream_opts.on_stdout = indicator.write
     end
-    local process = M.start(
-      args,
-      stream_opts,
-      vim.schedule_wrap(function(value)
-        completed = value
-      end)
-    )
-    -- Scheduled progress must run before completion; SystemObj:wait only pumps fast events.
-    if not vim.wait(2147483647, function()
-      return completed ~= nil
-    end, 10) then
-      if not process:is_closing() then
-        process:kill(15)
-      end
-      error("Gin read interrupted", 0)
-    end
-    return completed
+    return wait_for(function(done)
+      return M.start(args, stream_opts, done)
+    end)
   end)
   indicator.close()
   if not ok then
@@ -98,14 +100,19 @@ function M.run(args, opts)
   if result.code == 0 and opts.processor and #opts.processor > 0 then
     local processor = type(opts.processor) == "string" and require("gin.uri").split(opts.processor)
       or opts.processor
-    result = vim
-      .system(processor, {
-        cwd = opts.cwd,
-        env = opts.env,
-        stdin = result.stdout,
-        timeout = opts.timeout or 30000,
-      })
-      :wait()
+    local processor_opts = {
+      cwd = opts.cwd,
+      env = opts.env,
+      stdin = result.stdout,
+      timeout = opts.timeout or 30000,
+    }
+    if opts.progress then
+      result = wait_for(function(done)
+        return vim.system(processor, processor_opts, done)
+      end)
+    else
+      result = vim.system(processor, processor_opts):wait()
+    end
     if opts.check ~= false and result.code ~= 0 then
       error(M.error_message(result, "processor"), 0)
     end

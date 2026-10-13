@@ -931,3 +931,10 @@ missing proxy variables; fixtures now cover masked credential responses, askpass
 opt-out and an actual commit completed through the editor Apply command. The
 same merged environment is passed to output processors. Manual keyboard-driven
 editing while a synchronous call waits remains unverified.
+
+Synchronous output processors now use the same scheduled-event wait as the Git
+process. A real credential-fill processor reproduced an unanswered askpass RPC,
+a nil timeout result and a stranded test client under SystemObj:wait. The new
+fixture passes Git-produced credential input through the processor and verifies
+both masked prompt responses in its returned output. Processor output remains
+captured rather than streamed, matching the pinned postprocessor executor.

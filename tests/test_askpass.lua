@@ -119,4 +119,26 @@ T["synchronous proxy opt-out keeps credential requests noninteractive"] = functi
   MiniTest.expect.equality(result.stdout, "")
   MiniTest.expect.equality(prompts, 0)
 end
+T["synchronous output processors service askpass requests"] = function()
+  local prompts = 0
+  vim.fn.inputsecret = function()
+    prompts = prompts + 1
+    return prompts == 1 and "unit-user" or "unit-password"
+  end
+  local result = require("gin.git").run({
+    "-c",
+    [[alias.request=!printf 'protocol=https\nhost=example.invalid\n\n']],
+    "request",
+  }, {
+    cwd = root,
+    env = { GIT_TERMINAL_PROMPT = "0" },
+    processor = { "git", "-c", "credential.helper=", "credential", "fill" },
+    progress = true,
+    timeout = 5000,
+  })
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(prompts, 2)
+  MiniTest.expect.equality(result.stdout:find("username=unit-user\n", 1, true) ~= nil, true)
+  MiniTest.expect.equality(result.stdout:find("password=unit-password\n", 1, true) ~= nil, true)
+end
 return T
