@@ -56,6 +56,31 @@ T["Gin commit waits for Apply and records the edited message"] = function()
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message from Neovim\n")
   MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
 end
+T["synchronous editor failure preserves the index without a success event"] = function()
+  local previous = vim.g.gin_proxy_disable_editor
+  vim.g.gin_proxy_disable_editor = 1
+  local events = 0
+  local id = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  local ok, err = pcall(require("gin.command").execute, {
+    fargs = { "++wait", "commit" },
+    smods = { silent = true },
+  })
+  vim.g.gin_proxy_disable_editor = previous
+  vim.api.nvim_del_autocmd(id)
+  MiniTest.expect.equality(ok, false)
+  MiniTest.expect.equality(tostring(err):find("false", 1, true) ~= nil, true)
+  MiniTest.expect.equality(events, 0)
+  MiniTest.expect.equality(require("gin.git").run({ "rev-parse", "--verify", "HEAD" }, {
+    cwd = root,
+    check = false,
+  }).code ~= 0, true)
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+end
 T["Cancel rejects the commit and leaves staged content intact"] = function()
   local process = require("gin.command").execute({
     fargs = { "commit" },

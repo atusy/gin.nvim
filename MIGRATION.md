@@ -500,3 +500,11 @@ chunks, independently for stdout and stderr. Tests cover every byte boundary of
 two-, three- and four-byte characters, interleaved streams, and EOF handling for
 truncated characters/escape sequences. Non-UTF-8 stream encodings and other
 terminal control sequences remain under audit.
+
+The test harness clears inherited Git editor/sequence-editor and askpass
+variables so fixture-local configuration cannot accidentally invoke a user's
+running proxy. A synchronous failed-editor fixture verifies that the index is
+preserved and no success event is emitted. A separate headless input probe
+confirmed that vim.wait does not process normal editor input, so merely pumping
+scheduled RPC callbacks would not establish usable ++wait editor integration;
+that integration remains pending.

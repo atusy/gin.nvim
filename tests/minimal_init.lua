@@ -1,5 +1,8 @@
 vim.env.GIT_CONFIG_NOSYSTEM = "1"
 vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
+for _, name in ipairs({ "GIT_EDITOR", "GIT_SEQUENCE_EDITOR", "GIT_ASKPASS", "SSH_ASKPASS" }) do
+  vim.env[name] = nil
+end
 local prefix = vim.fs.dirname(vim.fs.dirname(vim.uv.fs_realpath(vim.v.progpath)))
 vim.opt.rtp = {
   vim.fn.getcwd(),
