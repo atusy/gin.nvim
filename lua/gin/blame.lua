@@ -195,8 +195,10 @@ function M.read(buf, name, output)
   end
   buffer.replace(buf, content, parsed.root, ft and ft .. ".gin-blame" or "gin-blame")
   local filewin = vim.api.nvim_get_current_win()
-  local navname = uri.format("ginblamenav", parsed.root, parsed.params, path)
-  local detailname = uri.format("ginblamedetail", parsed.root, parsed.params, path)
+  local navname = parsed.legacy and name:gsub("^ginblame:", "ginblamenav:")
+    or uri.format("ginblamenav", parsed.root, parsed.params, path)
+  local detailname = parsed.legacy and name:gsub("^ginblame:", "ginblamedetail:")
+    or uri.format("ginblamedetail", parsed.root, parsed.params, path)
   local detail = vim.fn.bufnr(detailname)
   if detail == -1 or vim.fn.bufwinid(detail) == -1 then
     detail = buffer.open(detailname, { opener = "split", smods = { split = "topleft" } })
@@ -418,7 +420,11 @@ end
 
 function M.read_nav(buf)
   local file = vim.b[buf].gin_blame_file_bufnr
-  assert(file and vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
+  if not file or not vim.api.nvim_buf_is_valid(file) then
+    local name = vim.b[buf].gin_blame_file_bufname
+    file = type(name) == "string" and vim.fn.bufnr(name) or -1
+  end
+  assert(file ~= -1 and vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
   local win = vim.fn.bufwinid(file)
   assert(win ~= -1, "GinBlame file window is missing")
   vim.api.nvim_win_call(win, function()

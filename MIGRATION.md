@@ -1248,5 +1248,13 @@ revision different from HEAD using a path with spaces, plus, Japanese text,
 and a literal dollar; verifies emojified details and attribution; reloads both
 file and navigation panes without adding windows; and follows attribution then
 returns through history without changing HEAD or the working tree. Native Lua
-URI filenames retain literal backslashes. Restoring an upstream navigation pane
-from its legacy buffer variables remains unaudited.
+URI filenames retain literal backslashes.
+
+Navigation reload also resolves an existing file buffer through the upstream
+`gin_blame_file_bufname` variable when Lua's buffer-number link is absent. Legacy
+file reads retain their paired URI names so existing navigation/detail panes
+are reused. A real repository fixture loads three upstream-named buffers,
+reloads from navigation using only the upstream file reference, verifies
+revision content/attribution/detail and fixed windows, then reloads the file.
+Recreating a missing file pane and reconciling divergent navigation/file URI
+parameters remain outside this verified case.

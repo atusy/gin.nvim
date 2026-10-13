@@ -191,6 +191,48 @@ T["reloading either blame pane updates the existing three windows"] = function()
     )
   end
 end
+T["legacy navigation reload resolves its paired file by name"] = function()
+  local suffix = "://" .. root .. ";commitish=" .. first .. "#sub/file.lua"
+  vim.cmd.tabnew()
+  local file = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(file, "ginblame" .. suffix)
+  local filewin = vim.api.nvim_get_current_win()
+  vim.cmd("topleft new")
+  local detail = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(detail, "ginblamedetail" .. suffix)
+  vim.api.nvim_set_current_win(filewin)
+  vim.cmd("leftabove vnew")
+  local nav = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(nav, "ginblamenav" .. suffix)
+  vim.b[nav].gin_blame_file_bufname = "ginblame" .. suffix
+  vim.b[nav].gin_blame_file_fragment = "sub/file.lua"
+  vim.wo.winfixbuf = true
+  vim.wo[filewin].winfixbuf = true
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  vim.cmd.edit()
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), nav)
+  MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, 0, -1, false),
+    { "", "one", "two", "three" }
+  )
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[3].commitSha, first)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. first })
+  MiniTest.expect.equality({
+    vim.b[nav].gin_blame_file_bufnr,
+    vim.b[file].gin_blame_nav_bufnr,
+    vim.b[file].gin_blame_detail_bufnr,
+  }, { file, nav, detail })
+  for _, buf in ipairs({ file, nav }) do
+    MiniTest.expect.equality(vim.wo[vim.fn.bufwinid(buf)].winfixbuf, true)
+  end
+  vim.api.nvim_set_current_win(filewin)
+  vim.cmd.edit()
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+end
 T["missing detail commits clear stale details without breaking navigation"] = function()
   vim.cmd("GinBlame file.lua")
   local nav, file, detail =
