@@ -758,3 +758,10 @@ which supplies diffjump/difffold but no filetype override, and allows the same
 FileType customizations as a normal GinBuffer. Existing opener/emojify fixtures
 now assert the filetype on open and reload across all four source views; their
 content and window-layout checks remain in place.
+
+Diff-jump configuration dispatch was checked separately from file actions.
+The pinned feat/diffjump/jump.ts calls the internal edit executor rather than
+edit:command, so GinEdit persistent arguments do not apply. A fixture confirms
+the existing Lua path retains UTF-8 decoding and the current tab despite
+persistent Latin-1/tabedit settings, then jumps back to the correct working
+file. No production change was needed for this distinction.
