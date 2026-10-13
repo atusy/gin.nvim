@@ -1,0 +1,157 @@
+local M = {}
+local git = require("gin.git")
+local uri = require("gin.uri")
+local buffer = require("gin.buffer")
+
+-- Use line porcelain so filename/previous metadata belongs to each line,
+-- including when the same commit contributed lines from different paths.
+function M.parse(output)
+  local result = { commits = {}, lines = {} }
+  local entry, metadata
+  for line in (output .. "\n"):gmatch("([^\n]*)\n") do
+    if line:sub(1, 1) == "\t" and entry then
+      entry.content = line:sub(2)
+      entry.metadata = metadata
+      result.commits[entry.commitSha] = metadata
+      result.lines[#result.lines + 1] = entry
+      entry = nil
+    elseif entry then
+      local key, value = line:match("^(%S+)%s?(.*)$")
+      if key then
+        metadata[key] = value
+      end
+    else
+      local sha, original, final, count = line:match("^(%x+) (%d+) (%d+)%s*(%d*)$")
+      if sha then
+        entry = {
+          commitSha = sha,
+          originalLineNumber = tonumber(original),
+          lineNumber = tonumber(final),
+          numLinesInGroup = tonumber(count) or 1,
+        }
+        metadata = {}
+      end
+    end
+  end
+  return result
+end
+
+local function relative_time(timestamp)
+  local now = os.time()
+  local diff = now - tonumber(timestamp)
+  local seconds = math.abs(diff)
+  if seconds < 60 then
+    return "just now"
+  end
+  local value, unit
+  if seconds < 3600 then
+    value, unit = math.floor(seconds / 60), "minute"
+  elseif seconds < 86400 then
+    value, unit = math.floor(seconds / 3600), "hour"
+  elseif seconds < 604800 then
+    value, unit = math.floor(seconds / 86400), "day"
+  elseif seconds < 2592000 then
+    value, unit = math.floor(seconds / 604800), "week"
+  else
+    local earlier = os.date("*t", math.min(now, tonumber(timestamp)))
+    local later = os.date("*t", math.max(now, tonumber(timestamp)))
+    if seconds < 31536000 then
+      value, unit = (later.year - earlier.year) * 12 + later.month - earlier.month, "month"
+      if later.day < earlier.day then
+        value = value - 1
+      end
+    else
+      value, unit = later.year - earlier.year, "year"
+      if
+        later.month < earlier.month or (later.month == earlier.month and later.day < earlier.day)
+      then
+        value = value - 1
+      end
+    end
+    value = math.max(1, value)
+  end
+  local text = value .. " " .. unit .. (value == 1 and "" or "s")
+  return diff < 0 and "in " .. text or text .. " ago"
+end
+
+function M.read(buf, name)
+  local parsed = uri.parse(name)
+  local path =
+    require("gin.edit").path(parsed.root, assert(parsed.fragment, "GinBlame requires a path"))
+  local output = git.run(
+    { "blame", "--line-porcelain", parsed.params.commitish or "HEAD", "--", path },
+    { cwd = parsed.root }
+  ).stdout
+  local result = M.parse(output)
+  local content, navlines, map, reverse = {}, {}, {}, {}
+  local previous
+  local width = #tostring(#result.lines)
+  for _, line in ipairs(result.lines) do
+    local label = string.format("%" .. width .. "d", line.lineNumber)
+    if line.commitSha ~= previous then
+      content[#content + 1], navlines[#navlines + 1] = "", ""
+      label = label
+        .. " "
+        .. relative_time(line.metadata["author-time"])
+        .. "\t"
+        .. line.metadata.author
+        .. "\t"
+        .. line.metadata.summary
+    end
+    content[#content + 1], navlines[#navlines + 1] = line.content, label
+    map[#content], reverse[line.lineNumber] = line, #content
+    previous = line.commitSha
+  end
+  local ft = vim.filetype.match({ filename = path, buf = buf })
+  buffer.replace(buf, content, parsed.root, ft and ft .. ".gin-blame" or "gin-blame")
+  local filewin = vim.api.nvim_get_current_win()
+  local navname = uri.format("ginblamenav", parsed.root, parsed.params, path)
+  local detailname = uri.format("ginblamedetail", parsed.root, parsed.params, path)
+  local detail = buffer.open(detailname, { opener = "split", smods = { split = "topleft" } })
+  vim.api.nvim_win_set_height(0, 10)
+  vim.wo.winfixheight = true
+  buffer.replace(
+    detail,
+    buffer.lines(
+      git.run(
+        { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
+        { cwd = parsed.root }
+      ).stdout
+    ),
+    parsed.root,
+    "git"
+  )
+  vim.api.nvim_set_current_win(filewin)
+  local nav = buffer.open(navname, { opener = "vsplit", smods = { split = "leftabove" } })
+  vim.api.nvim_win_set_width(0, 60)
+  buffer.replace(nav, navlines, parsed.root, "gin-blame-nav")
+  for _, target in ipairs({ buf, nav, detail }) do
+    vim.bo[target].buftype = "nowrite"
+    vim.b[target].gin_blame_file_bufnr = buf
+    vim.b[target].gin_blame_nav_bufnr = nav
+    vim.b[target].gin_blame_detail_bufnr = detail
+    local win = vim.fn.bufwinid(target)
+    vim.wo[win].number, vim.wo[win].relativenumber = false, false
+    vim.wo[win].wrap, vim.wo[win].signcolumn = false, "no"
+    if target ~= detail then
+      vim.b[target].gin_blame_result = result
+      vim.b[target].gin_blame_line_map = map
+      vim.b[target].gin_blame_file_line_to_physical = reverse
+      vim.wo[win].scrollbind, vim.wo[win].cursorbind, vim.wo[win].cursorline = true, true, true
+    end
+  end
+end
+
+function M.command(opts)
+  local options, args = require("gin.command").parse(opts.fargs, { "worktree", "opener" })
+  assert(#args == 1 or #args == 2, "GinBlame expects [commitish] path")
+  local root = require("gin.worktree").current(options.worktree)
+  local path = require("gin.edit").path(root, vim.fn.fnamemodify(args[#args], ":p"))
+  local name = uri.format("ginblame", root, { commitish = #args == 2 and args[1] or nil }, path)
+  return buffer.open(
+    name,
+    { opener = options.opener or "tabedit", bang = opts.bang, smods = opts.smods }
+  )
+end
+
+return M

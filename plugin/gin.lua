@@ -145,3 +145,13 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
 vim.api.nvim_create_user_command("GinBrowse", function(opts)
   require("gin.browse").command(opts)
 end, { nargs = "*", bar = true, range = true })
+vim.api.nvim_create_user_command("GinBlame", function(opts)
+  require("gin.blame").command(opts)
+end, { nargs = "*", bar = true, bang = true })
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_blame", { clear = true }),
+  pattern = "ginblame://*",
+  callback = function(event)
+    require("gin.blame").read(event.buf, event.match)
+  end,
+})
