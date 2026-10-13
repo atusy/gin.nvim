@@ -1041,4 +1041,12 @@ utility, as pinned `bare/command.ts` does, instead of reading buffers directly
 inside the event. Hidden views defer Git execution until entry and use normal
 `:edit` handling when reloaded. A real log fixture verifies that the hidden
 view retains its old contents until BufEnter and then shows the new commit.
-Other listing bindings still need the same automatic-reload audit.
+Branch/tag/stash/status now use the same path, including status refreshes from
+file-write events. Thirteen integration fixtures cover all six listing types
+while hidden or visible in another window, asynchronous dispatch, restored
+focus and a real file write. Existing action tests await scheduled refreshes
+before inspecting view contents or issuing a second action on the new rows.
+Reload also saves/restores each displaying window's view: normal `:edit` resets
+positions before Lua replaces the contents, so the existing multiple-window
+status cursor regression remains covered. The event debounce interval and
+broader reload/URI compatibility audit remain separate from these fixtures.

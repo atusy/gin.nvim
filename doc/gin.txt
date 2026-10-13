@@ -133,8 +133,11 @@ require('gin.util').reload([bufnr])                           *gin-util-reload*
     Schedule :edit for the specified buffer (default or 0: current buffer).
     A buffer hidden in the current tab reloads once on its next BufEnter.
     Reloading another visible buffer restores the original window afterward.
+    Displaying windows retain their cursor and scroll positions where possible.
     Unsaved changes are retained and :edit failures are reported with
     vim.notify(). Requests for buffers wiped before execution are ignored.
+    Listing views use this deferred reload after GinCommandPost; GinStatus also
+    uses it after file writes. Hidden views refresh on their next entry.
 
 require('gin.util').expand(expr)                              *gin-util-expand*
     Expand a Vim filename expression. For GinEdit, GinDiff and file-filtered

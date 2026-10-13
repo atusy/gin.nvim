@@ -29,6 +29,7 @@ T["stash apply index restores selected content and retains both stashes"] = func
   require("gin.action").call(vim.api.nvim_get_current_buf(), "apply:index", { 2, 2 })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
   MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
+  H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
 T["stash echo exposes the selected reflog reference and index"] = function()
@@ -68,6 +69,7 @@ T["stash pop restores only the selected stash and removes it"] = function()
   vim.cmd.GinStash()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 2, 2 })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
+  H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 1)
   MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%s"), "On main: newer\n")
 end
@@ -102,6 +104,7 @@ T["stash emojify retains pop targets across reload"] = function()
   )
   require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 1, 1 })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "emoji content" })
+  H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
   MiniTest.expect.equality(
     H.git(root, "stash", "list", "--format=%s"),
@@ -122,6 +125,7 @@ T["stash decoding options survive reload and preserve pop targets"] = function()
   MiniTest.expect.equality(vim.bo.fileformat, "unix")
   require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 1, 1 })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "encoded content" })
+  H.drain()
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
 T["custom stash formats preserve filtered pop targets across reload"] = function()

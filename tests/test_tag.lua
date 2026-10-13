@@ -34,6 +34,7 @@ T["tag delete removes only selected refs"] = function()
   vim.cmd.GinTag()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "tag", "--list"), "release\n")
+  H.drain()
   MiniTest.expect.equality(#vim.b.gin_tags, 1)
 end
 T["tag show opens annotated tag content"] = function()

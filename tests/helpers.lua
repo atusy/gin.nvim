@@ -1,5 +1,18 @@
 local M = {}
 
+function M.drain()
+  local done = false
+  vim.schedule(function()
+    done = true
+  end)
+  assert(
+    vim.wait(1000, function()
+      return done
+    end, 10),
+    "scheduled callbacks must finish"
+  )
+end
+
 function M.git(cwd, ...)
   local cmd = { "git", "-C", cwd }
   vim.list_extend(cmd, { ... })

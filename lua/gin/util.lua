@@ -8,7 +8,18 @@ function M.reload(bufnr)
     bufnr = vim.api.nvim_get_current_buf()
   end
   local function edit()
+    local views = {}
+    for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+      views[win] = vim.api.nvim_win_call(win, vim.fn.winsaveview)
+    end
     local ok, err = pcall(vim.cmd.edit)
+    for win, view in pairs(views) do
+      if vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == bufnr then
+        vim.api.nvim_win_call(win, function()
+          vim.fn.winrestview(view)
+        end)
+      end
+    end
     if not ok then
       vim.notify(tostring(err), vim.log.levels.ERROR)
     end
