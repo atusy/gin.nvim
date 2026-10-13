@@ -41,7 +41,9 @@ Currently implemented:
   its linked worktree. `worktree`, `worktree:force`, and `worktree:orphan` prompt
   for a branch and checkout path, then change cwd to the created worktree.
   `merge`/`merge:ff`, `merge:no-ff`, and `merge:ff-only` merge the selected ref
-  into the current branch. Remote deletion deletes the remote ref.
+  into the current branch. `rebase`, `rebase:x`, and `rebase:instant-drop` replay
+  onto the selected ref, run an exec command, or drop the selected commit.
+  Interactive rebase actions remain pending. Remote deletion deletes the remote ref.
 - `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
   file by default, or an immutable revision when a commitish is given. Relative
   paths are repository-relative. Writing the index buffer updates Git's index

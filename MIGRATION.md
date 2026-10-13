@@ -43,7 +43,7 @@ to prove an action produces the intended Git state.
   current-branch rejection, pattern reloads, named-register yanks, creation,
   forced reset, orphan branches, cancellation, rename, linked-worktree moves,
   worktree creation, orphan checkouts, command-driven refresh, event cleanup,
-  merge ancestry and ff-only rejection.
+  merge ancestry, ff-only rejection, rebase replay/exec and instant-drop history.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection, working/index/revision jumps, reverse and three-dot
@@ -104,7 +104,7 @@ become available. Audit every pinned command, option, mapping, event and compone
 before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
-actions, plus branch/worktree creation and moves. Log/browse/rebase actions,
+actions, plus branch/worktree creation and moves. Log/browse and interactive rebase actions,
 complete option/display compatibility remain pending. Branch views refresh after
 GinCommandPost while preserving the current view.
 
