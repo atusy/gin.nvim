@@ -27,4 +27,13 @@ function M.repo()
   return dir
 end
 
+function M.cleanup(root)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(buf):find(root, 1, true) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+  vim.fn.delete(root, "rf")
+end
+
 return M

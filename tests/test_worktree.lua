@@ -11,7 +11,7 @@ local T = MiniTest.new_set({
       vim.cmd.cd(saved_cwd)
       vim.fn.delete(root .. " linked", "rf")
       vim.fn.delete(root .. " symlink", "rf")
-      vim.fn.delete(root, "rf")
+      H.cleanup(root)
     end,
   },
 })

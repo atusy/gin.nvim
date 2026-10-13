@@ -6,7 +6,7 @@ local T = MiniTest.new_set({
       root = H.repo()
     end,
     post_case = function()
-      vim.fn.delete(root, "rf")
+      H.cleanup(root)
     end,
   },
 })
