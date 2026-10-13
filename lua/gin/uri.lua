@@ -5,10 +5,12 @@ end
 
 function M.format(scheme, root, params, fragment)
   local query = {}
-  for _, key in ipairs(vim.tbl_keys(params or {})) do
-    query[#query + 1] = encode(key) .. "=" .. encode(params[key])
+  for _, key in ipairs(vim.fn.sort(vim.tbl_keys(params or {}))) do
+    local values = type(params[key]) == "table" and params[key] or { params[key] }
+    for _, value in ipairs(values) do
+      query[#query + 1] = encode(key) .. "=" .. encode(value)
+    end
   end
-  table.sort(query)
   return scheme
     .. "://"
     .. encode(root):gsub("%%2F", "/")
@@ -28,7 +30,15 @@ function M.parse(name)
     if not key then
       key, value = record, ""
     end
-    params[vim.uri_decode(key)] = vim.uri_decode(value)
+    key, value = vim.uri_decode(key), vim.uri_decode(value)
+    if params[key] == nil then
+      params[key] = value
+    else
+      if type(params[key]) ~= "table" then
+        params[key] = { params[key] }
+      end
+      table.insert(params[key], value)
+    end
   end
   return {
     scheme = scheme,

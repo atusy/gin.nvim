@@ -1089,3 +1089,11 @@ duplicate. Existing real-Git action fixtures now include that setting alongside
 encoding, diff/history filters or pane options; browse fixtures verify the
 resulting selected-path and selected-commit URLs. Explicit duplicate openers
 still fail, and file paths remain anchored to the selected buffer's repository.
+
+GinDiff now preserves repeated Git flags rather than overwriting earlier values.
+The pinned command uses denops std v7's array-valued flags and buffer parameters;
+the Lua URI query now likewise stores repeated keys in their original value
+order and restores them on read. A real Git fixture combines `--diff-filter=M`
+and `--diff-filter=A` and checks both modified and added file diffs against Git,
+including a buffer reload. This does not establish legacy URI-format parity or
+complete short-flag parsing parity; those remain part of the migration audit.

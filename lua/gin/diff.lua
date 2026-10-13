@@ -8,8 +8,10 @@ function M.output(name, progress)
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
     if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
       local prefix = key:sub(1, 1) == "-" and "" or "--"
-      local value = parsed.params[key]
-      args[#args + 1] = prefix .. key .. (value ~= "" and "=" .. value or "")
+      local values = parsed.params[key]
+      for _, value in ipairs(type(values) == "table" and values or { values }) do
+        args[#args + 1] = prefix .. key .. (value ~= "" and "=" .. value or "")
+      end
     end
   end
   if parsed.params.commitish then
@@ -64,7 +66,15 @@ function M.command(opts)
     elseif arg:sub(1, 1) == "-" then
       local key, value = arg:match("^%-%-([^=]+)=(.*)$")
       key = key or arg:match("^%-%-(.+)$") or arg
-      options.flags[key] = value or ""
+      value = value or ""
+      if options.flags[key] == nil then
+        options.flags[key] = value
+      else
+        if type(options.flags[key]) ~= "table" then
+          options.flags[key] = { options.flags[key] }
+        end
+        table.insert(options.flags[key], value)
+      end
     else
       assert(not options.commitish, "GinDiff expects [commitish] [-- paths...]")
       options.commitish = arg

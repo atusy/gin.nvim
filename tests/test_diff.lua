@@ -42,6 +42,22 @@ T["GinDiff compares an explicit revision range"] = function()
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
   MiniTest.expect.equality(content:find("working", 1, true), nil)
 end
+T["GinDiff retains repeated filters across reloads"] = function()
+  vim.fn.writefile({ "added" }, root .. "/sub/added")
+  H.git(root, "add", "sub/added")
+  local expected =
+    H.git(root, "diff", "--no-color", "--cached", "--diff-filter=M", "--diff-filter=A")
+  MiniTest.expect.equality(expected:find("sub/file", 1, true) ~= nil, true)
+  MiniTest.expect.equality(expected:find("sub/added", 1, true) ~= nil, true)
+  vim.cmd("GinDiff --cached --diff-filter=M --diff-filter=A")
+  for _ = 1, 2 do
+    MiniTest.expect.equality(
+      table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+      expected
+    )
+    vim.cmd.edit()
+  end
+end
 T["file diff actions honor persistent flags and retain the selected path"] = function()
   vim.fn.writefile({ "base" }, root .. "/sub/%target")
   H.git(root, "add", "sub/%target")
