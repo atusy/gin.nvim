@@ -255,6 +255,98 @@ T["merge ff-only rejects divergent history without changing HEAD"] = function()
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), before)
   MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
 end
+for _, failure in ipairs({ "cancelled editor", "conflicting files" }) do
+  T["merge recovers from " .. failure .. " through Gin commit"] = function()
+    vim.env.GIT_MERGE_AUTOEDIT = "yes"
+    H.git(root, "config", "user.name", "Gin Test")
+    H.git(root, "config", "user.email", "gin@example.invalid")
+    H.git(root, "config", "core.editor", "true")
+    if failure == "conflicting files" then
+      H.git(root, "checkout", "topic")
+      vim.fn.writefile({ "topic version" }, root .. "/file")
+      H.git(root, "commit", "-am", "topic change")
+      H.git(root, "checkout", "main")
+      vim.fn.writefile({ "main version" }, root .. "/file")
+      H.git(root, "commit", "-am", "main change")
+    else
+      advance_topic()
+    end
+    local before, topic = H.git(root, "rev-parse", "main"), H.git(root, "rev-parse", "topic")
+    vim.cmd("GinBranch topic")
+    local posts, message = 0, nil
+    local event = vim.api.nvim_create_autocmd("User", {
+      pattern = "GinCommandPost",
+      callback = function()
+        posts = posts + 1
+      end,
+    })
+    local notify = vim.notify
+    vim.notify = function(text)
+      message = text
+    end
+    local ok, err = pcall(function()
+      local process =
+        require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:no-ff", { 1, 1 })
+      if failure == "cancelled editor" then
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return vim.b.gin_editor_request ~= nil
+          end, 10),
+          true
+        )
+        vim.cmd.Cancel()
+      end
+      MiniTest.expect.equality(
+        vim.wait(5000, function()
+          return message ~= nil
+        end, 10),
+        true
+      )
+      MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+      MiniTest.expect.equality(posts, 0)
+      MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), before)
+      MiniTest.expect.equality(H.git(root, "rev-parse", "MERGE_HEAD"), topic)
+      if failure == "conflicting files" then
+        MiniTest.expect.equality(H.git(root, "show", ":1:file"), "base\n")
+        MiniTest.expect.equality(H.git(root, "show", ":2:file"), "main version\n")
+        MiniTest.expect.equality(H.git(root, "show", ":3:file"), "topic version\n")
+        MiniTest.expect.equality(vim.b.gin_editor_request, nil)
+        vim.fn.writefile({ "resolved content" }, root .. "/file")
+        H.git(root, "add", "file")
+      else
+        MiniTest.expect.equality(H.git(root, "show", ":topic-file"), "topic\n")
+      end
+      vim.cmd("Gin commit")
+      MiniTest.expect.equality(
+        vim.wait(5000, function()
+          return vim.b.gin_editor_request ~= nil
+        end, 10),
+        true
+      )
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "recovered merge" })
+      vim.cmd.Apply()
+      MiniTest.expect.equality(
+        vim.wait(5000, function()
+          return posts == 1
+        end, 10),
+        true
+      )
+      MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "recovered merge\n")
+      MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^1"), before)
+      MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^2"), topic)
+      MiniTest.expect.equality(vim.fn.filereadable(root .. "/.git/MERGE_HEAD"), 0)
+      MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+      if failure == "conflicting files" then
+        MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "resolved content\n")
+      else
+        MiniTest.expect.equality(H.git(root, "show", "HEAD:topic-file"), "topic\n")
+      end
+    end)
+    vim.notify = notify
+    vim.api.nvim_del_autocmd(event)
+    assert(ok, err)
+  end
+end
 local function diverge()
   advance_topic()
   H.git(root, "config", "user.name", "Gin Test")

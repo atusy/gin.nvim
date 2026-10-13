@@ -287,4 +287,8 @@ Branch and history merge actions now run through the asynchronous command proxy,
 so Git can request an editable merge message. A no-ff branch fixture applies a
 custom message and verifies both parents. Fast-forward branch/history fixtures
 and divergent ff-only rejection verify completion and unchanged failure state.
-Merge-editor cancellation and conflict continuation need further coverage.
+Recovery fixtures now verify that editor cancellation preserves MERGE_HEAD and
+staged merge content, and conflicts preserve the base/ours/theirs index stages.
+Both paths finish through Gin commit and the proxy editor, with checks for the
+message, both parents, final content, clean status and removed MERGE_HEAD.
+Failed merges emit no success event; the completed recovery emits one.
