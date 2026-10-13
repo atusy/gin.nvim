@@ -38,27 +38,49 @@ end
 
 function M.execute(opts)
   local options, args =
-    M.parse(opts.fargs, { "wait", "worktree", "enc", "encoding", "ff", "fileformat" })
+    M.parse(opts.fargs, { "wait", "worktree", "processor", "enc", "encoding", "ff", "fileformat" })
   local root = require("gin.worktree").current(options.worktree)
   if options.wait then
-    local result = require("gin.git").run(args, { cwd = root })
+    local result = require("gin.git").run(args, { cwd = root, processor = options.processor })
     M.finish(result, options, opts.smods)
     return result
+  end
+  local function report(message)
+    if not opts.smods.emsg_silent then
+      vim.notify(message, vim.log.levels.ERROR)
+    end
+  end
+  local function finish(result, source)
+    if result.code ~= 0 then
+      report(("%s exited %d: %s"):format(source, result.code, vim.trim(result.stderr or "")))
+      return
+    end
+    M.finish(result, options, opts.smods)
   end
   return require("gin.git").start(
     args,
     { cwd = root },
     vim.schedule_wrap(function(result)
-      if result.code ~= 0 then
-        if not opts.smods.emsg_silent then
-          vim.notify(
-            ("git exited %d: %s"):format(result.code, vim.trim(result.stderr or "")),
-            vim.log.levels.ERROR
-          )
-        end
+      if result.code ~= 0 or not options.processor or options.processor == "" then
+        finish(result, "git")
         return
       end
-      M.finish(result, options, opts.smods)
+      local ok, err = pcall(function()
+        vim.system(
+          require("gin.uri").split(options.processor),
+          {
+            cwd = root,
+            stdin = result.stdout,
+            timeout = 30000,
+          },
+          vim.schedule_wrap(function(processed)
+            finish(processed, "processor")
+          end)
+        )
+      end)
+      if not ok then
+        report("processor failed: " .. tostring(err))
+      end
     end)
   )
 end

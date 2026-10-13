@@ -64,4 +64,60 @@ T["directory commands use buffer repository and honor local scope"] = function()
   MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root))
   MiniTest.expect.equality(vim.fn.haslocaldir(), 1)
 end
+T["Gin wait returns processed output and rejects processor failures"] = function()
+  vim.fn.writefile({ "text" }, root .. "/file")
+  local result = require("gin.command").execute({
+    fargs = { "++wait", "++processor=tr a-z A-Z", "status", "--short" },
+    smods = { silent = true },
+  })
+  MiniTest.expect.equality(result.stdout, "?? FILE\n")
+  MiniTest.expect.equality(events, 1)
+  MiniTest.expect.error(function()
+    vim.cmd("Gin ++wait ++processor=false status")
+  end, "processor exited")
+  MiniTest.expect.equality(events, 1)
+end
+T["asynchronous Gin waits for processor completion before publishing success"] = function()
+  vim.fn.writefile({ "text" }, root .. "/file")
+  local command = require("gin.command")
+  local original, received = command.finish, nil
+  command.finish = function(result, options, mods)
+    received = result.stdout
+    return original(result, options, mods)
+  end
+  local ok, err = pcall(function()
+    command.execute({
+      fargs = { "++processor=tr a-z A-Z", "status", "--short" },
+      smods = { silent = true },
+    })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return events == 1
+      end),
+      true
+    )
+  end)
+  command.finish = original
+  assert(ok, err)
+  MiniTest.expect.equality(received, "?? FILE\n")
+end
+T["asynchronous processor failures report errors without success events"] = function()
+  local original, received = vim.notify, nil
+  vim.notify = function(message)
+    received = message
+  end
+  local ok, err = pcall(function()
+    require("gin.command").execute({ fargs = { "++processor=false", "status" }, smods = {} })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return received ~= nil
+      end),
+      true
+    )
+  end)
+  vim.notify = original
+  assert(ok, err)
+  MiniTest.expect.equality(received:find("processor exited", 1, true) ~= nil, true)
+  MiniTest.expect.equality(events, 0)
+end
 return T
