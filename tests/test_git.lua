@@ -60,4 +60,37 @@ T["processor errors propagate and failed Git commands skip processors"] = functi
   )
   MiniTest.expect.equality(result.stderr:find("not%-a%-git%-command") ~= nil, true)
 end
+T["stream listeners observe output before exit without losing captured bytes"] = function()
+  local stdout, stderr = {}, {}
+  local process = require("gin.git").start({
+    "-c",
+    [[alias.progress=!printf 'early\000data\n'; read answer; printf '%s\n' "$answer"; printf 'warning\n' >&2]],
+    "progress",
+  }, {
+    cwd = root,
+    stdin = true,
+    on_stdout = function(_, data)
+      if data then
+        stdout[#stdout + 1] = data
+      end
+    end,
+    on_stderr = function(_, data)
+      if data then
+        stderr[#stderr + 1] = data
+      end
+    end,
+  })
+  local observed = vim.wait(1000, function()
+    return table.concat(stdout):find("early\0data\n", 1, true) ~= nil
+  end, 10)
+  process:write("finished\n")
+  process:write(nil)
+  local result = process:wait(5000)
+  MiniTest.expect.equality(observed, true)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(result.stdout, "early\0data\nfinished\n")
+  MiniTest.expect.equality(result.stderr, "warning\n")
+  MiniTest.expect.equality(table.concat(stdout), result.stdout)
+  MiniTest.expect.equality(table.concat(stderr), result.stderr)
+end
 return T

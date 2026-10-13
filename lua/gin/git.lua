@@ -2,7 +2,7 @@ local M = {}
 
 ---Run Git with literal argv and preserve its output and exit status.
 ---@param args string[]
----@param opts? {cwd?: string, env?: table, stdin?: string|boolean, timeout?: integer|false, check?: boolean}
+---@param opts? {cwd?: string, env?: table, stdin?: string|boolean, timeout?: integer|false, check?: boolean, on_stdout?: function, on_stderr?: function}
 ---@param callback? fun(result: vim.SystemCompleted)
 ---@return vim.SystemObj
 function M.start(args, opts, callback)
@@ -15,12 +15,35 @@ function M.start(args, opts, callback)
   end
   local cmd = { "git", "--no-pager", "--literal-pathspecs", "--no-optional-locks" }
   vim.list_extend(cmd, args)
+  local streams = {}
+  local function listen(name)
+    local listener = opts["on_" .. name]
+    if not listener then
+      return nil
+    end
+    streams[name] = {}
+    return function(err, data)
+      if data then
+        streams[name][#streams[name] + 1] = data
+      end
+      listener(err, data)
+    end
+  end
   return vim.system(cmd, {
     cwd = opts.cwd,
     env = opts.env,
     stdin = opts.stdin,
     timeout = timeout,
-  }, callback)
+    stdout = listen("stdout"),
+    stderr = listen("stderr"),
+  }, function(result)
+    for name, chunks in pairs(streams) do
+      result[name] = table.concat(chunks)
+    end
+    if callback then
+      callback(result)
+    end
+  end)
 end
 
 function M.run(args, opts)
