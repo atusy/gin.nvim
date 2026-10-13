@@ -907,3 +907,10 @@ for displayed progress before completing and asserting transformed index content
 unchanged working content and restored editor options. Existing action fixtures
 continue to validate selection and resulting Git state. This streaming change
 does not close the wider action executor/proxy compatibility audit.
+
+Branch mutations, tag mutations and stash apply/pop/drop now stream both output
+channels through their existing command paths, including worktree removal before
+branch deletion. Three real Git trace fixtures cover branch switching, tag
+deletion and stash dropping, asserting progress independently of final messages,
+the resulting refs and preserved working-file contents. Other action execution
+semantics remain subject to the wider command/proxy audit.

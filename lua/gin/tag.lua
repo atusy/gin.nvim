@@ -75,7 +75,7 @@ function M.read(buf, name)
   vim.b[buf].gin_tags = rows
   action.setup(buf, candidates)
   local function run(args)
-    require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
+    require("gin.command").finish(git.run(args, { cwd = parsed.root, progress = "both" }), {}, {})
   end
   action.define(buf, "delete", function(target, range)
     local selected = candidates(target, range)

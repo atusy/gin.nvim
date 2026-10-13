@@ -165,7 +165,7 @@ function M.read(buf, name)
     end,
   })
   local function run(args)
-    local result = git.run(args, { cwd = parsed.root })
+    local result = git.run(args, { cwd = parsed.root, progress = "both" })
     require("gin.command").finish(result, {}, {})
   end
   for _, detach in ipairs({ false, true }) do
@@ -194,7 +194,7 @@ function M.read(buf, name)
               args[#args + 1] = "--force"
             end
             vim.list_extend(args, { "--", row.worktree })
-            git.run(args, { cwd = parsed.root })
+            git.run(args, { cwd = parsed.root, progress = "both" })
           end
           run({ "branch", force and "-D" or "-d", "--", row.branch })
         end

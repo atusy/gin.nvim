@@ -73,7 +73,7 @@ function M.read(buf, name)
         args[#args + 1] = "--index"
       end
       args[#args + 1] = row.stash
-      require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
+      require("gin.command").finish(git.run(args, { cwd = parsed.root, progress = "both" }), {}, {})
     end)
   end
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
