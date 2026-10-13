@@ -1,0 +1,74 @@
+local M = {}
+local function encode(value)
+  return vim.uri_encode(tostring(value), "rfc3986")
+end
+
+function M.format(scheme, root, params, fragment)
+  local query = {}
+  for _, key in ipairs(vim.tbl_keys(params or {})) do
+    query[#query + 1] = encode(key) .. "=" .. encode(params[key])
+  end
+  table.sort(query)
+  return scheme
+    .. "://"
+    .. encode(root):gsub("%%2F", "/")
+    .. (#query > 0 and "?" .. table.concat(query, "&") or "")
+    .. (fragment and "#" .. encode(fragment) .. "$" or "")
+end
+
+function M.parse(name)
+  local scheme, rest = name:match("^(gin[%w]*)://(.*)$")
+  assert(scheme, "Invalid Gin URI: " .. name)
+  local expr, fragment = rest:match("^(.-)#(.*)%$$")
+  expr = expr or rest
+  local root, query = expr:match("^(.-)%?(.*)$")
+  local params = {}
+  for record in (query or ""):gmatch("[^&]+") do
+    local key, value = record:match("^([^=]+)=(.*)$")
+    if not key then
+      key, value = record, ""
+    end
+    params[vim.uri_decode(key)] = vim.uri_decode(value)
+  end
+  return {
+    scheme = scheme,
+    root = vim.uri_decode(root or expr),
+    params = params,
+    fragment = fragment and vim.uri_decode(fragment) or nil,
+  }
+end
+
+---Escape whitespace and backslashes using the user command's argument syntax.
+function M.join(args)
+  local escaped = {}
+  for _, arg in ipairs(args) do
+    escaped[#escaped + 1] = arg:gsub("\\", "\\\\"):gsub("%s", "\\%0")
+  end
+  return table.concat(escaped, " ")
+end
+
+function M.split(fragment)
+  local args, current, escaped = {}, {}, false
+  for char in fragment:gmatch(".") do
+    if escaped then
+      current[#current + 1], escaped = char, false
+    elseif char == "\\" then
+      escaped = true
+    elseif char:match("%s") then
+      if #current > 0 then
+        args[#args + 1], current = table.concat(current), {}
+      end
+    else
+      current[#current + 1] = char
+    end
+  end
+  if escaped then
+    current[#current + 1] = "\\"
+  end
+  if #current > 0 then
+    args[#args + 1] = table.concat(current)
+  end
+  return args
+end
+
+return M

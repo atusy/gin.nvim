@@ -1,3 +1,5 @@
+vim.env.GIT_CONFIG_NOSYSTEM = "1"
+vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
 vim.opt.rtp:prepend(vim.fn.getcwd())
 vim.opt.rtp:append(vim.fn.getcwd() .. "/.deps/mini.nvim")
 require("mini.test").setup({

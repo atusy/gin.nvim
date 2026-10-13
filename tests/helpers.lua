@@ -29,7 +29,10 @@ end
 
 function M.cleanup(root)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_get_name(buf):find(root, 1, true) then
+    if
+      vim.uri_decode(vim.api.nvim_buf_get_name(buf)):find(root, 1, true)
+      or vim.b[buf].gin_worktree == vim.uv.fs_realpath(root)
+    then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
   end

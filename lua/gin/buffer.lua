@@ -1,0 +1,52 @@
+local M = {}
+
+function M.open(name, opts)
+  local opener = opts.opener or "edit"
+  if not vim.tbl_contains({ "edit", "split", "vsplit", "tabedit", "pedit" }, opener) then
+    error("Unsupported Gin opener: " .. opener, 0)
+  end
+  vim.api.nvim_cmd(
+    { cmd = opener, args = { vim.fn.fnameescape(name) }, bang = opts.bang, mods = opts.smods },
+    {}
+  )
+  return vim.fn.bufnr(name)
+end
+
+function M.replace(buf, lines, root, filetype)
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modified = false
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "unload"
+  vim.bo[buf].swapfile = false
+  vim.b[buf].gin_worktree = root
+  vim.bo[buf].filetype = filetype
+end
+
+function M.lines(output)
+  output = output:gsub("\r\n", "\n"):gsub("\27%[[%d;]*m", "")
+  if output:sub(-1) == "\n" then
+    output = output:sub(1, -2)
+  end
+  return vim.split(output, "\n", { plain = true })
+end
+
+function M.read(buf, name)
+  local uri = require("gin.uri").parse(name)
+  assert(uri.fragment, "Gin buffer requires command arguments")
+  local result = require("gin.git").run(require("gin.uri").split(uri.fragment), { cwd = uri.root })
+  M.replace(buf, M.lines(result.stdout), uri.root, uri.params.filetype or "gin-buffer")
+end
+
+function M.command(opts)
+  local options, args =
+    require("gin.command").parse(opts.fargs, { "worktree", "opener", "filetype", "monochrome" })
+  local root = require("gin.worktree").current(options.worktree)
+  local uri = require("gin.uri")
+  local name =
+    uri.format("gin", root, { filetype = options.filetype or "gin-buffer" }, uri.join(args))
+  return M.open(name, { opener = options.opener, bang = opts.bang, smods = opts.smods })
+end
+
+return M
