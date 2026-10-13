@@ -157,4 +157,18 @@ T["yank path uses the requested register and absolute file path"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), vim.uv.fs_realpath(root) .. "/file")
 end
+T["restore reverts only the selected working file"] = function()
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "base" }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "initial")
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "changed" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "restore", { 2, 2 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/one"), { "base" })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "changed" })
+end
 return T

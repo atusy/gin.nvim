@@ -3,6 +3,30 @@ local M = {}
 
 ---Install file actions whose candidates contain repository-relative paths.
 function M.setup(buf, gather)
+  local function define_git(name, args)
+    action.define(buf, name, function(target, range)
+      local entries = gather(target, range)
+      if #entries == 0 then
+        return
+      end
+      local command = vim.list_extend(vim.deepcopy(args), { "--" })
+      for _, entry in ipairs(entries) do
+        command[#command + 1] = entry.path
+      end
+      local result = require("gin.git").run(command, { cwd = vim.b[target].gin_worktree })
+      require("gin.command").finish(result, {}, {})
+    end)
+  end
+  for name, flags in pairs({
+    restore = { "--ignore-unmerged" },
+    ["restore:staged"] = { "--ignore-unmerged", "--staged" },
+    ["restore:ours"] = { "--ignore-unmerged", "--ours" },
+    ["restore:theirs"] = { "--ignore-unmerged", "--theirs" },
+    ["restore:conflict:merge"] = { "--conflict=merge" },
+    ["restore:conflict:diff3"] = { "--conflict=diff3" },
+  }) do
+    define_git(name, vim.list_extend({ "restore", "--quiet" }, flags))
+  end
   for _, source in ipairs({ "local", "cached", "HEAD" }) do
     for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
       action.define(buf, "edit:" .. source .. ":" .. opener, function(target, range)
