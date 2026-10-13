@@ -504,6 +504,27 @@ T["status command defaults to all untracked files with explicit overrides"] = fu
   require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
   MiniTest.expect.equality(H.git(root, "show", ":new/file"), "content\n")
 end
+T["status preserves upstream flag grouping through URI reload"] = function()
+  vim.fn.mkdir(root .. "/new", "p")
+  vim.fn.writefile({ "nested" }, root .. "/new/file")
+  for _, case in ipairs({
+    { "-uno --untracked-files=all", {} },
+    { "-unormal --untracked-files=no -uall", { "?? new/file" } },
+    { "--untracked-files=all -uno --untracked-files=normal", {} },
+    { "-uall --untracked-files=no -unormal", { "?? new/" } },
+  }) do
+    vim.cmd("GinStatus " .. case[1])
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
+  end
+  -- Git must see earlier repeated values too, including an invalid one.
+  MiniTest.expect.error(function()
+    vim.cmd("GinStatus --renames=invalid --renames")
+  end, "takes no value")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/new/file"), { "nested" })
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "")
+end
 T["short untracked flags survive reload and stop at the path separator"] = function()
   vim.fn.mkdir(root .. "/new", "p")
   vim.fn.writefile({ "nested" }, root .. "/new/file")

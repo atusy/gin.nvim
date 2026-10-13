@@ -1264,3 +1264,11 @@ Navigation reload creates the referenced file there, explicitly reads its blame
 content despite non-nested BufReadCmd handling, reuses the original navigation
 and detail buffers, and restores fixed-window behavior and navigation focus.
 Reconciling divergent navigation/file URI parameters remains unaudited.
+
+GinStatus command flag parsing now retains distinct short/long names, repeated
+values and first-occurrence name ordering. The default untracked-files name
+stays first, as in the pinned object merge, with explicit values replacing the
+default. A real Git fixture checks mixed -u/--untracked-files modes on open and
+reload and confirms that an invalid earlier --renames value still reaches Git
+instead of being silently discarded by a later occurrence. This verifies the
+status command path in addition to the existing legacy URI flag tests.

@@ -120,9 +120,18 @@ function M.command(opts)
     args,
     { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
   )
-  local flags, paths, path_mode = { ["untracked-files"] = "" }, {}, false
-  local allowed =
-    { "untracked-files", "ignore-submodules", "ignored", "renames", "no-renames", "find-renames" }
+  local flags, paths, path_mode = {}, {}, false
+  -- Upstream inserts this default before merging the parsed flag names.
+  local flag_order = { "untracked-files" }
+  local allowed = {
+    "u",
+    "untracked-files",
+    "ignore-submodules",
+    "ignored",
+    "renames",
+    "no-renames",
+    "find-renames",
+  }
   for _, arg in ipairs(residue) do
     if not path_mode and arg == "--" then
       path_mode = true
@@ -130,16 +139,28 @@ function M.command(opts)
       local key, value = arg:match("^%-%-([^=]+)=(.*)$")
       key = key or arg:match("^%-%-(.+)$")
       if arg:match("^%-u") then
-        key, value = "untracked-files", arg:sub(3)
+        key, value = "u", arg:sub(3)
       end
       if not vim.tbl_contains(allowed, key) then
         error("Unsupported GinStatus flag: " .. arg, 0)
       end
-      flags[key] = value or ""
+      value = value or ""
+      if flags[key] == nil then
+        if key ~= "untracked-files" then
+          flag_order[#flag_order + 1] = key
+        end
+        flags[key] = value
+      else
+        if type(flags[key]) ~= "table" then
+          flags[key] = { flags[key] }
+        end
+        table.insert(flags[key], value)
+      end
     else
       paths[#paths + 1] = arg
     end
   end
+  flags["untracked-files"] = flags["untracked-files"] or ""
   local root = require("gin.worktree").current(options.worktree)
   return buffer.open(
     uri.format(
@@ -149,7 +170,8 @@ function M.command(opts)
         enc = options.enc or options.encoding,
         ff = options.ff or options.fileformat,
       }),
-      #paths > 0 and vim.json.encode(paths) or nil
+      #paths > 0 and vim.json.encode(paths) or nil,
+      flag_order
     ),
     { opener = options.opener, bang = opts.bang, smods = opts.smods }
   )
