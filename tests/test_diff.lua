@@ -246,4 +246,50 @@ T["jump preserves literal backslashes before octal digits and escape letters"] =
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/" .. path)
   MiniTest.expect.equality(vim.api.nvim_get_current_line(), "new")
 end
+
+for _, flags in ipairs({
+  "--no-prefix",
+  "--src-prefix=old.+/ --dst-prefix=new.+/",
+  "-R --no-prefix",
+  "-R --src-prefix=old.+/ --dst-prefix=new.+/",
+}) do
+  T["diff prefixes preserve real paths for folds and jumps " .. flags] = function()
+    vim.fn.mkdir(root .. "/a", "p")
+    vim.fn.writefile({ "old" }, root .. "/a/file")
+    H.git(root, "add", "a/file")
+    vim.fn.writefile({ "new" }, root .. "/a/file")
+    vim.cmd("GinDiff " .. flags .. " -- a/file")
+    local header
+    for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if line:match("^%-%-%- ") then
+        header = i
+      end
+    end
+    assert(header)
+    vim.cmd("normal! zM")
+    MiniTest.expect.equality(vim.fn.foldtextresult(header), "[.] a/file (+1 -1)")
+    vim.cmd("normal! zR")
+    jump(flags:find("-R", 1, true) and "-new" or "+new")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/a/file")
+    MiniTest.expect.equality(vim.api.nvim_get_current_line(), "new")
+  end
+end
+
+T["custom slash prefixes preserve deleted-file markers"] = function()
+  vim.fn.delete(root .. "/sub/file")
+  vim.cmd("GinDiff --src-prefix=/ --dst-prefix=/ -- sub/file")
+  local header
+  for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    if line:match("^%-%-%- ") then
+      header = i
+    end
+  end
+  assert(header)
+  vim.cmd("normal! zM")
+  MiniTest.expect.equality(vim.fn.foldtextresult(header), "[-] sub/file (-1)")
+  vim.cmd("normal! zR")
+  jump("-index")
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
+end
 return T

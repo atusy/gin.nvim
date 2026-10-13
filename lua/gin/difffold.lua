@@ -36,7 +36,9 @@ end
 function M.text()
   local lines = vim.api.nvim_buf_get_lines(0, vim.v.foldstart - 1, vim.v.foldend, false)
   local path = require("gin.diffjump").path
-  local old, new = path(lines[1]:sub(5)), path(lines[2]:sub(5))
+  local params = require("gin.uri").parse(vim.api.nvim_buf_get_name(0)).params
+  local prefixes = require("gin.diffjump").prefixes(params)
+  local old, new = path(lines[1]:sub(5), prefixes.old), path(lines[2]:sub(5), prefixes.new)
   local kind, label = "modified", new
   if old == "/dev/null" then
     kind = "added"

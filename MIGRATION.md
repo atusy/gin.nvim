@@ -402,3 +402,11 @@ rename fixture includes literal backslashes before octal digits alongside tabs,
 quotes and Japanese characters, and verifies both directions of history plus
 source content. Diff-specific prefix/timestamp handling stays outside the
 shared decoder.
+
+GinDiff jump targets and fold labels now honor explicit no-prefix, src-prefix
+and dst-prefix options, including reverse diffs. Four real Git fixtures retain
+a genuine a/ directory and use custom prefixes containing pattern characters,
+checking both fold labels and exact working-file navigation. A deletion fixture
+also preserves /dev/null under a custom slash prefix and verifies index
+navigation. Prefixes inherited from Git configuration and arbitrary GinBuffer
+argv remain under audit.

@@ -1,21 +1,39 @@
 local M = {}
 
-function M.path(header)
+function M.prefixes(params)
+  if params["no-prefix"] ~= nil then
+    return { old = "", new = "" }
+  end
+  local prefixes = { old = params["src-prefix"] or "a/", new = params["dst-prefix"] or "b/" }
+  if params["-R"] ~= nil or params.reverse ~= nil then
+    prefixes.old, prefixes.new = prefixes.new, prefixes.old
+  end
+  return prefixes
+end
+
+function M.path(header, prefix)
   local path = header:match("^[^\t]+") or ""
   path = require("gin.git_path").unquote(path)
+  if path == "/dev/null" then
+    return path
+  end
+  if prefix ~= nil then
+    return path:sub(1, #prefix) == prefix and path:sub(#prefix + 1) or path
+  end
   return path:gsub("^[ab]/", "")
 end
 
-function M.parse(lines, row, side)
+function M.parse(lines, row, side, prefixes)
+  prefixes = prefixes or {}
   local old_path, new_path, old_line, new_line
   for i = 1, row do
     local line = lines[i] or ""
     if line:match("^diff ") then
       old_path, new_path, old_line, new_line = nil, nil, nil, nil
     elseif line:match("^%-%-%- ") and not old_line then
-      old_path = M.path(line:sub(5))
+      old_path = M.path(line:sub(5), prefixes.old)
     elseif line:match("^%+%+%+ ") and not old_line then
-      new_path = M.path(line:sub(5))
+      new_path = M.path(line:sub(5), prefixes.new)
     elseif line:match("^@@ ") then
       local a, b = line:match("^@@ %-(%d+)[,%d]* %+(%d+)[,%d]* @@")
       old_line, new_line = tonumber(a), tonumber(b)
@@ -71,7 +89,7 @@ function M.jump(side, options)
   if side == "smart" then
     side = lines[cursor[1]]:sub(1, 1) == "-" and "old" or "new"
   end
-  local target = M.parse(lines, cursor[1], side)
+  local target = M.parse(lines, cursor[1], side, M.prefixes(parsed.params))
   if not target then
     return
   end
