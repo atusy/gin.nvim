@@ -135,6 +135,27 @@ T["edit action opens the selected working file from a subdirectory"] = function(
   )
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "working" })
 end
+T["revision edit actions honor persistent decoding arguments"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) }, root .. "/%encoded")
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "initial")
+  vim.fn.writefile({ "changed" }, root .. "/%encoded")
+  vim.cmd.GinStatus()
+  local status = vim.api.nvim_get_current_buf()
+  local previous = vim.g.gin_edit_persistent_args
+  vim.g.gin_edit_persistent_args = { "++enc=latin1", "++opener=vsplit" }
+  local windows = #vim.api.nvim_tabpage_list_wins(0)
+  local ok, err = pcall(function()
+    for _, source in ipairs({ "cached", "HEAD" }) do
+      require("gin.action").call(status, "edit:" .. source, { 2, 2 })
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "café" })
+      MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+      MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), windows)
+    end
+  end)
+  vim.g.gin_edit_persistent_args = previous
+  assert(ok, err)
+end
 T["cached status edit opens the selected index file in a split"] = function()
   vim.fn.mkdir(root .. "/sub", "p")
   vim.fn.writefile({ "index" }, root .. "/sub/file.lua")

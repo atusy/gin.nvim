@@ -713,3 +713,11 @@ quoted content untouched. A fixture verifies exact nested output with escaped
 quotes, backslashes, punctuation, newlines, booleans, null and an empty object;
 decoding the output recovers the original candidates. Empty selections retain
 the existing [] representation.
+
+Cached/HEAD file edit actions now dispatch through GinEdit's command handler,
+as the pinned action/edit.ts does, so persistent encoding and other command
+arguments apply. A fixture opens a Latin-1 index/HEAD file through both actions,
+checks decoding and verifies the action's explicit opener overrides a persistent
+opener. The selected path is made absolute before command expansion so a literal
+% prefix remains a filename. Other action-to-command dispatch paths, including
+diff, still need the same configuration audit.

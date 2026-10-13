@@ -42,10 +42,13 @@ function M.setup(buf, gather)
           if source == "local" then
             require("gin.buffer").open(root .. "/" .. entry.path, { opener = opener })
           else
-            require("gin.edit").open(root, entry.path, {
-              opener = opener,
-              commitish = source == "HEAD" and "HEAD" or nil,
-            })
+            local args = { "++worktree=" .. root, "++opener=" .. opener }
+            if source == "HEAD" then
+              args[#args + 1] = "HEAD"
+            end
+            -- Absolute paths cannot be mistaken for Vim filename placeholders.
+            args[#args + 1] = root .. "/" .. entry.path
+            require("gin.edit").command({ fargs = args, smods = {} })
           end
         end
       end)
