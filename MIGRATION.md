@@ -1013,3 +1013,13 @@ instead of stripping graph/header prefixes as the log parser does. A real
 the exact selected entries and that resetting the indented row leaves HEAD
 unchanged. The view is identified by its URI, so changing its filetype does
 not change action targets.
+
+The remaining default history-header rules now follow the pinned parser:
+hexadecimal captures have no minimum length, and log `commit` headers require
+exact spaces around optional `+`, `-`, `=`, `<` and `>` markers. The new
+`tests/test_log_parser.lua` fixture checks 24 positive/negative rows including
+graph prefixes, short captures, invalid spacing and non-ASCII word boundaries.
+An additional local audit evaluated the actual pinned JavaScript log/reflog
+regexes against 12,210 generated rows, then compared both Lua candidate modes:
+all 24,420 comparisons matched. This audits the default expressions on those
+inputs, not arbitrary custom JavaScript regular expressions.

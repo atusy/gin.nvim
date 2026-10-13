@@ -18,10 +18,12 @@ function M.candidates(buf, range)
     local text = line
     if not reflog then
       text = text:gsub("^[ *|\\/+%=<>%-]*", "")
-      text = text:gsub("^commit [+%=<>%-]? ?", "")
+      if text:sub(1, 7) == "commit " then
+        text = text:sub(8):gsub("^[+=<>%-] ", "")
+      end
     end
     local commit = text:match("^([a-fA-F0-9]+)%f[^a-zA-Z0-9_]")
-    if commit and #commit >= 4 then
+    if commit then
       result[#result + 1] = { commit = commit }
     end
   end
