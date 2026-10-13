@@ -185,8 +185,11 @@ GinBlame now opens the three-pane attribution/content/detail layout. Its Git
 line-porcelain reader retains per-line source metadata and physical/source line
 maps; cursor movement updates details, preserving the last commit on intermediate
 dividers. Tests exercise a subdirectory, a dirty working file, repeated commit
-groups and detail selection. Remaining blame work includes commit/history
-navigation and rename tracking, divider highlights, encoding/fileformat and emoji
+groups and detail selection. Commit selection now follows per-line historical
+filenames and source positions, with parent selection when already viewing the
+selected commit. Quoted filename decoding and failed-parent view retention are
+tested. Remaining blame work includes back/forward history, divider highlights,
+encoding/fileformat and emoji
 options, and broader parser/UI parity checks. Source/attribution reload now
 refreshes existing panes; unloading a pane removes its companions after the
 operation settles so reload does not trigger cleanup. Tests cover all three

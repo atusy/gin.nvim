@@ -108,8 +108,11 @@ Currently implemented:
 - `:GinBlame [commitish] path` opens a tab with synchronized attribution and
   committed file content, plus commit details that follow the cursor. Supports
   `++worktree` and `++opener`. Reloading either source or attribution refreshes
-  the existing panes; closing a pane removes its companions. Commit navigation,
-  encoding options and emoji rendering are still being ported.
+  the existing panes; closing a pane removes its companions. `<CR>` follows a
+  line to its source commit and historical filename; selecting that commit again
+  visits its parent. `g:gin_blame_disable_default_mappings` disables the default
+  key binding. Back/forward history, encoding options and emoji rendering are
+  still being ported.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
 The `echo` action in status, branch, tag, history, and stash views prints the
