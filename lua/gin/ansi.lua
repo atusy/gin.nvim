@@ -1,4 +1,5 @@
 local M = {}
+local highlights = {}
 local namespace = vim.api.nvim_create_namespace("gin_ansi")
 local palette = {
   "#282a2e",
@@ -35,6 +36,21 @@ local function color(index)
     levels[index % 6 + 1]
   )
 end
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = vim.api.nvim_create_augroup("gin_ansi", { clear = true }),
+  callback = function()
+    for name, attrs in pairs(highlights) do
+      for _, key in ipairs({ "fg", "bg" }) do
+        local index = attrs["cterm" .. key]
+        if index then
+          attrs[key] = color(index)
+        end
+      end
+      vim.api.nvim_set_hl(0, name, attrs)
+    end
+  end,
+})
+
 local function update(state, sequence)
   local codes = {}
   for part in (sequence .. ";"):gmatch("([^;]*);") do
@@ -105,6 +121,7 @@ function M.parse(lines)
         local name = "Comment"
         if not state.dim then
           name = "GinColor" .. vim.fn.sha256(vim.inspect(state)):sub(1, 16)
+          highlights[name] = vim.deepcopy(state)
           vim.api.nvim_set_hl(0, name, state)
         end
         marks[#marks + 1] = { row - 1, column, column + #text, name }
