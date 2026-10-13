@@ -41,6 +41,7 @@ COMMANDS                                                        *gin-commands*
 
 :GinBranch [options] [flags] [patterns...]                       *:GinBranch*
     List branches. <CR> switches branches and yy yanks the branch name.
+    The default display uses Git's color.branch.* settings.
     Color atoms in --format render as highlights; --no-color disables them.
     --abbrev={n} and --no-abbrev control the default commit column and its yank.
     Actions include new, move, delete, worktree, merge, rebase, and log.

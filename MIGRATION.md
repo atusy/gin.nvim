@@ -681,3 +681,12 @@ A native branch -vv comparison covers detached HEAD labels, core.abbrev,
 explicit lengths, zero/full length, a below-minimum length, flag ordering and
 reloads. Git still resolves abbreviation uniqueness. Ordinary detached labels
 already matched; rebase/bisect labels and detached-row actions remain unaudited.
+
+The default GinBranch display now renders current/local/remote/worktree branch
+colors, upstream names and linked-worktree paths. Git config --get-color
+interprets each used color slot, with Git's default palette as fallback; values
+are cached for the current read only. Native-output comparisons verify exact
+highlight ranges with custom colors and attributes, aliases, reloads, forced
+default color despite color.branch=never, and explicit never/auto/no-color.
+Configuration is unchanged. Other native formatting flags and uncommon color
+settings still require audit.

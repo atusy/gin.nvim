@@ -19,6 +19,7 @@ function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "branch", "--list", "--color=always" }
   local format, all
+  local colored = true
   local objectname = "%(objectname:short)"
   for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
     if arg:sub(1, 9) == "--format=" then
@@ -35,6 +36,10 @@ function M.read(buf, name)
         objectname = "%(objectname:short)"
       elseif arg:match("^%-%-abbrev=%d+$") then
         objectname = "%(objectname:short=" .. arg:match("=(%d+)$") .. ")"
+      elseif arg == "--no-color" or arg == "--color=never" or arg == "--color=auto" then
+        colored = false
+      elseif arg == "--color" or arg == "--color=always" then
+        colored = true
       end
     end
   end
@@ -48,6 +53,26 @@ function M.read(buf, name)
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
   local output = git.run(args, { cwd = parsed.root }).stdout
+  local colors = {}
+  local defaults = {
+    current = "green",
+    remote = "red",
+    ["local"] = "normal",
+    upstream = "blue",
+    worktree = "cyan",
+  }
+  local function paint(slot, text)
+    if not colored or format then
+      return text
+    end
+    if colors[slot] == nil then
+      colors[slot] = git.run(
+        { "config", "--get-color", "color.branch." .. slot, defaults[slot] },
+        { cwd = parsed.root }
+      ).stdout
+    end
+    return colors[slot] .. text .. "\27[m"
+  end
   local rows, lines = {}, {}
   local records = vim.split(output, "\0" .. boundary .. "\0", { plain = true })
   local width, names, targets = 0, {}, {}
@@ -72,12 +97,19 @@ function M.read(buf, name)
       kind = fields[8] ~= "" and "alias" or remote and "remote" or "local",
     }
     local tracking = fields[5] ~= ""
-        and (" [" .. fields[5] .. (fields[6] ~= "" and ": " .. fields[6]:sub(2, -2) or "") .. "]")
+        and (" [" .. paint("upstream", fields[5]) .. (fields[6] ~= "" and ": " .. fields[6]:sub(
+          2,
+          -2
+        ) or "") .. "]")
       or ""
     local linked = row.worktree and row.head ~= "*"
     local marker = linked and "+" or row.head
-    local location = linked and (" (" .. row.worktree .. ")") or ""
+    local location = linked and (" (" .. paint("worktree", row.worktree) .. ")") or ""
     local padded = names[i] .. string.rep(" ", width - vim.fn.strdisplaywidth(names[i]))
+    padded = paint(
+      row.head == "*" and "current" or linked and "worktree" or remote and "remote" or "local",
+      padded
+    )
     local display = format and table.concat(fields, "\0", 9)
       or row.kind == "alias" and ("  " .. padded .. " -> " .. fields[8]
         :gsub("^refs/heads/", "")

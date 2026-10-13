@@ -45,6 +45,41 @@ T["default branch columns align names by display width"] = function()
     end
   end
 end
+T["default branch colors match Git configuration across reload"] = function()
+  H.git(root, "branch", "spare")
+  H.git(root, "worktree", "add", root .. "/linked", "topic")
+  H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+  H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+  H.git(root, "branch", "--set-upstream-to=spare", "main")
+  H.git(root, "config", "color.branch", "never")
+  for slot, value in pairs({
+    current = "magenta bold",
+    local_ = "yellow",
+    remote = "cyan",
+    upstream = "red",
+    worktree = "blue",
+  }) do
+    H.git(root, "config", "color.branch." .. slot:gsub("_$", ""), value)
+  end
+  local ns = vim.api.nvim_create_namespace("gin_ansi")
+  for _, flag in ipairs({ "", "--color=always", "--no-color", "--color=auto", "--color=never" }) do
+    vim.cmd("GinBranch --all " .. flag)
+    for _ = 1, 2 do
+      local native =
+        H.git(root, "branch", "--list", "-vv", "--all", flag == "" and "--color=always" or flag)
+      local lines, marks = require("gin.ansi").parse(vim.split(native:gsub("\n$", ""), "\n"))
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), lines)
+      local actual = {}
+      for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })) do
+        actual[#actual + 1] = { mark[2], mark[3], mark[4].end_col, mark[4].hl_group }
+      end
+      MiniTest.expect.equality(actual, marks)
+      vim.cmd.edit()
+    end
+  end
+  MiniTest.expect.equality(H.git(root, "config", "color.branch"), "never\n")
+  H.git(root, "worktree", "remove", root .. "/linked")
+end
 T["detached branch listings honor commit abbreviation flags"] = function()
   H.git(root, "config", "core.abbrev", "9")
   H.git(root, "checkout", "--detach", "HEAD")
