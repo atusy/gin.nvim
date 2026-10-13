@@ -35,7 +35,9 @@ Currently implemented:
 - `:GinBranch [flags] [patterns...]` lists branches with commit and upstream
   information. `<CR>` switches to the selected branch; `yy` yanks its name.
   The action menu includes `switch:detach`, `delete`, `delete:force`, and
-  yanks for branch, target, and commit. Remote deletion deletes the remote ref.
+  yanks for branch, target, and commit. `new`, `new:force`, and `new:orphan`
+  create and switch branches. `move`/`move:force` rename a branch or relocate
+  its linked worktree. Remote deletion deletes the remote ref.
 - `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
   file by default, or an immutable revision when a commitish is given. Relative
   paths are repository-relative. Writing the index buffer updates Git's index

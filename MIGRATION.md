@@ -40,7 +40,8 @@ to prove an action produces the intended Git state.
 - `tests/test_chaperon.lua`: real merge resolution, explicit staging, supplementary
   commit logs, single-side layouts and status conflict tabs.
 - `tests/test_branch.lua`: branch selection, switching, local/remote deletion,
-  current-branch rejection, pattern reloads and named-register yanks.
+  current-branch rejection, pattern reloads, named-register yanks, creation,
+  forced reset, orphan branches, cancellation, rename and linked-worktree moves.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection, working/index/revision jumps, reverse and three-dot
@@ -101,5 +102,6 @@ become available. Audit every pinned command, option, mapping, event and compone
 before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
-actions. Creation, rename, worktree creation, log/browse/merge/rebase actions,
+actions, plus creation and branch/worktree moves. Worktree creation,
+log/browse/merge/rebase actions,
 automatic refresh and complete option/display compatibility remain pending.
