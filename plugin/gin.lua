@@ -142,3 +142,6 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.stash").read(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_user_command("GinBrowse", function(opts)
+  require("gin.browse").command(opts)
+end, { nargs = "*", bar = true, range = true })
