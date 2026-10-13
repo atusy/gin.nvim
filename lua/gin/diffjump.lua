@@ -5,6 +5,11 @@ function M.prefixes(params)
     return { old = "", new = "" }
   end
   local prefixes = { old = params["src-prefix"] or "a/", new = params["dst-prefix"] or "b/" }
+  for side, value in pairs(prefixes) do
+    if type(value) == "table" then
+      prefixes[side] = value[#value]
+    end
+  end
   if params.R ~= nil or params["-R"] ~= nil or params.reverse ~= nil then
     prefixes.old, prefixes.new = prefixes.new, prefixes.old
   end

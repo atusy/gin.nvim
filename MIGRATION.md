@@ -1113,3 +1113,10 @@ including reloads. Repeated values stay grouped under their first-occurring
 key, as in the pinned denops std parser/formatter. Lua callers supplying a flags
 map can provide `flag_order`; maps without it retain deterministic sorted keys.
 This preserves command semantics without claiming legacy URI syntax parity.
+
+Diff folds and jumps now use the final value of repeated `--src-prefix` and
+`--dst-prefix` flags, as Git does. Passing their newly preserved value arrays
+directly to path parsing had left the display prefix attached to actual paths
+and mislabeled ordinary modifications as renames. The real-file prefix fixture
+now covers repeated values and verifies both the folded label and the contents
+of the file reached by a jump.
