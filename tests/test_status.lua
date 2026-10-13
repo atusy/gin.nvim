@@ -46,4 +46,64 @@ T["stage and unstage target the selected path from a subdirectory"] = function()
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/space name"), { "hello" })
 end
+T["staging supports newlines, pathspec magic and leading dashes"] = function()
+  local paths = { "line\nbreak", "[literal]", "-dash" }
+  for _, path in ipairs(paths) do
+    vim.fn.writefile({ "content" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  require("gin.status").action(vim.api.nvim_get_current_buf(), "stage", { 2, 4 })
+  local actual = vim.split(H.git(root, "ls-files", "-z"), "\0", { plain = true, trimempty = true })
+  table.sort(paths)
+  MiniTest.expect.equality(actual, paths)
+end
+T["unstaging the branch header leaves staged files alone"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  H.git(root, "add", "file")
+  vim.cmd.GinStatus()
+  require("gin.status").action(vim.api.nvim_get_current_buf(), "unstage", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
+end
+T["stage records deleted files in the index"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  H.git(root, "add", "file")
+  H.git(root, "commit", "-m", "initial")
+  vim.fn.delete(root .. "/file")
+  vim.cmd.GinStatus()
+  require("gin.status").action(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-status"), "D\tfile\n")
+end
+T["unstage restores both sides of a staged rename"] = function()
+  vim.fn.writefile({ "content" }, root .. "/before")
+  H.git(root, "add", "before")
+  H.git(root, "commit", "-m", "initial")
+  H.git(root, "mv", "before", "after")
+  vim.cmd.GinStatus()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "R  before -> after" })
+  require("gin.status").action(vim.api.nvim_get_current_buf(), "unstage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/after"), { "content" })
+end
+T["status path filtering survives reload"] = function()
+  vim.fn.writefile({ "content" }, root .. "/one")
+  vim.fn.writefile({ "content" }, root .. "/two")
+  vim.cmd("GinStatus -- one")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "?? one" })
+end
+T["visual stage mapping changes only the selected range"] = function()
+  for _, path in ipairs({ "a", "b", "c" }) do
+    vim.fn.writefile({ "content" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  vim.api.nvim_feedkeys("ggjVj<<", "mx", false)
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "a\nb\n")
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+end
+T["Gin command completion refreshes the status view"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  vim.cmd.GinStatus()
+  vim.cmd("Gin ++wait add -- file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "A  file" })
+end
 return T
