@@ -25,4 +25,25 @@ T["GinStatus lists the branch and untracked paths in sorted order"] = function()
     { "## No commits yet on main", "?? a", "?? z" }
   )
 end
+T["stage and unstage target the selected path from a subdirectory"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.fn.writefile({ "hello" }, root .. "/sub/space name")
+  vim.cmd.cd(root .. "/sub")
+  vim.cmd.GinStatus()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Plug>(gin-action-stage)", true, false, true),
+    "mx",
+    false
+  )
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "sub/space name\n")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { 'A  "sub/space name"' })
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Plug>(gin-action-unstage)", true, false, true),
+    "mx",
+    false
+  )
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/space name"), { "hello" })
+end
 return T

@@ -55,6 +55,7 @@ function M.read(buf, name)
   vim.b[buf].gin_status_entries = entries
   vim.bo[buf].buflisted = false
   vim.bo[buf].modeline = false
+  M.mappings(buf)
   local group = vim.api.nvim_create_augroup("gin_status_" .. buf, { clear = true })
   local function reload()
     if vim.api.nvim_buf_is_loaded(buf) then
@@ -112,6 +113,65 @@ function M.command(opts)
     uri.format("ginstatus", root, flags, #paths > 0 and vim.json.encode(paths) or nil),
     { opener = options.opener, bang = opts.bang, smods = opts.smods }
   )
+end
+
+function M.action(buf, name, range)
+  local root = vim.b[buf].gin_worktree
+  local paths, removed = {}, {}
+  for _, entry in ipairs(vim.b[buf].gin_status_entries or {}) do
+    if entry.line >= range[1] and entry.line <= range[2] then
+      if name == "unstage" then
+        paths[#paths + 1] = entry.path
+        if entry.orig_path then
+          paths[#paths + 1] = entry.orig_path
+        end
+      elseif name == "stage" then
+        if entry.xy:sub(2, 2) == "D" then
+          removed[#removed + 1] = entry.path
+        elseif entry.xy:sub(2, 2) ~= " " then
+          paths[#paths + 1] = entry.path
+        end
+      end
+    end
+  end
+  if #paths == 0 and #removed == 0 then
+    return
+  end
+  if #removed > 0 then
+    git.run(
+      vim.list_extend({ "rm", "--quiet", "--ignore-unmatch", "--cached", "--" }, removed),
+      { cwd = root }
+    )
+  end
+  if #paths > 0 then
+    local args = name == "unstage" and { "reset", "--quiet", "--" }
+      or { "add", "--ignore-errors", "--force", "--" }
+    git.run(vim.list_extend(args, paths), { cwd = root })
+  end
+  require("gin.command").post()
+end
+
+function M.mappings(buf)
+  for _, name in ipairs({ "stage", "unstage" }) do
+    vim.keymap.set({ "n", "x" }, "<Plug>(gin-action-" .. name .. ")", function()
+      local line = vim.fn.line(".")
+      local other = vim.fn.mode() == "n" and line or vim.fn.line("v")
+      M.action(buf, name, { math.min(line, other), math.max(line, other) })
+    end, { buffer = buf, silent = true })
+  end
+  if
+    not vim.g.gin_status_disable_default_mappings
+    or vim.g.gin_status_disable_default_mappings == 0
+  then
+    for lhs, action in pairs({ ["<<"] = "stage", [">>"] = "unstage" }) do
+      vim.keymap.set(
+        { "n", "x" },
+        lhs,
+        "<Plug>(gin-action-" .. action .. ")",
+        { buffer = buf, remap = true, nowait = true }
+      )
+    end
+  end
 end
 
 return M
