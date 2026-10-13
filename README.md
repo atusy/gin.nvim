@@ -57,6 +57,9 @@ Currently implemented:
   Annotated/signed tags and fixup amend/reword actions remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
   actions, including show and reset for commits no longer in normal history.
+- `:GinStash [flags]` lists saved changes. Actions include `apply`, `pop`, their
+  `:index` variants, and `drop`; each acts on the first selected entry. `<CR>`
+  shows a stash and `yy` yanks its ref. The view refreshes after Gin commands.
 - `:GinTag [flags] [patterns...]` lists tags. `<CR>` shows the selected tag;
   `yy` yanks its name. Actions include `delete`, `switch:detach`, and
   `yank:commit`. `show:split`, `show:vsplit`, and `show:tabedit` choose the

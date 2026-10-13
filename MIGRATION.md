@@ -50,6 +50,8 @@ to prove an action produces the intended Git state.
   keep-mode rejection of local changes, lightweight tag targets, forced tag
   replacement, cancellation, fixup messages/trees, root-commit autosquash,
   reflog recovery after reset and ref/limit reloads.
+- `tests/test_stash.lua`: selected stash apply/index restoration, pop/drop
+  entry retention, range handling and failed-pop conflict state.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -150,3 +152,7 @@ Amend/reword variants remain pending editor integration.
 GinReflog now uses the shared history display and implemented commit actions,
 with separate default/persistent arguments and mapping settings. Its remaining
 commit-action, format and UI audits follow GinLog.
+
+GinStash now lists saved changes with apply/pop/drop, show/yank and automatic
+refresh. Browse/echo, custom formatting, emoji/encoding and combined-diff show
+navigation still need implementation or compatibility checks.
