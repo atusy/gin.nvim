@@ -226,6 +226,11 @@ keys use ASCII defaults. Presets are available in Lua: >lua
 The plugin also publishes g:gin#difffold#prefixes_ascii and
 g:gin#difffold#prefixes_nerdfont.
 
+gin#difffold#foldtext()                              *gin#difffold#foldtext()*
+    Legacy foldtext entry point backed by require('gin.difffold').text().
+    Works with Gin diff views and ordinary unified diff buffers whose folds
+    start at the ---/+++ file headers. Uses g:gin_difffold_prefixes above.
+
 Set g:gin_chaperon_supplement_disable = 1 to hide supporting commit logs.
 g:gin_chaperon_supplement_height controls their height (default 10).
 g:gin_browse_aliases configures hosting aliases for browse URLs.

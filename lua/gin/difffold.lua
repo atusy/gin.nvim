@@ -41,7 +41,9 @@ end
 function M.text()
   local lines = vim.api.nvim_buf_get_lines(0, vim.v.foldstart - 1, vim.v.foldend, false)
   local path = require("gin.diffjump").path
-  local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(0))
+  local name = vim.api.nvim_buf_get_name(0)
+  local parsed = name:match("^gin[%w]*://") and require("gin.uri").parse(name)
+    or { params = {}, param_order = {} }
   local prefixes = require("gin.diffjump").prefixes(parsed.params, parsed.param_order)
   local old, new = path(lines[1]:sub(5), prefixes.old), path(lines[2]:sub(5), prefixes.new)
   local kind, label = "modified", new

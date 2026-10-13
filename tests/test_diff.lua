@@ -35,6 +35,23 @@ T["GinDiff cached comparison survives URI reload"] = function()
   local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
 end
+T["legacy foldtext works in Gin views and ordinary diff buffers"] = function()
+  for _, gin_view in ipairs({ true, false }) do
+    if gin_view then
+      vim.cmd("GinDiff -- sub/file")
+    else
+      vim.cmd.enew({ bang = true })
+      local lines =
+        vim.split(H.git(root, "diff", "--no-color", "--", "sub/file"), "\n", { trimempty = true })
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+      vim.wo.foldmethod = "manual"
+      vim.api.nvim_cmd({ cmd = "fold", range = { 3, #lines } }, {})
+    end
+    vim.wo.foldtext = "gin#difffold#foldtext()"
+    vim.cmd("normal! zM")
+    MiniTest.expect.equality(vim.fn.foldtextresult(3), "[.] sub/file (+1 -1)")
+  end
+end
 T["GinDiff compares an explicit revision range"] = function()
   H.git(root, "commit", "-m", "second")
   vim.cmd("GinDiff HEAD^..HEAD -- sub/file")

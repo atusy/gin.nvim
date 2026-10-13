@@ -1137,3 +1137,10 @@ in their saved flag order. Previously the presence of `--no-prefix` always
 overrode explicit prefixes even when Git applied those prefixes later. Real
 file fixtures cover both complete overrides, each one-sided override and a
 reverse diff; they assert folded path labels and the contents reached by jumps.
+
+The public `gin#difffold#foldtext()` entry point now delegates to the Lua fold
+renderer. That renderer also accepts ordinary diff buffers, using standard
+`a/` and `b/` prefixes when no Gin URI parameters exist. A real Git fixture
+evaluates the legacy foldtext expression in both GinDiff and an unnamed buffer
+containing the same patch, checking the path and added/deleted line counts.
+Existing fixtures cover the published ASCII/Nerd Font presets and overrides.
