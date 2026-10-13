@@ -57,3 +57,13 @@ vim.api.nvim_create_autocmd("FileReadCmd", {
     require("gin.edit").insert(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_user_command("GinDiff", function(opts)
+  require("gin.diff").command(opts)
+end, { nargs = "*", bar = true, bang = true })
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_diff", { clear = true }),
+  pattern = "gindiff://*",
+  callback = function(event)
+    require("gin.diff").read(event.buf, event.match)
+  end,
+})
