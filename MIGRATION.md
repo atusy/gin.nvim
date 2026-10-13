@@ -421,3 +421,10 @@ and selected deletion. Custom parse-pattern settings remain under audit.
 Tag records use a per-read boundary so NUL bytes and newlines in custom display
 formats do not become action metadata. A regression fixture checks the exact
 binary-containing lines after reload and verifies deletion of the selected ref.
+
+Tag URIs now support addressed :read through FileReadCmd. Output generation is
+shared with the tag view, while insertion reuses the command-buffer read path
+for decoding, emoji conversion, marks and FileReadPost. Integration tests verify
+destination options and content, no tag-view metadata installation, empty output
+and failure without a success event. Log, reflog and stash URI reads remain
+pending.

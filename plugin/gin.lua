@@ -111,6 +111,13 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.tag").read(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_autocmd("FileReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_tag", { clear = false }),
+  pattern = "gintag://*",
+  callback = function(event)
+    require("gin.tag").insert(event.buf, event.match)
+  end,
+})
 vim.api.nvim_create_user_command("GinLog", function(opts)
   require("gin.log").command(opts)
 end, { nargs = "*", bar = true, bang = true })

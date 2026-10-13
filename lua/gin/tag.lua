@@ -47,6 +47,11 @@ local function output(parsed)
   return table.concat(lines, "\n") .. (#lines > 0 and "\n" or ""), rows
 end
 
+function M.insert(buf, name)
+  local text = output(uri.parse(name))
+  require("gin.buffer").insert_output(buf, name, text)
+end
+
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local text, rows = output(parsed)

@@ -157,4 +157,55 @@ T["NUL bytes in tag formats cannot replace action metadata"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 3, 4 })
   MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
 end
+T["reading tag URIs inserts decoded output without installing a tag view"] = function()
+  H.git(root, "tag", "-a", "encoded", "-m", ":sparkles: caf" .. string.char(233))
+  vim.cmd("GinTag ++emojify ++enc=latin1 --format=%(subject) encoded")
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.enew()
+  vim.bo.filetype, vim.bo.fileformat, vim.bo.fileencoding = "lua", "dos", "utf-8"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "first", "last" })
+  local events = 0
+  local id = vim.api.nvim_create_autocmd("FileReadPost", {
+    pattern = "gintag://*",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  local ok, err = pcall(vim.cmd, "1read ++enc=latin1 " .. vim.fn.fnameescape(name))
+  vim.api.nvim_del_autocmd(id)
+  assert(ok, err)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "first", "✨ café", "last" }
+  )
+  MiniTest.expect.equality(vim.api.nvim_buf_get_mark(0, "["), { 2, 0 })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_mark(0, "]"), { 2, 0 })
+  MiniTest.expect.equality(
+    { vim.bo.filetype, vim.bo.fileformat, vim.bo.fileencoding, vim.bo.buftype, vim.bo.modified },
+    { "lua", "dos", "utf-8", "", true }
+  )
+  MiniTest.expect.equality(vim.b.gin_tags, nil)
+  MiniTest.expect.equality(events, 1)
+end
+for _, failing in ipairs({ false, true }) do
+  T["tag reads preserve destination on " .. (failing and "failure" or "empty output")] = function()
+    local name = require("gin.uri").format("gintag", vim.uv.fs_realpath(root), {
+      args = vim.json.encode(failing and { "--invalid-gin-flag" } or {}),
+    }, "absent-tag")
+    vim.cmd.enew()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "keep" })
+    local events = 0
+    local id = vim.api.nvim_create_autocmd("FileReadPost", {
+      pattern = "gintag://*",
+      callback = function()
+        events = events + 1
+      end,
+    })
+    local ok = pcall(vim.cmd, "read " .. vim.fn.fnameescape(name))
+    vim.api.nvim_del_autocmd(id)
+    MiniTest.expect.equality(ok, not failing)
+    MiniTest.expect.equality(events, failing and 0 or 1)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "keep" })
+  end
+end
 return T
