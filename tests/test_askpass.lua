@@ -141,4 +141,44 @@ T["synchronous output processors service askpass requests"] = function()
   MiniTest.expect.equality(result.stdout:find("username=unit-user\n", 1, true) ~= nil, true)
   MiniTest.expect.equality(result.stdout:find("password=unit-password\n", 1, true) ~= nil, true)
 end
+for _, wait in ipairs({ true, false }) do
+  T[(wait and "waiting" or "asynchronous") .. " Gin processors inherit askpass environment"] = function()
+    local prompts, completed = 0, nil
+    vim.fn.inputsecret = function()
+      prompts = prompts + 1
+      return prompts == 1 and "unit-user" or "unit-password"
+    end
+    local terminal = vim.env.GIT_TERMINAL_PROMPT
+    vim.env.GIT_TERMINAL_PROMPT = "0"
+    local ok, err = pcall(function()
+      require("gin.command").execute({
+        fargs = vim.list_extend(wait and { "++wait" } or {}, {
+          "++worktree=" .. root,
+          "++processor=git -c credential.helper= credential fill",
+          "-c",
+          [[alias.request=!printf 'protocol=https\nhost=example.invalid\n\n']],
+          "request",
+        }),
+        smods = { silent = true, emsg_silent = true },
+        on_exit = function(value)
+          completed = value
+        end,
+      })
+      MiniTest.expect.equality(
+        vim.wait(5000, function()
+          return completed ~= nil
+        end, 10),
+        true
+      )
+      MiniTest.expect.equality(completed.code, 0)
+      MiniTest.expect.equality(prompts, 2)
+      MiniTest.expect.equality(
+        completed.stdout:find("password=unit-password\n", 1, true) ~= nil,
+        true
+      )
+    end)
+    vim.env.GIT_TERMINAL_PROMPT = terminal
+    assert(ok, err)
+  end
+end
 return T

@@ -128,6 +128,7 @@ function M.execute(opts)
           require("gin.uri").split(options.processor),
           {
             cwd = root,
+            env = env,
             stdin = result.stdout,
             timeout = 30000,
           },

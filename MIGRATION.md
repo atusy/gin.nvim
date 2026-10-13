@@ -52,6 +52,24 @@ used upstream. Diff jumps deliberately keep the internal executor route. These
 dispatch checks do not close the four parser overrides or the broader API/URI
 compatibility audit. The completion checklist above remains unchanged.
 
+## Execution-path audit
+
+| Lua route | Live output | Proxy handling | Current deadline |
+| --- | --- | --- | --- |
+| `command.execute`, including `++wait` | Both Git channels | Editor/askpass environment and scheduled RPCs | No Git deadline; processor 30 seconds |
+| `git.run` with progress for views and mutations | Stderr or both channels as selected by the caller | Editor/askpass environment and scheduled RPCs, including processors | Normally 30 seconds |
+| Patch and Chaperon panes | Through GinEdit/GinBuffer | Inherits those executors | Inherits those executors |
+| Internal `git.run` queries | Captured | No automatic proxy setup; blocking wait | Normally 30 seconds |
+| Component `git.start` queries | Captured | Asynchronous callbacks; no automatic proxy setup | Normally 30 seconds |
+
+Remaining direct queries include repository discovery, browse URL/ref resolution,
+diff merge-base lookup, branch color configuration, index-mode lookup and fixup
+parent detection. Upstream also separates captured internal process execution
+from its indicator executor (for example finder and component queries). This
+inventory does not establish full compatibility for those queries. Deadlines,
+manual keyboard interaction during synchronous waits, custom indicator APIs and
+the wider command/URI contracts remain open audit items.
+
 ## Validation rules
 
 Tests use disposable repositories and check Git state as well as displayed
@@ -938,3 +956,9 @@ a nil timeout result and a stranded test client under SystemObj:wait. The new
 fixture passes Git-produced credential input through the processor and verifies
 both masked prompt responses in its returned output. Processor output remains
 captured rather than streamed, matching the pinned postprocessor executor.
+
+Gin's own output processors now receive the same proxy environment as the Git
+process. Separate real credential-fill fixtures reproduced missing askpass
+variables in both `++wait` and asynchronous commands and now verify successful
+prompt responses through the processor output. This closes the missing
+environment path identified by the execution inventory above.

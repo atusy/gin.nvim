@@ -242,7 +242,7 @@ User GinComponentPost
 LIMITATIONS                                                   *gin-limitations*
 
 The migration is incomplete. See MIGRATION.md for the detailed audit status.
-Internal blocking Git reads and output processors normally have a 30-second
+Synchronous Git reads/actions and output processors normally have a 30-second
 timeout. Gin commands, including ++wait, do not use that Git process timeout.
 ++wait services proxy requests and progress while waiting; manual interactive
 editing during the wait remains unverified.
