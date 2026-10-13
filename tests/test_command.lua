@@ -43,4 +43,25 @@ T["Gin dispatches asynchronously unless wait is requested"] = function()
   )
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "async\n")
 end
+T["Gin expands current file and respects silent"] = function()
+  vim.fn.writefile({ "text" }, root .. "/file")
+  vim.cmd.edit(vim.fn.fnameescape(root .. "/file"))
+  vim.cmd("silent Gin ++wait add -- %:p")
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
+end
+T["failed Gin does not publish a success event"] = function()
+  MiniTest.expect.error(function()
+    vim.cmd("Gin ++wait not-a-git-command")
+  end, "git exited")
+  MiniTest.expect.equality(events, 0)
+end
+T["directory commands use buffer repository and honor local scope"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.fn.writefile({ "text" }, root .. "/sub/file")
+  vim.cmd.cd(old_cwd)
+  vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/file"))
+  vim.cmd.GinLcd()
+  MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root))
+  MiniTest.expect.equality(vim.fn.haslocaldir(), 1)
+end
 return T
