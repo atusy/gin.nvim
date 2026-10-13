@@ -2,7 +2,7 @@ local M = {}
 
 ---Run Git with literal argv and preserve its output and exit status.
 ---@param args string[]
----@param opts? {cwd?: string, env?: table, stdin?: string, timeout?: integer, check?: boolean}
+---@param opts? {cwd?: string, env?: table, stdin?: string|boolean, timeout?: integer, check?: boolean}
 ---@param callback? fun(result: vim.SystemCompleted)
 ---@return vim.SystemObj
 function M.start(args, opts, callback)

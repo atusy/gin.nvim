@@ -30,4 +30,11 @@ T["binary output retains NUL separators"] = function()
   local result = require("gin.git").run({ "status", "--porcelain", "-z" }, { cwd = root })
   MiniTest.expect.equality(result.stdout, "?? space name.txt\0")
 end
+T["timed out commands report failure"] = function()
+  local result = require("gin.git").run(
+    { "hash-object", "--stdin" },
+    { cwd = root, stdin = true, timeout = 20, check = false }
+  )
+  MiniTest.expect.equality(result.code, 124)
+end
 return T
