@@ -231,4 +231,18 @@ T["stash saves only selected paths and ignores an empty selection"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "changed" })
   MiniTest.expect.equality(H.git(root, "show", "stash:one"), "changed\n")
 end
+T["intent-to-add stage and unstage retain new-file entries"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  vim.cmd.GinStatus()
+  local buf = vim.api.nvim_get_current_buf()
+  local action = require("gin.action")
+  action.call(buf, "stage:intent-to-add", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files"), "file\n")
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
+  action.call(buf, "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
+  action.call(buf, "unstage:intent-to-add", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files"), "file\n")
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "")
+end
 return T

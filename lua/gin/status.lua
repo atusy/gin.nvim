@@ -123,24 +123,30 @@ end
 
 function M.action(buf, name, range)
   local root = vim.b[buf].gin_worktree
-  local paths, removed = {}, {}
+  local paths, removed, intent = {}, {}, {}
+  local unstage = name == "unstage" or name == "unstage:intent-to-add"
   for _, entry in ipairs(vim.b[buf].gin_status_entries or {}) do
     if entry.line >= range[1] and entry.line <= range[2] then
-      if name == "unstage" then
+      if unstage then
+        if name == "unstage:intent-to-add" and entry.xy == "A " then
+          intent[#intent + 1] = entry.path
+        end
         paths[#paths + 1] = entry.path
         if entry.orig_path then
           paths[#paths + 1] = entry.orig_path
         end
-      elseif name == "stage" then
-        if entry.xy:sub(2, 2) == "D" then
+      elseif name == "stage" or name == "stage:intent-to-add" then
+        if name == "stage:intent-to-add" and entry.xy == "??" then
+          intent[#intent + 1] = entry.path
+        elseif entry.xy:sub(2, 2) == "D" then
           removed[#removed + 1] = entry.path
-        elseif entry.xy:sub(2, 2) ~= " " then
+        elseif name == "stage:intent-to-add" or entry.xy:sub(2, 2) ~= " " then
           paths[#paths + 1] = entry.path
         end
       end
     end
   end
-  if #paths == 0 and #removed == 0 then
+  if #paths == 0 and #removed == 0 and #intent == 0 then
     return
   end
   if #removed > 0 then
@@ -150,9 +156,15 @@ function M.action(buf, name, range)
     )
   end
   if #paths > 0 then
-    local args = name == "unstage" and { "reset", "--quiet", "--" }
+    local args = unstage and { "reset", "--quiet", "--" }
       or { "add", "--ignore-errors", "--force", "--" }
     git.run(vim.list_extend(args, paths), { cwd = root })
+  end
+  if #intent > 0 then
+    git.run(
+      vim.list_extend({ "add", "--ignore-errors", "--force", "--intent-to-add", "--" }, intent),
+      { cwd = root }
+    )
   end
   require("gin.command").post()
 end
@@ -160,7 +172,7 @@ end
 function M.mappings(buf)
   local action = require("gin.action")
   action.setup(buf)
-  for _, name in ipairs({ "stage", "unstage" }) do
+  for _, name in ipairs({ "stage", "unstage", "stage:intent-to-add", "unstage:intent-to-add" }) do
     action.define(buf, name, function(target, range)
       M.action(target, name, range)
     end)
