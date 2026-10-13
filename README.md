@@ -33,7 +33,8 @@ Currently implemented:
   The edit actions include `edit:cached`, `edit:HEAD`, and their `:split`,
   `:vsplit`, and `:tabedit` variants.
 - `:GinBranch [flags] [patterns...]` lists branches with commit and upstream
-  information. `<CR>` switches to the selected branch; `yy` yanks its name.
+  information and refreshes after successful Gin commands. `<CR>` switches to
+  the selected branch; `yy` yanks its name.
   The action menu includes `switch:detach`, `delete`, `delete:force`, and
   yanks for branch, target, and commit. `new`, `new:force`, and `new:orphan`
   create and switch branches. `move`/`move:force` rename a branch or relocate
