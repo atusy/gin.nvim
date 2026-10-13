@@ -36,4 +36,15 @@ for _, kind in ipairs({ "branch", "status", "log", "reflog", "tag", "stash" }) d
     end
   end
 end
+T["diff filetype inherits and undoes the runtime diff settings"] = function()
+  vim.bo.commentstring = "custom %s"
+  vim.bo.filetype = "gin-diff"
+  MiniTest.expect.equality(vim.bo.modeline, false)
+  MiniTest.expect.equality(vim.bo.commentstring, "# %s")
+  MiniTest.expect.equality(vim.b.did_ftplugin, 1)
+  vim.cmd(vim.b.undo_ftplugin)
+  vim.b.undo_ftplugin = nil
+  MiniTest.expect.equality(vim.bo.modeline, vim.go.modeline)
+  MiniTest.expect.equality(vim.bo.commentstring, vim.go.commentstring)
+end
 return T

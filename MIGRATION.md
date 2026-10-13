@@ -528,3 +528,9 @@ precedence, persistent opener/encoding and unchanged configuration arrays.
 The pinned command tree has 12 fillCmdArgs call sites; each now has a matching
 shared argument-expansion call in Lua (log/reflog share a module). This closes
 the command-setting wiring audit, not the remaining command behavior audits.
+
+The gin-diff Lua ftplugin now loads Neovim's bundled diff ftplugin, as the pinned
+upstream does. It inherits modeline suppression, comment settings and the
+runtime's undo behavior rather than duplicating those settings. A filetype
+fixture checks application and undo; diff fold setup and jump mappings remain
+owned by their existing Lua modules.
