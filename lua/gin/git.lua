@@ -2,18 +2,24 @@ local M = {}
 
 ---Run Git with literal argv and preserve its output and exit status.
 ---@param args string[]
----@param opts? {cwd?: string, env?: table, stdin?: string|boolean, timeout?: integer, check?: boolean}
+---@param opts? {cwd?: string, env?: table, stdin?: string|boolean, timeout?: integer|false, check?: boolean}
 ---@param callback? fun(result: vim.SystemCompleted)
 ---@return vim.SystemObj
 function M.start(args, opts, callback)
   opts = opts or {}
+  local timeout = opts.timeout
+  if timeout == nil then
+    timeout = 30000
+  elseif timeout == false then
+    timeout = nil
+  end
   local cmd = { "git", "--no-pager", "--literal-pathspecs", "--no-optional-locks" }
   vim.list_extend(cmd, args)
   return vim.system(cmd, {
     cwd = opts.cwd,
     env = opts.env,
     stdin = opts.stdin,
-    timeout = opts.timeout or 30000,
+    timeout = timeout,
   }, callback)
 end
 

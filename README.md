@@ -126,7 +126,8 @@ of opening them.
 Commands locate the repository from the current buffer before trying cwd.
 `++worktree` explicitly selects a repository. Filenames use Vim's command
 argument syntax: escape spaces with backslashes; `%:p` expands the current file.
-Git processes currently have a 30-second timeout.
+Synchronous Git processes currently have a 30-second timeout. Asynchronous `Gin`
+commands wait without that timeout so interactive editing can finish.
 
 The rewrite is not a complete replacement yet. Other views and actions,
 interactive editor/askpass integration, full decoration support, and compatibility audits remain
@@ -146,3 +147,10 @@ GinBuffer renders ANSI Git colors as Neovim highlights. Use `++monochrome` to
 skip forced Git coloring, especially with processors that transform raw text.
 GinDiff, GinLog and GinReflog also render Git colors by default; use `--no-color`
 for plain output.
+
+Asynchronous `:Gin commit` opens Git's editor file in a new tab. Use buffer-local
+`:Apply` to write it and continue Git, or `:Cancel` to reject it. Set
+`g:gin_proxy_editor_opener` to choose another supported opener or
+`g:gin_proxy_disable_editor = 1` to retain Git's configured editor. Quit-time
+confirmation, terminal inheritance, askpass and synchronous/action integration
+are still being ported.

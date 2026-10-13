@@ -59,7 +59,7 @@ function M.execute(opts)
   end
   return require("gin.git").start(
     args,
-    { cwd = root },
+    { cwd = root, env = require("gin.editor").environment(), timeout = false },
     vim.schedule_wrap(function(result)
       if result.code ~= 0 or not options.processor or options.processor == "" then
         finish(result, "git")

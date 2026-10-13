@@ -229,3 +229,12 @@ reloads alongside the existing navigation, fold and addressed-read coverage.
 GinLog and GinReflog now force Git color output by default through the shared
 ANSI renderer. Tests resolve parsed candidates back to real commits after colored
 rendering/reload and verify `--no-color` suppresses highlight spans.
+
+The asynchronous Gin command now supplies a Neovim RPC editor client via its
+child environment. Git waits for buffer-local Apply/Cancel; Apply writes the
+file and releases Git, while Cancel returns failure. A real commit fixture
+verifies the edited message and committed content. The editor opener/disable
+settings are supported. Unlike the pinned global-environment proxy, this stage
+is scoped to asynchronous Gin children; synchronous calls, action/terminal
+integration, quit confirmation/aliases, cancellation coverage, askpass and
+client-disconnect lifecycle audits remain pending.
