@@ -49,7 +49,8 @@ to prove an action produces the intended Git state.
   cherry-pick, ordinary/mainline revert, reset-mode HEAD/index/worktree effects
   keep-mode rejection of local changes, lightweight tag targets, forced tag
   replacement, cancellation, fixup messages/trees, root-commit autosquash,
-  reflog recovery after reset and ref/limit reloads.
+  reflog recovery after reset, ref/limit reloads, detached switching from both
+  history views and rejection of ordinary switches to commit IDs.
 - `tests/test_stash.lua`: selected stash apply/index restoration, pop/drop
   entry retention, range handling and failed-pop conflict state.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,

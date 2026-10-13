@@ -54,6 +54,7 @@ Currently implemented:
   prompts for a tag at the selected commit; `tag:lightweight:force` replaces
   an existing tag. `fixup` commits staged changes for the selected commit;
   `fixup:instant-fixup` immediately autosquashes them, including root commits.
+  `switch:detach` checks out the selected commit without moving a branch ref.
   Annotated/signed tags and fixup amend/reword actions remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
   actions, including show and reset for commits no longer in normal history.
