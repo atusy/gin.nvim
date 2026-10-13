@@ -824,3 +824,11 @@ as command options; `stdoutIndicator` and `stderrIndicator` are internal executo
 arguments. This change covers the default GinBuffer edit/reload route only.
 FileReadCmd insertion and other buffer executors still need streaming audits;
 custom executor APIs remain unported.
+
+FileReadCmd insertion through `gin://` now streams both stdout and stderr, as
+the pinned `command/buffer/read.ts` uses the executor's default indicators for
+both channels. A Git alias waits for both channels to be displayed before it
+finishes. The fixture verifies stripped stderr colors, processed stdout inserted
+at the requested address without stderr contamination, and restored editor
+options. Buffer edit/reload continues to display stderr only. Other executors
+and custom indicator APIs remain under audit.

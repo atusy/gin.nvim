@@ -92,6 +92,39 @@ T["reading empty Git output inserts no blank line"] = function()
   vim.api.nvim_cmd({ cmd = "read", args = { vim.fn.fnameescape(name) } }, {})
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "keep" })
 end
+T["read streams both channels before inserting processed stdout"] = function()
+  H.git(
+    root,
+    "config",
+    "alias.read-progress",
+    [[!printf 'out\n'; printf '\033[32mwarning\033[0m\n' >&2; i=0; while test ! -f .git/read-seen; do i=$((i+1)); test "$i" -lt 100 || exit 9; sleep 0.01; done; printf 'done\n']]
+  )
+  local name = require("gin.uri").format("gin", vim.uv.fs_realpath(root), {
+    processor = "tr a-z A-Z",
+  }, "read-progress")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "first", "last" })
+  local echo, observed = vim.api.nvim_echo, {}
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.api.nvim_echo = function(chunks)
+    observed[chunks[1][1]] = true
+    if observed.out and observed.warning then
+      vim.fn.writefile({}, root .. "/.git/read-seen")
+    end
+  end
+  local ok, err = pcall(vim.api.nvim_cmd, {
+    cmd = "read",
+    range = { 1 },
+    args = { vim.fn.fnameescape(name) },
+  }, {})
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(observed.out and observed.warning, true)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "first", "OUT", "DONE", "last" }
+  )
+  MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+end
 T["read honors encoding without changing the destination encoding"] = function()
   vim.fn.writefile({ "caf" .. string.char(233) }, root .. "/latin1")
   H.git(root, "add", "latin1")

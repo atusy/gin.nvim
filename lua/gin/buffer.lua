@@ -114,7 +114,7 @@ function M.insert(buf, name)
   assert(parsed.fragment, "Gin buffer requires command arguments")
   local result = require("gin.git").run(
     require("gin.uri").split(parsed.fragment),
-    { cwd = parsed.root, processor = parsed.params.processor }
+    { cwd = parsed.root, processor = parsed.params.processor, progress = "both" }
   )
   M.insert_output(buf, name, result.stdout)
 end

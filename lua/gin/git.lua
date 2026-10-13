@@ -51,6 +51,9 @@ local function with_progress(args, opts)
   local ok, result = pcall(function()
     local completed
     local stream_opts = vim.tbl_extend("force", opts, { on_stderr = indicator.write_stderr })
+    if opts.progress == "both" then
+      stream_opts.on_stdout = indicator.write
+    end
     local process = M.start(
       args,
       stream_opts,
