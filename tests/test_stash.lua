@@ -31,6 +31,20 @@ T["stash apply index restores selected content and retains both stashes"] = func
   MiniTest.expect.equality(H.git(root, "show", ":file"), "older\n")
   MiniTest.expect.equality(#vim.b.gin_stashes, 2)
 end
+T["stash echo exposes the selected reflog reference and index"] = function()
+  vim.cmd.GinStash()
+  local echo, output = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    output = chunks[1][1]
+  end
+  local ok, err =
+    pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), "echo", { 2, 2 })
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(vim.json.decode(output), {
+    { stashRef = "stash@{1}", index = 1, commit = "stash@{1}" },
+  })
+end
 T["stash pop restores only the selected stash and removes it"] = function()
   vim.cmd.GinStash()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 2, 2 })

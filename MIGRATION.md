@@ -1023,3 +1023,11 @@ An additional local audit evaluated the actual pinned JavaScript log/reflog
 regexes against 12,210 generated rows, then compared both Lua candidate modes:
 all 24,420 comparisons matched. This audits the default expressions on those
 inputs, not arbitrary custom JavaScript regular expressions.
+
+Stash action candidates now expose the pinned fields: `stashRef`, numeric
+`index` for numeric selectors, and `commit` containing the stash reference.
+The `echo` action reports this shape, and shared show/browse actions receive
+the reference rather than the stored object's hash. Apply/pop/drop and yank
+continue to use that same selected stash reference. Structured per-row Git
+metadata remains available internally for custom and multiline displays;
+this change does not close the custom parse-pattern audit.

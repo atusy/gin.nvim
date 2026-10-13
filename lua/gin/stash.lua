@@ -7,7 +7,12 @@ local function candidates(buf, range)
   local result, rows, seen = {}, vim.b[buf].gin_stashes or {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
     if not seen[rows[i].stash] then
-      result[#result + 1] = rows[i]
+      local ref = rows[i].stash
+      result[#result + 1] = {
+        stashRef = ref,
+        index = tonumber(ref:match("^stash@{(%d+)}$")),
+        commit = ref,
+      }
       seen[rows[i].stash] = true
     end
   end
@@ -72,7 +77,7 @@ function M.read(buf, name)
       if variant:find(":index", 1, true) then
         args[#args + 1] = "--index"
       end
-      args[#args + 1] = row.stash
+      args[#args + 1] = row.commit
       require("gin.command").finish(git.run(args, { cwd = parsed.root, progress = "both" }), {}, {})
     end)
   end
@@ -101,7 +106,7 @@ function M.read(buf, name)
   action.define(buf, "yank:stash", function(target, range)
     local values = {}
     for _, row in ipairs(candidates(target, range)) do
-      values[#values + 1] = row.stash
+      values[#values + 1] = row.commit
     end
     vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
   end)
