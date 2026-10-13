@@ -275,5 +275,5 @@ annotated-force-specific coverage remain pending.
 
 History fixup:amend and fixup:reword now open editable fixup messages without
 blocking Neovim. The amend fixture verifies the new commit message, staged file
-content and unchanged parent relationship. Direct reword staging coverage and
-instant amend/reword remain pending.
+content and unchanged parent relationship. Reword coverage verifies an unchanged
+commit tree and retained staged content. Instant amend/reword remain pending.

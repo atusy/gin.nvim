@@ -373,4 +373,42 @@ T["amend fixup edits the message and commits staged content"] = function()
   MiniTest.expect.equality(H.git(root, "show", "HEAD:one"), "amended content\n")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), second .. "\n")
 end
+T["reword fixup leaves staged changes out of the new commit"] = function()
+  vim.fn.writefile({ "still staged" }, root .. "/one")
+  H.git(root, "add", "one")
+  vim.cmd("GinLog --oneline")
+  local process =
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "fixup:reword", { 2, 2 })
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return vim.b.gin_editor_request ~= nil
+    end, 10),
+    true
+  )
+  vim.api.nvim_buf_set_lines(
+    0,
+    0,
+    -1,
+    false,
+    { "amend! first change", "", "reworded first message" }
+  )
+  vim.cmd.Apply()
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return process:is_closing()
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(process:wait(5000).code, 0)
+  MiniTest.expect.equality(
+    H.git(root, "log", "-1", "--format=%B"),
+    "amend! first change\n\nreworded first message\n\n"
+  )
+  MiniTest.expect.equality(
+    H.git(root, "rev-parse", "HEAD^{tree}"),
+    H.git(root, "rev-parse", "HEAD^^{tree}")
+  )
+  MiniTest.expect.equality(H.git(root, "show", "HEAD:one"), "first\n")
+  MiniTest.expect.equality(H.git(root, "show", ":one"), "still staged\n")
+end
 return T
