@@ -95,4 +95,19 @@ T["tag emojify retains selected deletion targets across reload"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\nrelease\n")
 end
+
+T["tag decoding options survive reload and preserve deletion targets"] = function()
+  H.git(root, "tag", "-a", "encoded", "-m", "caf" .. string.char(233))
+  vim.cmd("GinTag ++enc=latin1 ++ff=unix encoded")
+  vim.cmd.edit()
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]:find("café", 1, true) ~= nil,
+    true
+  )
+  MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+  MiniTest.expect.equality(vim.bo.fileformat, "unix")
+  MiniTest.expect.equality(vim.b.gin_tags[1].tag, "encoded")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list", "encoded"), "")
+end
 return T

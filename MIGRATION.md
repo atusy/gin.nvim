@@ -351,3 +351,9 @@ leaving source lines unchanged. Its URI option propagates to companion panes
 and history entries. The integration fixture verifies initial display, reload,
 detail updates, commit navigation and backward history with literal emoji names
 in source content.
+
+Tag/stash lists now accept enc/encoding and ff/fileformat options, retaining
+them in reload URIs and using the shared display decoder. Latin-1 fixtures
+verify descriptions, buffer options and the original candidate targets through
+tag deletion and stash pop. Candidate extraction continues to use raw Git
+identifiers before display decoding.

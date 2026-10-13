@@ -75,4 +75,20 @@ T["stash emojify retains pop targets across reload"] = function()
     "On main: newer\nOn main: older\n"
   )
 end
+
+T["stash decoding options survive reload and preserve pop targets"] = function()
+  vim.fn.writefile({ "encoded content" }, root .. "/file")
+  H.git(root, "stash", "push", "-m", "café")
+  vim.cmd("GinStash ++encoding=latin1 ++fileformat=unix --encoding=ISO-8859-1")
+  vim.cmd.edit()
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]:find("café", 1, true) ~= nil,
+    true
+  )
+  MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+  MiniTest.expect.equality(vim.bo.fileformat, "unix")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "pop", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "encoded content" })
+  MiniTest.expect.equality(#vim.b.gin_stashes, 2)
+end
 return T
