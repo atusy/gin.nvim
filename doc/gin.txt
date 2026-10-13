@@ -242,9 +242,15 @@ User GinComponentPost
 LIMITATIONS                                                   *gin-limitations*
 
 The migration is incomplete. See MIGRATION.md for the detailed audit status.
-Synchronous Git processes currently have a 30-second timeout. Asynchronous Gin
-commands have no such timeout so interactive editing can finish. Synchronous
-proxy/progress integration, custom indicator APIs, full decoration and parse
-pattern compatibility, and legacy Vimscript APIs remain under audit.
+Internal blocking Git reads and output processors normally have a 30-second
+timeout. Gin commands, including ++wait, do not use that Git process timeout.
+++wait services proxy requests and progress while waiting; manual interactive
+editing during the wait remains unverified.
+
+The upstream g:gin_log_parse_pattern, g:gin_reflog_parse_pattern,
+g:gin_tag_parse_pattern and g:gin_stash_parse_pattern settings are not yet
+implemented. They accept JavaScript regular expressions upstream. Lua patterns
+are not a compatible substitute. Custom indicator APIs, remaining display
+options, URI compatibility and legacy Vimscript APIs also remain under audit.
 
  vim:tw=78:ts=8:noet:ft=help:norl:
