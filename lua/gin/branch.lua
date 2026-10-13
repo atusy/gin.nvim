@@ -203,6 +203,15 @@ function M.read(buf, name)
       end)
     end)
   end
+  for _, method in ipairs({ "ff", "no-ff", "ff-only" }) do
+    action.define(buf, "merge:" .. method, function(target, range)
+      local row = M.candidates(target, range)[1]
+      if row then
+        run({ "merge", "--" .. method, row.target })
+      end
+    end)
+  end
+  action.alias(buf, "merge", "merge:ff")
   for _, field in ipairs({ "branch", "target", "commit" }) do
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}
