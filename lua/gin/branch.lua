@@ -1,6 +1,7 @@
 local M = {}
 local git = require("gin.git")
 local uri = require("gin.uri")
+local format_flag = require("gin.flags").format
 local action = require("gin.action")
 
 function M.candidates(buf, range)
@@ -22,12 +23,7 @@ local function arguments(parsed)
   end
   local flags = {}
   for _, key in ipairs(parsed.param_order) do
-    local values = parsed.params[key]
-    for _, value in ipairs(type(values) == "table" and values or { values }) do
-      flags[#flags + 1] = (#key == 1 and "-" or "--")
-        .. key
-        .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
-    end
+    vim.list_extend(flags, format_flag(key, parsed.params[key]))
   end
   return flags,
     parsed.fragment and vim.split(

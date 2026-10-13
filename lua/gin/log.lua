@@ -1,5 +1,6 @@
 local M = {}
 local uri = require("gin.uri")
+local format_flag = require("gin.flags").format
 local action = require("gin.action")
 
 function M.candidates(buf, range)
@@ -37,12 +38,7 @@ local function arguments(parsed, display)
   local args = {}
   local selector = parsed.scheme == "ginreflog" and "ref" or "commitish"
   local function flag(key)
-    local values = parsed.params[key]
-    for _, value in ipairs(type(values) == "table" and values or { values }) do
-      args[#args + 1] = (#key == 1 and "-" or "--")
-        .. key
-        .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
-    end
+    vim.list_extend(args, format_flag(key, parsed.params[key]))
   end
   -- Upstream merges the decorate default before the supplied flag entries.
   if display then

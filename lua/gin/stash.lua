@@ -1,5 +1,6 @@
 local M = {}
 local uri = require("gin.uri")
+local format_flag = require("gin.flags").format
 local action = require("gin.action")
 local git = require("gin.git")
 
@@ -26,12 +27,7 @@ local function arguments(parsed)
   local args = {}
   for _, key in ipairs(parsed.param_order) do
     if key ~= "emojify" then
-      local values = parsed.params[key]
-      for _, value in ipairs(type(values) == "table" and values or { values }) do
-        args[#args + 1] = (#key == 1 and "-" or "--")
-          .. key
-          .. (value ~= "" and (#key == 1 and "" or "=") .. value or "")
-      end
+      vim.list_extend(args, format_flag(key, parsed.params[key]))
     end
   end
   return args
