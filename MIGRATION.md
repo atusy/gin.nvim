@@ -638,3 +638,9 @@ A fixture checks color spans across reload, selection-driven branch switching,
 explicit --no-color and unchanged repository configuration. Native default
 branch layout/color parity remains under audit; metadata stays independent of
 the formatted display.
+
+GinTag color coverage now checks its pinned --color=never default even with
+color.ui=always, explicit --color=always and --no-color, sorted custom formats
+across reload, and deletion of the selected tag. The existing implementation
+passes without changes; unlike GinBranch, the pinned tag executor explicitly
+opts out of forced color settings. Repository color configuration is preserved.

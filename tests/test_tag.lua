@@ -120,6 +120,28 @@ T["custom tag formats survive reload and retain selected refs"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
 end
+T["tag color flags preserve selected refs across reload"] = function()
+  H.git(root, "config", "color.ui", "always")
+  local format = "--format=%(color:blue)%(refname:short)%(color:reset)"
+  local ns = vim.api.nvim_create_namespace("gin_ansi")
+  vim.cmd("GinTag " .. format)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "light", "release" })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
+  vim.cmd("GinTag --color=always --sort=-refname " .. format)
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "release", "light" })
+    local marks = vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })
+    MiniTest.expect.equality(#marks, 2)
+    MiniTest.expect.equality(marks[1][4].hl_group, "GinColorF4")
+    vim.cmd.edit()
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
+  vim.cmd("GinTag --no-color " .. format)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "light" })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
+  MiniTest.expect.equality(H.git(root, "config", "color.ui"), "always\n")
+end
 T["default tag display matches the pinned upstream format"] = function()
   vim.cmd.GinTag()
   local expected = H.git(

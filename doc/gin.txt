@@ -61,6 +61,7 @@ COMMANDS                                                        *gin-commands*
 :GinTag [options] [flags] [patterns...]                             *:GinTag*
     List tags. <CR> shows the tag; yy yanks its name. Actions include delete,
     switch:detach, and yank:commit. Supports ++emojify.
+    Color is disabled by default; --color=always enables color atoms in --format.
 
 :GinEdit [options] [commitish] {path}                              *:GinEdit*
     Open the index version by default, or an immutable revision if commitish
