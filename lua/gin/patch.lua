@@ -1,47 +1,5 @@
 local M = {}
-
-local function reset_mappings(buf)
-  local plugs = {}
-  for _, name in ipairs({ "diffput", "diffget", "diffget-l", "diffget-r" }) do
-    plugs["<Plug>(gin-" .. name .. ")"] = true
-  end
-  local defaults = { dp = true, ["do"] = true, dol = true, dor = true }
-  for _, mode in ipairs({ "n", "x" }) do
-    for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-      if plugs[mapping.lhs] or (defaults[mapping.lhs] and plugs[mapping.rhs]) then
-        vim.keymap.del(mode, mapping.lhs, { buffer = buf })
-      end
-    end
-  end
-end
-
-local function bind(buf, name, command, target, default, disabled)
-  vim.keymap.set({ "n", "x" }, "<Plug>(gin-" .. name .. ")", function()
-    local range = vim.fn.mode() ~= "n" and require("gin.action").range() or nil
-    vim.api.nvim_cmd({ cmd = command, args = { tostring(target) }, range = range }, {})
-    vim.cmd.diffupdate()
-  end, { buffer = buf, silent = true })
-  if not disabled then
-    vim.keymap.set(
-      { "n", "x" },
-      default,
-      "<Plug>(gin-" .. name .. ")",
-      { buffer = buf, remap = true }
-    )
-  end
-end
-
-local function alias(buf, to, disabled)
-  vim.keymap.set(
-    { "n", "x" },
-    "<Plug>(gin-diffget)",
-    "<Plug>(gin-" .. to .. ")",
-    { buffer = buf, remap = true }
-  )
-  if not disabled then
-    vim.keymap.set({ "n", "x" }, "do", "<Plug>(gin-diffget)", { buffer = buf, remap = true })
-  end
-end
+local mapping = require("gin.diff_mapping")
 
 function M.open(root, path, options)
   options = options or {}
@@ -69,26 +27,26 @@ function M.open(root, path, options)
     )
     windows[#windows + 1] = vim.api.nvim_get_current_win()
   end
-  reset_mappings(index)
+  mapping.reset(index)
   if head then
-    reset_mappings(head)
+    mapping.reset(head)
   end
   if worktree then
-    reset_mappings(worktree)
+    mapping.reset(worktree)
   end
   local disabled = vim.g.gin_patch_disable_default_mappings
   disabled = disabled ~= nil and disabled ~= false and disabled ~= 0
   if head then
-    bind(head, "diffput", "diffput", index, "dp", disabled)
-    bind(index, "diffget-l", "diffget", head, "dol", disabled)
-    alias(index, "diffget-l", disabled)
+    mapping.bind(head, "diffput", "diffput", index, "dp", disabled)
+    mapping.bind(index, "diffget-l", "diffget", head, "dol", disabled)
+    mapping.alias(index, "diffget-l", disabled)
   end
   if worktree then
-    bind(worktree, "diffput", "diffput", index, "dp", disabled)
-    bind(worktree, "diffget", "diffget", index, "do", disabled)
-    bind(index, "diffput", "diffput", worktree, "dp", disabled)
-    bind(index, "diffget-r", "diffget", worktree, "dor", disabled)
-    alias(index, "diffget-r", disabled)
+    mapping.bind(worktree, "diffput", "diffput", index, "dp", disabled)
+    mapping.bind(worktree, "diffget", "diffget", index, "do", disabled)
+    mapping.bind(index, "diffput", "diffput", worktree, "dp", disabled)
+    mapping.bind(index, "diffget-r", "diffget", worktree, "dor", disabled)
+    mapping.alias(index, "diffget-r", disabled)
   end
   for _, win in ipairs(windows) do
     vim.api.nvim_win_call(win, function()
