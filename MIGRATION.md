@@ -891,3 +891,11 @@ intensity reset clears both dim and bold, and blink/conceal/unknown codes leave
 supported styling intact. Upstream parses blink/conceal but does not render them.
 These seven characterization cases pass without production changes; malformed
 and compound-reset sequences still need separate compatibility decisions.
+
+GinEdit index writes now stream stderr from blob filtering and index updates,
+preserving the progress exposed by upstream's `git add` write executor. The Lua
+implementation continues to use hash-object/update-index so it never temporarily
+overwrites the working file; plumbing stdout (blob IDs) is not displayed. A real
+required clean filter waits for its progress to be displayed before proceeding.
+The fixture checks transformed index content, unchanged working content, no blob
+or hash echo, cleared modified state and restored editor options.

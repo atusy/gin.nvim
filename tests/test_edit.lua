@@ -85,6 +85,34 @@ T["BOM and CRLF survive an index write"] = function()
     bytes
   )
 end
+T["index writes display live filter progress without echoing blobs or hashes"] = function()
+  vim.fn.writefile({ "sub/file.lua filter=progress" }, root .. "/.gitattributes")
+  H.git(root, "config", "filter.progress.required", "true")
+  H.git(
+    root,
+    "config",
+    "filter.progress.clean",
+    [[printf '\033[32mfilter waiting\033[m\n' >&2; i=0; while test ! -f .git/filter-seen; do i=$((i+1)); test "$i" -lt 100 || exit 9; sleep 0.01; done; tr a-z A-Z]]
+  )
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "filtered" })
+  local echo, output = vim.api.nvim_echo, {}
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.api.nvim_echo = function(chunks)
+    output[#output + 1] = chunks[1][1]
+    if chunks[1][1] == "filter waiting" then
+      vim.fn.writefile({}, root .. "/.git/filter-seen")
+    end
+  end
+  local ok, err = pcall(vim.cmd.write)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(output, { "filter waiting" })
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "FILTERED\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+  MiniTest.expect.equality(vim.bo.modified, false)
+  MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+end
 T["noeol content survives a write with fixendofline disabled"] = function()
   vim.fn.writefile({ "no newline" }, root .. "/sub/file.lua", "b")
   H.git(root, "add", "sub/file.lua")

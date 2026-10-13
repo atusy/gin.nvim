@@ -95,12 +95,12 @@ function M.write(buf, name)
   local hash = vim.trim(
     git.run(
       { "hash-object", "-w", "--stdin", "--path=" .. path },
-      { cwd = parsed.root, stdin = M.encode(buf) }
+      { cwd = parsed.root, stdin = M.encode(buf), progress = true }
     ).stdout
   )
   git.run(
     { "update-index", "-z", "--index-info" },
-    { cwd = parsed.root, stdin = mode .. " " .. hash .. "\t" .. path .. "\0" }
+    { cwd = parsed.root, stdin = mode .. " " .. hash .. "\t" .. path .. "\0", progress = true }
   )
   vim.bo[buf].modified = false
   vim.api.nvim_exec_autocmds("BufWritePost", { buffer = buf, modeline = false })
