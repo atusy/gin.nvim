@@ -211,4 +211,24 @@ T["add intent-to-add and rm affect only the index"] = function()
   MiniTest.expect.equality(H.git(root, "ls-files"), "")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
 end
+T["stash saves only selected paths and ignores an empty selection"] = function()
+  H.git(root, "config", "user.name", "Gin Test")
+  H.git(root, "config", "user.email", "gin@example.invalid")
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "base" }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "initial")
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "changed" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  local buf = vim.api.nvim_get_current_buf()
+  require("gin.action").call(buf, "stash", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "stash", "list"), "")
+  require("gin.action").call(buf, "stash", { 2, 2 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/one"), { "base" })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "changed" })
+  MiniTest.expect.equality(H.git(root, "show", "stash:one"), "changed\n")
+end
 return T

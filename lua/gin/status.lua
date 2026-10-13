@@ -186,6 +186,7 @@ function M.mappings(buf)
     for lhs, action in pairs({
       ["<<"] = "stage",
       [">>"] = "unstage",
+      ["=="] = "stash",
       a = "choice",
       ["<CR>"] = "edit",
       ["."] = "repeat",
