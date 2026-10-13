@@ -17,10 +17,26 @@ function M.parse(args, allowed)
     else
       if arg:match("^[%%#]") then
         arg = vim.fn.expand(arg)
-        if arg:match("^ginedit://") then
+        if arg:match("^gin[%w]*://") then
           local parsed = require("gin.uri").parse(arg)
-          if parsed.fragment then
-            arg = parsed.root .. "/" .. parsed.fragment
+          local path
+          if parsed.scheme == "ginedit" then
+            path = parsed.fragment
+          elseif parsed.scheme == "gindiff" and parsed.fragment then
+            path = vim.json.decode(parsed.fragment)[1]
+          elseif parsed.scheme == "ginlog" and parsed.fragment then
+            -- Log URIs store the full argv; paths follow the explicit separator.
+            local args = vim.json.decode(parsed.fragment)
+            for i, value in ipairs(args) do
+              if value == "--" then
+                path = args[i + 1]
+                break
+              end
+            end
+          end
+          if path then
+            local absolute = path:match("^/") or path:match("^%a:[/\\]")
+            arg = vim.fs.normalize(absolute and path or (parsed.root .. "/" .. path))
           end
         end
       else

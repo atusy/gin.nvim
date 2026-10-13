@@ -159,4 +159,23 @@ for _, spec in ipairs({
     end
   end
 end
+
+for _, view in ipairs({ "GinDiff", "GinLog --oneline" }) do
+  for _, absolute in ipairs({ false, true }) do
+    T["filename expansion from " .. view .. " absolute=" .. tostring(absolute)] = function()
+      vim.fn.writefile({ "base" }, root .. "/one space")
+      vim.fn.writefile({ "base" }, root .. "/two")
+      H.git(root, "add", ".")
+      H.git(root, "commit", "-m", "initial")
+      vim.fn.writefile({ "changed" }, root .. "/one space")
+      vim.fn.writefile({ "changed" }, root .. "/two")
+      local path = absolute and (root .. "/one space") or "one space"
+      vim.cmd(view .. " -- " .. vim.fn.fnameescape(path) .. " two")
+      vim.cmd("Gin ++wait add -- %")
+      MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "one space\n")
+      MiniTest.expect.equality(H.git(root, "show", ":one space"), "changed\n")
+      MiniTest.expect.equality(H.git(root, "show", ":two"), "base\n")
+    end
+  end
+end
 return T

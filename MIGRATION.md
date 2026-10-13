@@ -310,3 +310,10 @@ Bare-command fileformat decoding now preserves carriage returns when unix is
 explicitly selected, matching the pinned separator behavior. Raw Git blob
 fixtures cover ff/fileformat aliases, unix/dos/mac/default output and both
 synchronous and asynchronous execution.
+
+Filename expansion now resolves the first filtered path from diff and log
+buffers, alongside revision/index edit buffers. Git-state fixtures stage through
+% from both views with relative and absolute filenames containing spaces, and
+verify that the second path stays unstaged. Log expansion currently uses paths
+after an explicit -- separator; full URI and modifier interoperability remains
+under audit.
