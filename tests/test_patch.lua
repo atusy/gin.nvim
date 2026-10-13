@@ -64,4 +64,11 @@ T["reopening patch with fewer panes removes stale directional mappings"] = funct
   MiniTest.expect.equality(vim.fn.maparg("dol", "n"), "")
   MiniTest.expect.equality(vim.fn.maparg("<Plug>(gin-diffget-l)", "n"), "")
 end
+T["reopening patch preserves user mappings to its Plug actions"] = function()
+  vim.cmd("GinPatch file")
+  vim.keymap.set("n", "Q", "<Plug>(gin-diffget)", { buffer = true, remap = true })
+  vim.cmd("only!")
+  vim.cmd("GinPatch ++no-head file")
+  MiniTest.expect.equality(vim.fn.maparg("Q", "n"), "<Plug>(gin-diffget)")
+end
 return T

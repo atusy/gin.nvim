@@ -1,12 +1,14 @@
 local M = {}
 
 local function reset_mappings(buf)
+  local plugs = {}
+  for _, name in ipairs({ "diffput", "diffget", "diffget-l", "diffget-r" }) do
+    plugs["<Plug>(gin-" .. name .. ")"] = true
+  end
+  local defaults = { dp = true, ["do"] = true, dol = true, dor = true }
   for _, mode in ipairs({ "n", "x" }) do
     for _, mapping in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-      if
-        mapping.lhs:match("^<Plug>%(gin%-diff[getpu]+")
-        or (mapping.rhs or ""):match("^<Plug>%(gin%-diff[getpu]+")
-      then
+      if plugs[mapping.lhs] or (defaults[mapping.lhs] and plugs[mapping.rhs]) then
         vim.keymap.del(mode, mapping.lhs, { buffer = buf })
       end
     end
