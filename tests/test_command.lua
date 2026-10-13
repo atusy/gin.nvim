@@ -71,6 +71,14 @@ T["Gin expands current file and respects silent"] = function()
   vim.cmd("silent Gin ++wait add -- %:p")
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
 end
+T["Gin treats plus-prefixed paths after the separator as literal arguments"] = function()
+  local paths = { "++unknown", "++wait", "++worktree=elsewhere" }
+  for _, path in ipairs(paths) do
+    vim.fn.writefile({ "literal" }, root .. "/" .. path)
+  end
+  vim.cmd("Gin ++wait add -- " .. table.concat(paths, " "))
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), table.concat(paths, "\0") .. "\0")
+end
 T["failed Gin does not publish a success event"] = function()
   MiniTest.expect.error(function()
     vim.cmd("Gin ++wait not-a-git-command")

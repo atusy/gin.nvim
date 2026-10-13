@@ -23,12 +23,17 @@ end
 ---Normalize Vim filename placeholders and separate ++ options from Git arguments.
 function M.parse(args, allowed)
   local options, residue = {}, {}
+  local separated = false
   for _, arg in ipairs(args) do
-    local name, value = arg:match("^%+%+([^=]+)=(.*)$")
-    if not name then
-      name = arg:match("^%+%+(.+)$")
-      value = true
+    local name, value
+    if not separated then
+      name, value = arg:match("^%+%+([^=]+)=(.*)$")
+      if not name then
+        name = arg:match("^%+%+(.+)$")
+        value = true
+      end
     end
+    separated = separated or arg == "--"
     if name then
       if not vim.tbl_contains(allowed, name) then
         error("Unknown Gin option: ++" .. name, 0)

@@ -1065,3 +1065,10 @@ pinned buffer commitish map. Previously a bare option became the literal
 revision `true`, while an empty URI value could select the index. The fixture
 exercises both option spellings through URI reload and verifies old/new jumps
 against actual parent/current file contents and immutable GinEdit revisions.
+
+The shared `++option` parser now stops extracting options at `--`, preserving
+that separator and subsequent arguments. This matches denops std v7's
+`argument/opts.ts`, used by the pinned command handlers. A real Git fixture
+stages files named `++unknown`, `++wait` and `++worktree=elsewhere`, checking the
+exact NUL-delimited index paths. Filename placeholder expansion remains active
+after the separator, as upstream normalizes arguments before parsing options.

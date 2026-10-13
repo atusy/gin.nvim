@@ -125,7 +125,9 @@ ARGUMENTS                                                       *gin-arguments*
 Commands locate the repository from the current buffer, then cwd.
 ++worktree={path} explicitly selects a repository where supported.
 Use Vim command argument syntax: escape spaces with backslashes. %:p expands
-the current filename. Example: >
+the current filename. The -- separator ends Gin's ++option parsing, so paths
+such as ++wait remain Git arguments after it. Filename expansion still applies.
+Example: >
     :GinStatus
     :GinEdit HEAD src/main.lua
     :GinDiff --cached -- src/main.lua
