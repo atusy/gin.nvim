@@ -54,6 +54,30 @@ function M.url(root, revision, options)
   end
   local hash =
     vim.trim(git.run({ "rev-parse", "--verify", revision .. "^{commit}" }, { cwd = root }).stdout)
+  if options.pr then
+    assert(provider == "github.com", "Hosting service has no pull request URL: " .. provider)
+    local message = git.run({ "log", "-1", "--format=%s", hash }, { cwd = root }).stdout
+    local number = message:match("Merge pull request #(%d+)")
+    if not number then
+      local head = git.run(
+        { "symbolic-ref", "--quiet", "refs/remotes/" .. remote .. "/HEAD" },
+        { cwd = root, check = false }
+      )
+      local target = head.code == 0 and vim.trim(head.stdout)
+        or ("refs/remotes/" .. remote .. "/main")
+      local merges = git.run({
+        "log",
+        "--merges",
+        "--format=%s",
+        "--reverse",
+        "--ancestry-path",
+        hash .. "..." .. target,
+      }, { cwd = root })
+      number = (merges.stdout:match("^[^\n]*") or ""):match("Merge pull request #(%d+)")
+    end
+    assert(number, "No pull request found for " .. revision)
+    return base .. "/pull/" .. number
+  end
   if options.commit then
     local route = provider == "bitbucket.org" and "/commits/"
       or provider == "gitlab.com" and "/-/commit/"
@@ -112,6 +136,8 @@ function M.command(opts)
       options.remote = remote
     elseif arg == "--home" then
       options.home = true
+    elseif arg == "--pr" then
+      options.pr = true
     elseif arg == "--commit" then
       options.commit = true
     elseif arg == "--permalink" then
@@ -157,6 +183,8 @@ function M.setup(buf, gather)
     ":commit:yank",
     ":commit:permalink",
     ":commit:permalink:yank",
+    ":pr",
+    ":pr:yank",
   }) do
     require("gin.action").define(buf, "browse" .. suffix, function(target, range)
       local root = vim.b[target].gin_worktree
@@ -167,6 +195,9 @@ function M.setup(buf, gather)
         end
         if suffix:find(":permalink", 1, true) then
           args[#args + 1] = "--permalink"
+        end
+        if suffix:find(":pr", 1, true) then
+          args[#args + 1] = "--pr"
         end
         if suffix:find(":commit", 1, true) then
           args[#args + 1] = "--commit"

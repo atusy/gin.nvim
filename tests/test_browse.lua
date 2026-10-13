@@ -104,4 +104,27 @@ T["history browse commit action uses the selected commit"] = function()
   require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:commit:yank", { 1, 1 })
   MiniTest.expect.equality(vim.fn.getreg('"'), "https://github.com/owner/repo/commit/" .. hash)
 end
+T["browse PR finds a merge containing the selected commit"] = function()
+  H.git(root, "checkout", "-b", "topic")
+  vim.fn.writefile({ "topic" }, root .. "/topic")
+  H.git(root, "add", "topic")
+  H.git(root, "commit", "-m", "topic change")
+  local topic = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  H.git(root, "checkout", "main")
+  H.git(root, "merge", "--no-ff", "-m", "Merge pull request #42 from owner/topic", "topic")
+  H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+  H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, topic, { pr = true }),
+    "https://github.com/owner/repo/pull/42"
+  )
+  vim.cmd("GinBrowse --pr --no-browser ++repository ++yank=a HEAD")
+  MiniTest.expect.equality(vim.fn.getreg("a"), "https://github.com/owner/repo/pull/42")
+end
+T["browse PR reports a missing merge instead of generating an unrelated URL"] = function()
+  H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+  MiniTest.expect.error(function()
+    require("gin.browse").url(root, "HEAD", { pr = true })
+  end, "No pull request found")
+end
 return T
