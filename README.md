@@ -97,6 +97,9 @@ Currently implemented:
   `g:gin_chaperon_supplement_height` to adjust their height (default 10).
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 
+The `echo` action in status, branch, tag, history, and stash views prints the
+selected candidate metadata as JSON.
+
 Commands locate the repository from the current buffer before trying cwd.
 `++worktree` explicitly selects a repository. Filenames use Vim's command
 argument syntax: escape spaces with backslashes; `%:p` expands the current file.

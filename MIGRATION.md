@@ -56,7 +56,7 @@ to prove an action produces the intended Git state.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
-- `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
+- `tests/test_action.lua`: captured choice ranges, repeat, aliases, mapping help and JSON echo selection.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
   status target selection, working/index/revision jumps, reverse and three-dot
   comparisons, quoted paths, hunk line offsets and fold rebuilding.
@@ -157,3 +157,7 @@ commit-action, format and UI audits follow GinLog.
 GinStash now lists saved changes with apply/pop/drop, show/yank and automatic
 refresh. Browse/echo, custom formatting, emoji/encoding and combined-diff show
 navigation still need implementation or compatibility checks.
+
+Shared echo actions now expose each implemented view’s selected candidate
+metadata as compact JSON. Upstream uses indented JSON; exact field/display
+compatibility remains part of the final action audit.
