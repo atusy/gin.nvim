@@ -7,7 +7,7 @@ vim.opt.rtp = {
   vim.env.VIMRUNTIME,
   vim.fn.getcwd() .. "/.deps/mini.nvim",
 }
-vim.opt.packpath = {}
+vim.opt.packpath = { vim.env.VIMRUNTIME }
 require("mini.test").setup({
   collect = {
     find_files = function()
