@@ -203,4 +203,22 @@ T["ordinary log switch rejects a commit without changing HEAD"] = function()
   MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "main\n")
   MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
 end
+T["log merge uses the selected commit as its target"] = function()
+  H.git(root, "checkout", "-b", "target", first)
+  vim.cmd("GinLog --oneline main")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "merge:ff-only", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+end
+T["reflog rebase replays current work onto the selected entry"] = function()
+  H.git(root, "checkout", "-b", "target", first)
+  vim.fn.writefile({ "side" }, root .. "/side")
+  H.git(root, "add", "side")
+  H.git(root, "commit", "-m", "side change")
+  vim.cmd("GinReflog main")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "rebase", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), second .. "\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/side"), { "side" })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+end
 return T

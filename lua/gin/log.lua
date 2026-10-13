@@ -63,6 +63,44 @@ function M.read(buf, name)
       require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
     end)
   end
+  local function run(args)
+    require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
+  end
+  for _, method in ipairs({ "ff", "no-ff", "ff-only" }) do
+    action.define(buf, "merge:" .. method, function(target, range)
+      local row = M.candidates(target, range)[1]
+      if row then
+        run({ "merge", "--" .. method, row.commit })
+      end
+    end)
+  end
+  action.alias(buf, "merge", "merge:ff")
+  for _, variant in ipairs({ "rebase", "rebase:x", "rebase:instant-drop" }) do
+    action.define(buf, variant, function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      local args = variant == "rebase:instant-drop"
+          and { "rebase", "--onto", row.commit .. "~", row.commit, "HEAD" }
+        or { "rebase", row.commit }
+      local function execute()
+        run(args)
+        vim.cmd("silent checktime")
+      end
+      if variant == "rebase:x" then
+        vim.ui.input({ prompt = "Execute command after rebase: " }, function(command)
+          if not command or command == "" then
+            return
+          end
+          vim.list_extend(args, { "-x", command })
+          execute()
+        end)
+      else
+        execute()
+      end
+    end)
+  end
   for _, command in ipairs({ "cherry-pick", "revert" }) do
     for _, mainline in ipairs({ "", "1", "2" }) do
       action.define(
