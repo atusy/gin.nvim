@@ -1059,3 +1059,9 @@ still returns after the command/processor finishes, before this deferred event.
 The internal pending-state query lets tests wait for actual notification
 completion and drain scheduled reloads before inspecting or deleting fixtures.
 Broader reload/URI contracts remain subject to the migration audit.
+
+Bare or empty GinBuffer `++diffjump` now resolves to HEAD/HEAD^, matching the
+pinned buffer commitish map. Previously a bare option became the literal
+revision `true`, while an empty URI value could select the index. The fixture
+exercises both option spellings through URI reload and verifies old/new jumps
+against actual parent/current file contents and immutable GinEdit revisions.

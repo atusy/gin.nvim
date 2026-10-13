@@ -29,6 +29,8 @@ COMMANDS                                                        *gin-commands*
     Display Git output in a buffer. :edit reloads it. ANSI Git colors become
     highlights; ++monochrome skips forced Git coloring. Supports ++worktree,
     ++filetype, ++processor, ++emojify, ++enc and ++ff.
+    ++diffjump[={revision}] enables diff jumps using the revision and its first
+    parent. An omitted or empty revision means HEAD. ++difffold enables folds.
 
 :GinStatus [options] [flags] [-- pathspecs]                       *:GinStatus*
     Display status using Git's untracked-file settings. Use --untracked-files=all

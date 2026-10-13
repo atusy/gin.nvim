@@ -141,7 +141,7 @@ function M.command(opts)
     monochrome = options.monochrome and "" or nil,
     emojify = options.emojify and "" or nil,
     processor = options.processor,
-    diffjump = options.diffjump,
+    diffjump = options.diffjump == true and "" or options.diffjump,
     difffold = options.difffold and "" or nil,
     enc = options.enc or options.encoding,
     ff = options.ff or options.fileformat,

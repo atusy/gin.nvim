@@ -53,6 +53,39 @@ T["GinBuffer reload preserves special arguments"] = function()
   vim.cmd("edit")
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "space # name" })
 end
+T["GinBuffer empty diffjump selects HEAD and its parent"] = function()
+  vim.fn.writefile({ "before" }, root .. "/file")
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "before")
+  vim.fn.writefile({ "after" }, root .. "/file")
+  H.git(root, "commit", "-am", "after")
+  for _, option in ipairs({ "++diffjump", "++diffjump=" }) do
+    for _, case in ipairs({
+      { "new", "+after", "after", "HEAD" },
+      { "old", "-before", "before", "HEAD^" },
+    }) do
+      vim.cmd("GinBuffer " .. option .. " show HEAD")
+      vim.cmd.edit()
+      local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(0))
+      MiniTest.expect.equality(parsed.params.diffjump, "")
+      local row
+      for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+        if line == case[2] then
+          row = i
+        end
+      end
+      assert(row)
+      vim.api.nvim_win_set_cursor(0, { row, 0 })
+      require("gin.diffjump").jump(case[1])
+      MiniTest.expect.equality(vim.api.nvim_get_current_line(), case[3])
+      MiniTest.expect.equality(vim.bo.modifiable, false)
+      MiniTest.expect.equality(
+        require("gin.uri").parse(vim.api.nvim_buf_get_name(0)).params.commitish,
+        case[4]
+      )
+    end
+  end
+end
 T["GinBuffer respects a split modifier"] = function()
   local windows = #vim.api.nvim_tabpage_list_wins(0)
   vim.cmd("botright GinBuffer ++opener=vsplit status --short")
