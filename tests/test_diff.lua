@@ -210,4 +210,29 @@ T["GinDiff renders added-line colors and retains no-color across reload"] = func
   vim.cmd.edit()
   MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
 end
+
+for _, disabled in ipairs({ false, true }) do
+  T["diff jump mappings use their own disable option " .. tostring(disabled)] = function()
+    local buffer_option, diff_option =
+      vim.g.gin_buffer_disable_default_mappings, vim.g.gin_diff_disable_default_mappings
+    vim.g.gin_diff_disable_default_mappings = disabled and 1 or 0
+    vim.g.gin_buffer_disable_default_mappings = disabled and 0 or 1
+    local ok, err = pcall(function()
+      vim.cmd("GinDiff -- sub/file")
+      for key, side in pairs({ ["<CR>"] = "smart", ["g<CR>"] = "old", ["<C-g><CR>"] = "new" }) do
+        MiniTest.expect.equality(
+          vim.fn.maparg(key, "n"),
+          disabled and "" or ("<Plug>(gin-diffjump-" .. side .. ")")
+        )
+        MiniTest.expect.equality(
+          type(vim.fn.maparg("<Plug>(gin-diffjump-" .. side .. ")", "n", false, true).callback),
+          "function"
+        )
+      end
+    end)
+    vim.g.gin_buffer_disable_default_mappings, vim.g.gin_diff_disable_default_mappings =
+      buffer_option, diff_option
+    assert(ok, err)
+  end
+end
 return T

@@ -386,3 +386,8 @@ tag and stash views. Show Enter also includes Visual mode in the four history
 and object views; branch switching remains Normal-only as upstream specifies.
 Key-driven fixtures verify range capture and repeat against a new selection in
 all five views, plus a two-commit visual show from log.
+
+Command-buffer diff jumps now respect gin_buffer_disable_default_mappings
+independently of gin_diff_disable_default_mappings, matching the pinned filetype
+plugins. Fixtures exercise both switches in opposite states for GinBuffer and
+GinDiff, checking all three default keys and retained Plug callbacks.

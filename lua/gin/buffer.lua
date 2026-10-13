@@ -61,7 +61,7 @@ function M.read(buf, name)
   local result = require("gin.git").run(args, { cwd = uri.root, processor = uri.params.processor })
   M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
   if uri.params.diffjump then
-    require("gin.diffjump").setup(buf)
+    require("gin.diffjump").setup(buf, "buffer")
   end
   if uri.params.difffold ~= nil then
     require("gin.difffold").setup(buf)
