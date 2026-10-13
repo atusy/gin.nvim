@@ -182,7 +182,7 @@ T["GinDiff decodes requested encoding without forwarding it as a Git flag"] = fu
   end
 end
 T["GinDiff processes output on initial load and reload"] = function()
-  vim.cmd([[GinDiff ++processor=tr\ a-z\ A-Z -- sub/file]])
+  vim.cmd([[GinDiff ++processor=tr\ a-z\ A-Z --no-color -- sub/file]])
   for _ = 1, 2 do
     MiniTest.expect.equality(
       vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), "+WORKING"),
@@ -190,5 +190,23 @@ T["GinDiff processes output on initial load and reload"] = function()
     )
     vim.cmd.edit()
   end
+end
+T["GinDiff renders added-line colors and retains no-color across reload"] = function()
+  vim.cmd("GinDiff -- sub/file")
+  local ns = vim.api.nvim_create_namespace("gin_ansi")
+  local function added_color()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, { details = true })) do
+      if lines[mark[2] + 1] == "+working" then
+        return vim.api.nvim_get_hl(0, { name = mark[4].hl_group, link = false }).ctermfg
+      end
+    end
+  end
+  MiniTest.expect.equality(added_color(), 2)
+  vim.cmd.edit()
+  MiniTest.expect.equality(added_color(), 2)
+  vim.cmd("GinDiff --no-color -- sub/file")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
 end
 return T

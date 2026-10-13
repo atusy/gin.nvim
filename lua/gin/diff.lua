@@ -4,7 +4,7 @@ local M = {}
 
 function M.output(name)
   local parsed = uri.parse(name)
-  local args = { "diff" }
+  local args = { "diff", "--color=always" }
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
     if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
       local prefix = key:sub(1, 1) == "-" and "" or "--"

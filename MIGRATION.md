@@ -220,3 +220,8 @@ attribute reset and Unicode byte-offset fixtures now verify rendered highlight
 spans. Colorscheme changes restore generated groups using the current terminal
 palette. Broader ANSI control-sequence and cross-view decoration parity remain
 unaudited.
+
+GinDiff now requests colored output and uses the shared ANSI renderer. The
+`--no-color` Git flag persists on reload and disables forced colors, including
+for text-transforming processors. Tests verify added-line colors and no-color
+reloads alongside the existing navigation, fold and addressed-read coverage.
