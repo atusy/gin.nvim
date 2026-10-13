@@ -40,7 +40,8 @@ Currently implemented:
   create and switch branches. `move`/`move:force` rename a branch or relocate
   its linked worktree. `worktree`, `worktree:force`, and `worktree:orphan` prompt
   for a branch and checkout path, then change cwd to the created worktree.
-  Remote deletion deletes the remote ref.
+  `merge`/`merge:ff`, `merge:no-ff`, and `merge:ff-only` merge the selected ref
+  into the current branch. Remote deletion deletes the remote ref.
 - `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
   file by default, or an immutable revision when a commitish is given. Relative
   paths are repository-relative. Writing the index buffer updates Git's index
