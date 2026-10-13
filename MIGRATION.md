@@ -48,7 +48,8 @@ to prove an action produces the intended Git state.
   and path filters, reloads, show/yank actions, branch-to-log navigation,
   cherry-pick, ordinary/mainline revert, reset-mode HEAD/index/worktree effects
   keep-mode rejection of local changes, lightweight tag targets, forced tag
-  replacement, cancellation, fixup messages/trees and root-commit autosquash.
+  replacement, cancellation, fixup messages/trees, root-commit autosquash,
+  reflog recovery after reset and ref/limit reloads.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -145,3 +146,7 @@ editor/signing integration.
 GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
 selected parent (or --root), correcting the pinned double-parent traversal.
 Amend/reword variants remain pending editor integration.
+
+GinReflog now uses the shared history display and implemented commit actions,
+with separate default/persistent arguments and mapping settings. Its remaining
+commit-action, format and UI audits follow GinLog.

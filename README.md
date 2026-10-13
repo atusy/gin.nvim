@@ -55,6 +55,8 @@ Currently implemented:
   an existing tag. `fixup` commits staged changes for the selected commit;
   `fixup:instant-fixup` immediately autosquashes them, including root commits.
   Annotated/signed tags and fixup amend/reword actions remain pending.
+- `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
+  actions, including show and reset for commits no longer in normal history.
 - `:GinTag [flags] [patterns...]` lists tags. `<CR>` shows the selected tag;
   `yy` yanks its name. Actions include `delete`, `switch:detach`, and
   `yank:commit`. `show:split`, `show:vsplit`, and `show:tabedit` choose the
