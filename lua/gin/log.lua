@@ -28,7 +28,7 @@ function M.read(buf, name)
   local parsed = uri.parse(name)
   local kind = parsed.scheme == "ginreflog" and "reflog" or "log"
   local args = kind == "reflog" and { "reflog", "show" } or { "log" }
-  vim.list_extend(args, { "--decorate=short", "--color=never" })
+  vim.list_extend(args, { "--decorate=short", "--color=always" })
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
   local output = require("gin.git").run(args, { cwd = parsed.root }).stdout
   require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)

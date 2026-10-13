@@ -225,3 +225,7 @@ GinDiff now requests colored output and uses the shared ANSI renderer. The
 `--no-color` Git flag persists on reload and disables forced colors, including
 for text-transforming processors. Tests verify added-line colors and no-color
 reloads alongside the existing navigation, fold and addressed-read coverage.
+
+GinLog and GinReflog now force Git color output by default through the shared
+ANSI renderer. Tests resolve parsed candidates back to real commits after colored
+rendering/reload and verify `--no-color` suppresses highlight spans.

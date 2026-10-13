@@ -144,4 +144,5 @@ and `GinCommandPost`. Listen for `User GinComponentPost` to redraw your statusli
 
 GinBuffer renders ANSI Git colors as Neovim highlights. Use `++monochrome` to
 skip forced Git coloring, especially with processors that transform raw text.
-GinDiff also renders Git colors by default; use `--no-color` for plain output.
+GinDiff, GinLog and GinReflog also render Git colors by default; use `--no-color`
+for plain output.

@@ -221,4 +221,19 @@ T["reflog rebase replays current work onto the selected entry"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/side"), { "side" })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end
+T["colored log and reflog retain actionable commits across reload"] = function()
+  local ns = vim.api.nvim_create_namespace("gin_ansi")
+  for _, command in ipairs({ "GinLog", "GinReflog" }) do
+    vim.cmd(command .. " --oneline")
+    for _ = 1, 2 do
+      local marks = vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {})
+      MiniTest.expect.equality(#marks > 0, true)
+      local candidate = require("gin.log").candidates(0, { 1, 1 })[1]
+      MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", candidate.commit)), second)
+      vim.cmd.edit()
+    end
+    vim.cmd(command .. " --oneline --no-color")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_extmarks(0, ns, 0, -1, {}), {})
+  end
+end
 return T
