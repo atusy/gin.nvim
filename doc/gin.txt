@@ -134,6 +134,7 @@ Example: >
     :GinBuffer ++opener=split log --oneline -10
 <
 require('gin.util').reload([bufnr])                           *gin-util-reload*
+gin#util#reload([bufnr])                                     *gin#util#reload()*
     Schedule :edit for the specified buffer (default or 0: current buffer).
     A buffer hidden in the current tab reloads once on its next BufEnter.
     Reloading another visible buffer restores the original window afterward.
@@ -144,16 +145,20 @@ require('gin.util').reload([bufnr])                           *gin-util-reload*
     uses it after file writes. Hidden views refresh on their next entry.
 
 require('gin.util').expand(expr)                              *gin-util-expand*
+gin#util#expand(expr)                                       *gin#util#expand()*
     Expand a Vim filename expression. For GinEdit, GinDiff and file-filtered
     GinLog buffers, return the first represented file's absolute path. Views
     without a file path and unrecognized URI data retain their expanded name.
     Commands use the same function for % and # arguments.
 
 require('gin.util').worktree([path])                        *gin-util-worktree*
+gin#util#worktree([path])                                 *gin#util#worktree()*
     Return the repository worktree for an explicit path, or use the current
     buffer and window directory when omitted. Raise an error if no repository
     can be found. An invalid explicit path does not fall back to the current
     repository.
+
+The Vimscript utility functions delegate to the Lua implementations above.
 
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select

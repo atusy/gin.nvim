@@ -102,4 +102,30 @@ T["reload ignores a buffer wiped before the scheduled request"] = function()
   drain()
   MiniTest.expect.equality(vim.api.nvim_buf_is_valid(target), false)
 end
+T["legacy reload supports current and explicit buffers asynchronously"] = function()
+  for _, explicit in ipairs({ false, true }) do
+    vim.fn.delete(root .. "/b")
+    vim.fn.writefile({ "a" }, root .. "/a")
+    vim.cmd.GinStatus()
+    vim.cmd.edit()
+    local target = vim.api.nvim_get_current_buf()
+    vim.bo.bufhidden = "hide"
+    if explicit then
+      vim.cmd.enew()
+    end
+    vim.fn.writefile({ "b" }, root .. "/b")
+    if explicit then
+      vim.fn["gin#util#reload"](target)
+    else
+      vim.fn["gin#util#reload"]()
+    end
+    MiniTest.expect.equality(vim.api.nvim_buf_line_count(target), 2)
+    drain()
+    if explicit then
+      MiniTest.expect.equality(vim.api.nvim_buf_line_count(target), 2)
+      vim.api.nvim_set_current_buf(target)
+    end
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(target, 1, -1, false), { "?? a", "?? b" })
+  end
+end
 return T

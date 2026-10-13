@@ -980,16 +980,16 @@ utility corresponding to upstream `gin#util#expand`, and command argument
 expansion uses it. Fixtures cover native filename modifiers, edit/diff/log file
 resolution, single-path diff fragments and views with no usable file path.
 Lua log URIs retain their argv representation, resolving paths after `--`.
-Malformed URI data is contained rather than raising from expansion. This adds
-the Lua API; it does not supply legacy Vimscript function-name shims or close
-the separate URI-format compatibility audit.
+Malformed URI data is contained rather than raising from expansion. A minimal
+autoload wrapper also supplies `gin#util#expand`; URI-format compatibility
+remains a separate audit.
 
 The public Lua `gin.util.worktree([path])` now corresponds to upstream
 `gin#util#worktree`, sharing the existing worktree discovery implementation.
 The API fixture checks current-view context, an explicit subdirectory, failure
 without fallback for a missing explicit path, and string argument validation.
-Existing discovery fixtures cover linked worktrees and symlinks. Legacy
-Vimscript names remain a separate audit item.
+Existing discovery fixtures cover linked worktrees and symlinks. The public
+`gin#util#worktree` wrapper delegates optional arguments to the same Lua API.
 
 The public Lua `gin.util.reload([bufnr])` now supplies the asynchronous reload
 utility corresponding to upstream `gin#util#reload` and denops std v7's
@@ -998,11 +998,18 @@ restoring the original window, and coalesces hidden-buffer requests into one
 nested, one-shot BufEnter handler. Modified buffers retain their edits and
 report errors through `vim.notify`; wiped buffers are skipped. Five fixtures
 cover asynchronous GinStatus refresh, visible-window focus, hidden-buffer
-coalescing, unsaved changes and a buffer wiped before execution. This adds the
-Lua API without legacy Vimscript name shims.
+coalescing, unsaved changes and a buffer wiped before execution. The public
+`gin#util#reload` wrapper captures the current buffer when omitted and delegates
+to this Lua implementation.
 The handler is explicitly removed before `:edit`: Neovim 0.10 otherwise
 re-enters a Lua `once` callback during the nested BufEnter event. The same five
 fixtures pass on the minimum supported Neovim 0.10.0.
+
+Legacy utility API fixtures verify filename expansion with quotes, spaces and
+Unicode, current/explicit worktree discovery including a missing-path error,
+and asynchronous current/hidden-buffer reloads. Argument values cross the
+Vimscript/Lua boundary as data rather than interpolated expressions. These
+wrappers do not restore any dependency on Denops.
 
 The log/reflog candidate parser now requires the ASCII word boundary used by
 the pinned JavaScript parser, rather than accepting any non-hex character.

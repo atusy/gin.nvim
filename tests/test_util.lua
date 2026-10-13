@@ -18,6 +18,16 @@ T["expand supports native filename expressions"] = function()
     MiniTest.expect.equality(require("gin.util").expand("%:t"), vim.fs.basename(path))
   end)
 end
+T["legacy expand resolves Gin paths without evaluating their contents"] = function()
+  local root = vim.fn.tempname()
+  local path = "sub/space ' # 日本語.lua"
+  with_name(require("gin.uri").format("ginedit", root, { commitish = "HEAD" }, path), function()
+    MiniTest.expect.equality(vim.fn["gin#util#expand"]("%"), root .. "/" .. path)
+  end)
+  with_name(root .. "/" .. path, function()
+    MiniTest.expect.equality(vim.fn["gin#util#expand"]("%:t"), vim.fs.basename(path))
+  end)
+end
 for _, case in ipairs({
   { "ginedit", "sub/file.lua" },
   { "gindiff", vim.json.encode({ "sub/file.lua", "other" }) },
