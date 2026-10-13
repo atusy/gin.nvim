@@ -860,3 +860,10 @@ Git trace fixture checks initial blame/detail execution and cursor-driven detail
 updates without echoing porcelain or commit-body output. It also verifies the
 selected commit, three-pane layout and restored editor options. Existing blame
 navigation, reload and failure fixtures exercise the same progress lifecycle.
+
+Cursor-driven blame detail updates now honor the pinned detail executor's
+`throwOnError: false`. A missing commit reports Git stderr and replaces stale
+details with the empty output instead of raising from CursorMoved. The fixture
+temporarily moves a real loose commit object, checks the cleared detail and
+unchanged source pane, then restores it and verifies another selection displays
+the correct commit. Blame generation itself still fails on invalid revisions.

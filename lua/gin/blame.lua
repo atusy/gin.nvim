@@ -128,7 +128,7 @@ function M.update_detail(buf, lnum)
   end
   local output = git.run(
     { "show", "--no-patch", "--format=fuller", commit, "--" },
-    { cwd = parsed.root, progress = true }
+    { cwd = parsed.root, progress = true, check = false }
   ).stdout
   buffer.replace(detail, detail_lines(output, parsed.params), parsed.root, "git")
   vim.bo[detail].buftype = "nowrite"

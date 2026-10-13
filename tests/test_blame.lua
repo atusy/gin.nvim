@@ -138,6 +138,25 @@ T["reloading either blame pane updates the existing three windows"] = function()
     )
   end
 end
+T["missing detail commits clear stale details without breaking navigation"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav, file, detail =
+    vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr, vim.b.gin_blame_detail_bufnr
+  local content = vim.api.nvim_buf_get_lines(file, 0, -1, false)
+  local object = root .. "/.git/objects/" .. first:sub(1, 2) .. "/" .. first:sub(3)
+  local saved = root .. "/.git/missing-object"
+  assert(vim.uv.fs_rename(object, saved))
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").update_detail(nav, 2)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, -1, false), { "" })
+  MiniTest.expect.equality(vim.b[detail].gin_blame_detail_last_commit, first)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), content)
+  assert(vim.uv.fs_rename(saved, object))
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").update_detail(nav, 4)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. second })
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+end
 T["unloading a blame pane removes its companions and preserves other buffers"] = function()
   vim.cmd.edit(root .. "/sub/file.lua")
   local unrelated = vim.api.nvim_get_current_buf()
