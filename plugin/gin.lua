@@ -91,3 +91,13 @@ for scheme, module in pairs({ gin = "buffer", gindiff = "diff" }) do
     end,
   })
 end
+vim.api.nvim_create_user_command("GinBranch", function(opts)
+  require("gin.branch").command(opts)
+end, { nargs = "*", bar = true, bang = true })
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_branch", { clear = true }),
+  pattern = "ginbranch://*",
+  callback = function(event)
+    require("gin.branch").read(event.buf, event.match)
+  end,
+})
