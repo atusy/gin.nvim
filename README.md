@@ -16,7 +16,8 @@ Currently implemented:
   default. `++wait` waits for the result. Successful commands emit
   `User GinCommandPost`.
 - `:GinBuffer [++opener=edit|split|vsplit|tabedit|pedit] {git arguments}` displays
-  command output. Use `:edit` to reload. `++worktree`, `++filetype`, and
+  command output. Use `:edit` to reload, or `:read {gin-URI}` to insert output
+  into another buffer. `++worktree`, `++filetype`, and
   `++monochrome` are accepted; output is currently monochrome.
 - `:GinStatus [++worktree=path] [++opener=...] [flags] [-- pathspecs]` displays
   status. `<<` stages the current line or visual range; `>>` unstages it.
@@ -38,6 +39,8 @@ Currently implemented:
   a changed line; `g<CR>` selects the old revision and `<C-g><CR>` the new one.
   File sections have manual folds with status and change counts (`zc`/`zo` to
   close/open). Customize labels with `g:gin_difffold_prefixes`.
+  `:read {gindiff-URI}` inserts the comparison into another buffer. Reads support
+  line addresses and `++enc`/`++ff` without changing destination buffer options.
 - `:GinPatch [++no-head] [++no-worktree] [path]` opens HEAD, index, and working-file
   diff panes, focusing the index. The optional path is relative to cwd and defaults
   to the current file. In the index pane, `dor` gets the working hunk and `dol`

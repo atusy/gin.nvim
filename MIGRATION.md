@@ -53,7 +53,9 @@ to prove an action produces the intended Git state.
   symlinks and explicit invalid selection.
 - `tests/test_command.lua`: synchronous/asynchronous Gin, filename expansion,
   completion events and local directory scope.
-- `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes and split modifiers.
+- `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes, split
+  modifiers, addressed reads, encoding conversion, insertion marks/read events
+  and failure handling without destination changes.
 - `tests/test_status.lua`: display, staging/unstaging, empty selection, deletion,
   rename, newline/magic/dash paths, path filtering, visual range, event refresh,
   action repeat, local/cached edit navigation, named-register path yanks, restore
@@ -76,7 +78,8 @@ and clean filters, avoiding temporary replacement of working files.
 GinDiff now displays working-tree, cached and revision comparisons and backs the
 status diff actions. Jumps resolve working/index/revision targets, including the
 merge base for three-dot comparisons. File folds show status and change counts.
-Its addressed read handler and processor/encoding options remain pending;
+Addressed reads support encoding/fileformat overrides; command-buffer
+processor/encoding options remain pending;
 combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
 with index write-back and status actions; remaining option and visual-range
 compatibility needs an audit. The checklist stays open until those checks finish.
@@ -88,7 +91,7 @@ compatibility still needs an audit. When there is no in-progress operation head,
 its dependent supplemental logs are omitted instead of running an invalid log
 command as upstream does.
 
-Next work: diff read/options and the remaining parsed views with direct
+Next work: buffer/diff options and the remaining parsed views with direct
 Git-state tests. Complete status browse/echo actions as their supporting modules
 become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.
