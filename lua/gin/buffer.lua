@@ -32,7 +32,19 @@ function M.lines(output)
   return vim.split(output, "\n", { plain = true })
 end
 
+function M.read_options(options)
+  local explicit = require("gin.command").parse(
+    vim.split(vim.v.cmdarg, " ", { trimempty = true }),
+    { "enc", "encoding", "ff", "fileformat" }
+  )
+  local result = vim.deepcopy(options or {})
+  result.enc = explicit.enc or explicit.encoding or result.enc or result.encoding
+  result.ff = explicit.ff or explicit.fileformat or result.ff or result.fileformat
+  return result
+end
+
 function M.replace_output(buf, output, root, filetype, options)
+  options = M.read_options(options)
   local lines, decoded = require("gin.edit").decode(output, options or {})
   if options and options.emojify ~= nil then
     lines = vim.tbl_map(require("gin.emoji").emojify, lines)

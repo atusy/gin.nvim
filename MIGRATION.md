@@ -554,3 +554,10 @@ A fixture covers each scheme with encoded fragments and no cached buffer data,
 resetting component context between cases so stale values cannot pass the check.
 Tag/Blame URI discovery without buffer metadata remains outside this pinned
 protocol list and is not claimed by this audit.
+
+Explicit :edit ++enc/++encoding and ++ff/++fileformat now override URI decoding
+settings for the current read in shared output views and GinEdit. A byte-level
+fixture opens UTF-8/CRLF data with Latin-1/DOS defaults, reloads it as UTF-8/Unix,
+and verifies both text and options before returning to the unchanged URI
+settings on ordinary reload. Blame's separate decoding path and other builtin
+read options remain under audit.

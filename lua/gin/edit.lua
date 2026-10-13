@@ -44,7 +44,7 @@ function M.read(buf, name)
   local path = M.path(parsed.root, parsed.fragment)
   local treeish = (parsed.params.commitish or "") .. ":" .. path
   local data = git.run({ "show", treeish }, { cwd = parsed.root }).stdout
-  local lines, options = M.decode(data, parsed.params)
+  local lines, options = M.decode(data, buffer.read_options(parsed.params))
   buffer.replace(buf, lines, parsed.root, vim.filetype.match({ filename = path, buf = buf }) or "")
   vim.b[buf].gin_path = path
   vim.bo[buf].modifiable = true

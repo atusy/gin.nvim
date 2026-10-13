@@ -183,4 +183,23 @@ for _, disabled in ipairs({ false, true }) do
     assert(ok, err)
   end
 end
+T["edit decoding overrides URI defaults for the current read"] = function()
+  vim.fn.writefile({ "café\r" }, root .. "/encoded")
+  H.git(root, "add", "encoded")
+  for _, command in ipairs({
+    "GinBuffer ++enc=latin1 ++ff=dos show :encoded",
+    "GinEdit ++enc=latin1 ++ff=dos encoded",
+  }) do
+    vim.cmd(command)
+    local name = vim.api.nvim_buf_get_name(0)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "cafÃ©" })
+    vim.cmd("edit ++encoding=utf-8 ++fileformat=unix")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "café\r" })
+    MiniTest.expect.equality({ vim.bo.fileencoding, vim.bo.fileformat }, { "utf-8", "unix" })
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), name)
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "cafÃ©" })
+    MiniTest.expect.equality({ vim.bo.fileencoding, vim.bo.fileformat }, { "latin1", "dos" })
+  end
+end
 return T
