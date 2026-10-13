@@ -32,6 +32,10 @@ Currently implemented:
   work), `a` chooses an action, `.` repeats the chosen action, and `?` shows help.
   The edit actions include `edit:cached`, `edit:HEAD`, and their `:split`,
   `:vsplit`, and `:tabedit` variants.
+- `:GinBranch [flags] [patterns...]` lists branches with commit and upstream
+  information. `<CR>` switches to the selected branch; `yy` yanks its name.
+  The action menu includes `switch:detach`, `delete`, `delete:force`, and
+  yanks for branch, target, and commit. Remote deletion deletes the remote ref.
 - `:GinEdit [++worktree=path] [++opener=...] [commitish] {path}` opens the index
   file by default, or an immutable revision when a commitish is given. Relative
   paths are repository-relative. Writing the index buffer updates Git's index
