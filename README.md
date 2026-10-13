@@ -107,7 +107,8 @@ Currently implemented:
   messages and local ancestry; it uses the remote HEAD ref, falling back to `main`.
 - `:GinBlame [commitish] path` opens a tab with synchronized attribution and
   committed file content, plus commit details that follow the cursor. Supports
-  `++worktree` and `++opener`. Commit navigation, paired-pane cleanup/reload,
+  `++worktree` and `++opener`. Reloading either source or attribution refreshes
+  the existing panes; closing a pane removes its companions. Commit navigation,
   encoding options and emoji rendering are still being ported.
 - `:GinCd`, `:GinLcd`, and `:GinTcd` change directory to the buffer's repository.
 

@@ -81,6 +81,16 @@ T["reloading either blame pane updates the existing three windows"] = function()
     local commit = vim.trim(H.git(root, "rev-parse", "HEAD"))
     vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
     vim.cmd.edit()
+    local settled = false
+    vim.schedule(function()
+      settled = true
+    end)
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return settled
+      end, 10),
+      true
+    )
     MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(file, 0, -1, false),
@@ -90,6 +100,34 @@ T["reloading either blame pane updates the existing three windows"] = function()
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(detail, 0, 1, false),
       { "commit " .. commit }
+    )
+  end
+end
+T["unloading a blame pane removes its companions and preserves other buffers"] = function()
+  vim.cmd.edit(root .. "/sub/file.lua")
+  local unrelated = vim.api.nvim_get_current_buf()
+  for _, role in ipairs({ "nav", "file", "detail" }) do
+    vim.cmd("GinBlame file.lua")
+    local panes = {
+      nav = vim.b.gin_blame_nav_bufnr,
+      file = vim.b.gin_blame_file_bufnr,
+      detail = vim.b.gin_blame_detail_bufnr,
+    }
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(panes[role]))
+    vim.cmd.close()
+    local removed = vim.wait(1000, function()
+      for other, buf in pairs(panes) do
+        if other ~= role and vim.api.nvim_buf_is_valid(buf) then
+          return false
+        end
+      end
+      return true
+    end, 10)
+    MiniTest.expect.equality(removed, true)
+    MiniTest.expect.equality(vim.api.nvim_buf_is_loaded(unrelated), true)
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(unrelated, 0, -1, false),
+      { "one", "changed", "three" }
     )
   end
 end

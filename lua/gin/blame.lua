@@ -161,8 +161,34 @@ function M.read(buf, name)
     local win = vim.fn.bufwinid(target)
     vim.wo[win].number, vim.wo[win].relativenumber = false, false
     vim.wo[win].wrap, vim.wo[win].signcolumn = false, "no"
+    local group = vim.api.nvim_create_augroup("gin_blame_detail_" .. target, { clear = true })
+    vim.api.nvim_create_autocmd("BufUnload", {
+      group = group,
+      buffer = target,
+      callback = function()
+        -- Reload unloads the buffer temporarily. Check after the operation has
+        -- finished, when buffer/window deletion is also safe outside textlock.
+        vim.schedule(function()
+          if vim.api.nvim_buf_is_loaded(target) then
+            return
+          end
+          for _, paired in ipairs({ buf, nav, detail }) do
+            if paired ~= target and vim.api.nvim_buf_is_valid(paired) then
+              vim.api.nvim_buf_delete(paired, { force = true })
+            end
+          end
+        end)
+      end,
+    })
+    vim.api.nvim_create_autocmd("BufWipeout", {
+      group = group,
+      buffer = target,
+      once = true,
+      callback = function()
+        vim.api.nvim_del_augroup_by_id(group)
+      end,
+    })
     if target ~= detail then
-      local group = vim.api.nvim_create_augroup("gin_blame_detail_" .. target, { clear = true })
       vim.api.nvim_create_autocmd("CursorMoved", {
         group = group,
         buffer = target,
