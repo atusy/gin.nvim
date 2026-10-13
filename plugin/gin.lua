@@ -149,6 +149,15 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.stash").read(event.buf, event.match)
   end,
 })
+for scheme, module in pairs({ ginlog = "log", ginreflog = "log", ginstash = "stash" }) do
+  vim.api.nvim_create_autocmd("FileReadCmd", {
+    group = vim.api.nvim_create_augroup("gin_" .. scheme:sub(4), { clear = false }),
+    pattern = scheme .. "://*",
+    callback = function(event)
+      require("gin." .. module).insert(event.buf, event.match)
+    end,
+  })
+end
 vim.api.nvim_create_user_command("GinBrowse", function(opts)
   require("gin.browse").command(opts)
 end, { nargs = "*", bar = true, range = true })

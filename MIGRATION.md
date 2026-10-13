@@ -426,5 +426,10 @@ Tag URIs now support addressed :read through FileReadCmd. Output generation is
 shared with the tag view, while insertion reuses the command-buffer read path
 for decoding, emoji conversion, marks and FileReadPost. Integration tests verify
 destination options and content, no tag-view metadata installation, empty output
-and failure without a success event. Log, reflog and stash URI reads remain
-pending.
+and failure without a success event.
+
+Log, reflog and stash URIs also support addressed :read. These paths use the
+requested Git arguments without adding view decorations or private parsing
+formats, matching the pinned read implementations. Twelve integration cases
+cover custom output, emoji conversion, encoding, insertion marks, destination
+options, empty output and failed Git commands with no FileReadPost event.
