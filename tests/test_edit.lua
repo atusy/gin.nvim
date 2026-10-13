@@ -167,4 +167,30 @@ T["reading GinEdit honors explicit decoding without changing destination options
   MiniTest.expect.equality({ vim.fn.line("'["), vim.fn.line("']") }, { 2, 2 })
   MiniTest.expect.equality(vim.bo.modified, true)
 end
+for _, command in ipairs({ "edit", "read" }) do
+  T[command .. " of Git blobs displays stderr without echoing file contents"] = function()
+    local name = require("gin.uri").format("ginedit", root, { commitish = "HEAD" }, "sub/file.lua")
+    local trace, echo = vim.env.GIT_TRACE, vim.api.nvim_echo
+    local more, height = vim.o.more, vim.o.cmdheight
+    local output = {}
+    vim.env.GIT_TRACE = "1"
+    vim.api.nvim_echo = function(chunks)
+      output[#output + 1] = chunks[1][1]
+    end
+    local ok, err = pcall(vim.api.nvim_cmd, {
+      cmd = command,
+      args = { vim.fn.fnameescape(name) },
+    }, {})
+    vim.env.GIT_TRACE, vim.api.nvim_echo = trace, echo
+    assert(ok, err)
+    local progress = table.concat(output, "\n")
+    MiniTest.expect.equality(
+      progress:find("built-in: git show HEAD:sub/file.lua", 1, true) ~= nil,
+      true
+    )
+    MiniTest.expect.equality(progress:find("committed", 1, true), nil)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+  end
+end
 return T

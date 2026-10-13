@@ -43,7 +43,7 @@ function M.read(buf, name)
   assert(parsed.fragment, "GinEdit requires a path")
   local path = M.path(parsed.root, parsed.fragment)
   local treeish = (parsed.params.commitish or "") .. ":" .. path
-  local data = git.run({ "show", treeish }, { cwd = parsed.root }).stdout
+  local data = git.run({ "show", treeish }, { cwd = parsed.root, progress = true }).stdout
   local lines, options = M.decode(data, buffer.read_options(parsed.params))
   buffer.replace(buf, lines, parsed.root, vim.filetype.match({ filename = path, buf = buf }) or "")
   vim.b[buf].gin_path = path
@@ -112,7 +112,7 @@ function M.insert(buf, name)
   local path = M.path(parsed.root, assert(parsed.fragment, "GinEdit requires a path"))
   local data = git.run(
     { "show", (parsed.params.commitish or "") .. ":" .. path },
-    { cwd = parsed.root }
+    { cwd = parsed.root, progress = true }
   ).stdout
   if data ~= "" then
     local lines = M.decode(data, buffer.read_options(parsed.params))

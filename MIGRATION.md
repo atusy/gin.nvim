@@ -832,3 +832,9 @@ finishes. The fixture verifies stripped stderr colors, processed stdout inserted
 at the requested address without stderr contamination, and restored editor
 options. Buffer edit/reload continues to display stderr only. Other executors
 and custom indicator APIs remain under audit.
+
+GinEdit blob display and FileReadCmd insertion now stream stderr only, matching
+the null stdout indicators in the pinned `command/edit/edit.ts` and
+`command/edit/read.ts`. Real Git trace output verifies delivery on both paths
+without echoing blob contents, while asserting the loaded content and restored
+editor options. Index writes and other executors still need a streaming audit.
