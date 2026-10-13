@@ -345,3 +345,9 @@ Tag and stash lists now accept ++emojify and retain it across reloads. Conversio
 runs on display lines after candidate extraction, preserving original refs and
 object IDs. Integration tests delete the selected annotated tag and pop the
 selected stash after reload, checking remaining refs and restored file content.
+
+GinBlame ++emojify converts attribution summaries and commit details while
+leaving source lines unchanged. Its URI option propagates to companion panes
+and history entries. The integration fixture verifies initial display, reload,
+detail updates, commit navigation and backward history with literal emoji names
+in source content.

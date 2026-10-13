@@ -294,4 +294,44 @@ T["blame retains encoding and fileformat options through reload and history"] = 
   require("gin.blame").navigate_history("older")
   check()
 end
+
+T["blame emojifies metadata while preserving literal source through history"] = function()
+  vim.fn.writefile({ ":sparkles: source" }, root .. "/sub/file.lua")
+  H.git(root, "commit", "-am", ":sparkles: message")
+  local head = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  vim.cmd("GinBlame ++emojify file.lua")
+  local function check()
+    local file = vim.b.gin_blame_file_bufnr
+    local detail = vim.b.gin_blame_detail_bufnr
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(file, 0, -1, false),
+      { "", ":sparkles: source" }
+    )
+    MiniTest.expect.equality(
+      table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n"):find("✨ message", 1, true)
+        ~= nil,
+      true
+    )
+    MiniTest.expect.equality(
+      table
+        .concat(vim.api.nvim_buf_get_lines(detail, 0, -1, false), "\n")
+        :find("✨ message", 1, true) ~= nil,
+      true
+    )
+  end
+  check()
+  vim.cmd.edit()
+  check()
+  require("gin.blame").update_detail(vim.api.nvim_get_current_buf(), 2)
+  check()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  require("gin.blame").switch_commit()
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(0)).params.commitish,
+    head
+  )
+  check()
+  require("gin.blame").navigate_history("older")
+  check()
+end
 return T

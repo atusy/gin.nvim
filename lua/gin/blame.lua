@@ -87,6 +87,10 @@ local function relative_time(timestamp)
   return diff < 0 and "in " .. text or text .. " ago"
 end
 
+local function emojify(text, params)
+  return params.emojify ~= nil and require("gin.emoji").emojify(text) or text
+end
+
 function M.update_detail(buf, lnum)
   local detail = vim.b[buf].gin_blame_detail_bufnr
   if not detail or not vim.api.nvim_buf_is_loaded(detail) then
@@ -101,7 +105,7 @@ function M.update_detail(buf, lnum)
   end
   local output =
     git.run({ "show", "--no-patch", "--format=fuller", commit, "--" }, { cwd = parsed.root }).stdout
-  buffer.replace(detail, buffer.lines(output), parsed.root, "git")
+  buffer.replace(detail, buffer.lines(emojify(output, parsed.params)), parsed.root, "git")
   vim.bo[detail].buftype = "nowrite"
   vim.b[detail].gin_blame_detail_last_commit = commit
 end
@@ -141,7 +145,7 @@ function M.read(buf, name, output)
         .. "\t"
         .. line.metadata.author
         .. "\t"
-        .. line.metadata.summary
+        .. emojify(line.metadata.summary, parsed.params)
     end
     content[#content + 1], navlines[#navlines + 1] = line.content, label
     map[#content], reverse[line.lineNumber] = line, #content
@@ -163,10 +167,13 @@ function M.read(buf, name, output)
   buffer.replace(
     detail,
     buffer.lines(
-      git.run(
-        { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
-        { cwd = parsed.root }
-      ).stdout
+      emojify(
+        git.run(
+          { "show", "--no-patch", "--format=fuller", parsed.params.commitish or "HEAD", "--" },
+          { cwd = parsed.root }
+        ).stdout,
+        parsed.params
+      )
     ),
     parsed.root,
     "git"
@@ -402,7 +409,7 @@ end
 function M.command(opts)
   local options, args = require("gin.command").parse(
     opts.fargs,
-    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat", "emojify" }
   )
   assert(#args == 1 or #args == 2, "GinBlame expects [commitish] path")
   local root = require("gin.worktree").current(options.worktree)
@@ -411,6 +418,7 @@ function M.command(opts)
     commitish = #args == 2 and args[1] or nil,
     enc = options.enc or options.encoding,
     ff = options.ff or options.fileformat,
+    emojify = options.emojify and "" or nil,
   }, path)
   return buffer.open(
     name,
