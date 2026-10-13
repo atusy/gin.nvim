@@ -1151,3 +1151,12 @@ startup settings that select a preset. An isolated Neovim process started with
 `-u NONE` reads both presets through Vimscript, verifies all four symbols and
 asserts that the plugin remains uninitialized. The values come from Lua's
 existing preset tables rather than a second implementation.
+
+The built-in `gin#indicator#echo#{open,write,close}` entry points now delegate
+to Lua. They synchronously display line arrays, preserve whitespace, ignore
+empty/unopened writes and retain the pinned backend's ID-independent reference
+counting. Native byte streams and legacy echo calls share one display-state
+lifetime; tests verify restoration only after the final user closes, including
+a mixed legacy/native session. Legacy-only opens preserve `more`, while native
+stream opens continue disabling its prompt. Custom named indicator dispatch
+and the broader internal executor API remain separate audit items.

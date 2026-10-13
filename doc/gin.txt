@@ -255,6 +255,19 @@ request-specific :Apply and :Cancel. ++wait services proxy requests while waitin
 see |gin-limitations| for the remaining interactive-editing validation limit.
 
 ==============================================================================
+PROGRESS INDICATOR                                             *gin-indicator*
+
+gin#indicator#echo#open(id)                       *gin#indicator#echo#open()*
+gin#indicator#echo#write(id, lines)              *gin#indicator#echo#write()*
+gin#indicator#echo#close(id)                     *gin#indicator#echo#close()*
+    Legacy echo functions delegate to require('gin.indicator.echo').
+    write() displays a list of lines synchronously without adding history.
+    Empty lists and writes without an open indicator are ignored. The echo
+    backend shares its display settings with native Lua progress streams and
+    restores them after the last user closes. IDs are accepted but unused,
+    matching the pinned echo backend.
+
+==============================================================================
 STATUSLINE                                                     *gin-components*
 
 Lua functions return cached strings and update asynchronously:
