@@ -147,4 +147,41 @@ function M.command(opts)
   return url
 end
 
+function M.setup(buf, gather)
+  for _, suffix in ipairs({
+    "",
+    ":yank",
+    ":permalink",
+    ":permalink:yank",
+    ":commit",
+    ":commit:yank",
+    ":commit:permalink",
+    ":commit:permalink:yank",
+  }) do
+    require("gin.action").define(buf, "browse" .. suffix, function(target, range)
+      local root = vim.b[target].gin_worktree
+      for _, row in ipairs(gather(target, range)) do
+        local args = { "++worktree=" .. root }
+        if suffix:find(":yank", 1, true) then
+          args[#args + 1] = "++yank=" .. vim.v.register
+        end
+        if suffix:find(":permalink", 1, true) then
+          args[#args + 1] = "--permalink"
+        end
+        if suffix:find(":commit", 1, true) then
+          args[#args + 1] = "--commit"
+        end
+        if not row.path then
+          args[#args + 1] = "++repository"
+        end
+        args[#args + 1] = row.target or row.commit or "HEAD"
+        if row.path then
+          args[#args + 1] = root .. "/" .. row.path
+        end
+        M.command({ fargs = args, range = 0 })
+      end
+    end)
+  end
+end
+
 return M

@@ -97,6 +97,7 @@ function M.setup(buf, gather)
   end
   actions[buf] = {}
   if gather then
+    require("gin.browse").setup(buf, gather)
     M.define(buf, "echo", function(target, range)
       local selected = gather(target, range)
       local output = #selected == 0 and "[]" or vim.json.encode(selected)

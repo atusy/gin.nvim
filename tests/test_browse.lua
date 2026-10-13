@@ -15,6 +15,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.g.gin_browse_persistent_args = nil
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
@@ -85,5 +86,22 @@ T["browse selects remotes by ancestry rather than the presence of any ref"] = fu
     require("gin.browse").url(root, hash, { commit = true }),
     "https://github.com/owner/repo/commit/" .. hash
   )
+end
+T["status browse action uses the selected repository-relative path"] = function()
+  vim.fn.writefile({ "modified" }, root .. "/sub/space # file.md")
+  vim.g.gin_browse_persistent_args = { "--no-browser" }
+  vim.cmd.cd(root .. "/sub")
+  vim.cmd.GinStatus()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:permalink:yank", { 2, 2 })
+  MiniTest.expect.equality(
+    vim.fn.getreg('"'),
+    "https://github.com/owner/repo/blob/" .. hash .. "/sub/space%20%23%20file.md"
+  )
+end
+T["history browse commit action uses the selected commit"] = function()
+  vim.g.gin_browse_persistent_args = { "--no-browser" }
+  vim.cmd("GinLog --oneline")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:commit:yank", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.getreg('"'), "https://github.com/owner/repo/commit/" .. hash)
 end
 return T
