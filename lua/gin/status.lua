@@ -171,6 +171,18 @@ function M.mappings(buf)
     not vim.g.gin_status_disable_default_mappings
     or vim.g.gin_status_disable_default_mappings == 0
   then
+    vim.keymap.set(
+      "n",
+      "yy",
+      "<Plug>(gin-action-yank:path)",
+      { buffer = buf, remap = true, nowait = true }
+    )
+    vim.keymap.set(
+      "x",
+      "y",
+      "<Plug>(gin-action-yank:path)<Esc>",
+      { buffer = buf, remap = true, nowait = true }
+    )
     for lhs, action in pairs({
       ["<<"] = "stage",
       [">>"] = "unstage",

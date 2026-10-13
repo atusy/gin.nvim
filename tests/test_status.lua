@@ -150,4 +150,11 @@ T["cached status edit opens the selected index file in a split"] = function()
   MiniTest.expect.equality(vim.bo.buftype, "acwrite")
   vim.cmd.close()
 end
+T["yank path uses the requested register and absolute file path"] = function()
+  vim.fn.writefile({ "working" }, root .. "/file")
+  vim.cmd.GinStatus()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys('"ayy', "mx", false)
+  MiniTest.expect.equality(vim.fn.getreg("a"), vim.uv.fs_realpath(root) .. "/file")
+end
 return T

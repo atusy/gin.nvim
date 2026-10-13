@@ -23,6 +23,16 @@ function M.setup(buf, gather)
     action.alias(buf, "edit:" .. source, "edit:" .. source .. ":edit")
   end
   action.alias(buf, "edit", "edit:local")
+  for _, spec in ipairs({ { "yank:path", "path" }, { "yank:path:orig", "orig_path" } }) do
+    action.define(buf, spec[1], function(target, range)
+      local values = {}
+      for _, entry in ipairs(gather(target, range)) do
+        local path = entry[spec[2]]
+        values[#values + 1] = path and vim.b[target].gin_worktree .. "/" .. path or ""
+      end
+      vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
+    end)
+  end
 end
 
 return M
