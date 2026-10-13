@@ -410,3 +410,11 @@ checking both fold labels and exact working-file navigation. A deletion fixture
 also preserves /dev/null under a custom slash prefix and verifies index
 navigation. Prefixes inherited from Git configuration and arbitrary GinBuffer
 argv remain under audit.
+
+GinTag now honors --format instead of overriding it with its internal metadata
+format. The default display includes the creator date, matching the pinned
+upstream format. Private ref/object fields retain action targets across custom
+display formats, sorting and reloads; multiline displays map each line to its
+ref and range actions deduplicate those refs. Real Git tests check exact display
+and selected deletion. Custom parse-pattern settings and formats containing NUL
+bytes remain under audit.

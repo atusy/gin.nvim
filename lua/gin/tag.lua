@@ -4,9 +4,12 @@ local git = require("gin.git")
 local action = require("gin.action")
 
 local function candidates(buf, range)
-  local rows, selected = vim.b[buf].gin_tags or {}, {}
+  local rows, selected, seen = vim.b[buf].gin_tags or {}, {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
-    selected[#selected + 1] = rows[i]
+    if not seen[rows[i].tag] then
+      selected[#selected + 1] = rows[i]
+      seen[rows[i].tag] = true
+    end
   end
   return selected
 end
@@ -14,15 +17,25 @@ end
 function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "tag", "--list", "--color=never" }
-  vim.list_extend(args, parsed.params.args and vim.json.decode(parsed.params.args) or {})
-  args[#args + 1] = "--format=%(refname:strip=2)%00%(objectname)%00%(subject)"
+  local format = "%(objectname:short) %(refname:short) %(creatordate:short) %(subject)"
+  for _, flag in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
+    if flag:sub(1, 9) == "--format=" then
+      format = flag:sub(10)
+    else
+      args[#args + 1] = flag
+    end
+  end
+  args[#args + 1] = "--format=%(refname:strip=2)%00%(objectname)%00" .. format .. "%00"
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and uri.split(parsed.fragment) or {})
   local rows, lines = {}, {}
-  for line in git.run(args, { cwd = parsed.root }).stdout:gmatch("[^\n]+") do
-    local fields = vim.split(line, "\0", { plain = true })
-    rows[#rows + 1] = { tag = fields[1], commit = fields[2] }
-    lines[#lines + 1] = fields[2]:sub(1, 7) .. " " .. fields[1] .. " " .. fields[3]
+  for tag, commit, display in
+    git.run(args, { cwd = parsed.root }).stdout:gmatch("([^%z]+)%z([^%z]+)%z([^%z]*)%z\n")
+  do
+    for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
+      rows[#rows + 1] = { tag = tag, commit = commit }
+      lines[#lines + 1] = line
+    end
   end
   require("gin.buffer").replace_output(
     buf,

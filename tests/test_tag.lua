@@ -110,4 +110,39 @@ T["tag decoding options survive reload and preserve deletion targets"] = functio
   require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "tag", "--list", "encoded"), "")
 end
+T["custom tag formats survive reload and retain selected refs"] = function()
+  vim.cmd("GinTag --sort=-refname --format=%(refname:short):%(subject)")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "release:release notes",
+    "light:initial",
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
+end
+T["default tag display matches the pinned upstream format"] = function()
+  vim.cmd.GinTag()
+  local expected = H.git(
+    root,
+    "tag",
+    "--list",
+    "--color=never",
+    "--format=%(objectname:short) %(refname:short) %(creatordate:short) %(subject)"
+  )
+  MiniTest.expect.equality(
+    table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+    expected
+  )
+end
+T["multiline tag formats select each displayed ref once"] = function()
+  vim.cmd("GinTag --format=%(refname:short)%0a%(subject)")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "light",
+    "initial",
+    "release",
+    "release notes",
+  })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 3, 4 })
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
+end
 return T
