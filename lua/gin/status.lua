@@ -152,18 +152,25 @@ function M.action(buf, name, range)
 end
 
 function M.mappings(buf)
+  local action = require("gin.action")
+  action.setup(buf)
   for _, name in ipairs({ "stage", "unstage" }) do
-    vim.keymap.set({ "n", "x" }, "<Plug>(gin-action-" .. name .. ")", function()
-      local line = vim.fn.line(".")
-      local other = vim.fn.mode() == "n" and line or vim.fn.line("v")
-      M.action(buf, name, { math.min(line, other), math.max(line, other) })
-    end, { buffer = buf, silent = true })
+    action.define(buf, name, function(target, range)
+      M.action(target, name, range)
+    end)
   end
+  action.alias(buf, "reset", "unstage")
   if
     not vim.g.gin_status_disable_default_mappings
     or vim.g.gin_status_disable_default_mappings == 0
   then
-    for lhs, action in pairs({ ["<<"] = "stage", [">>"] = "unstage" }) do
+    for lhs, action in pairs({
+      ["<<"] = "stage",
+      [">>"] = "unstage",
+      a = "choice",
+      ["."] = "repeat",
+      ["?"] = "help",
+    }) do
       vim.keymap.set(
         { "n", "x" },
         lhs,

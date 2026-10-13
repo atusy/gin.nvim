@@ -106,4 +106,20 @@ T["Gin command completion refreshes the status view"] = function()
   vim.cmd("Gin ++wait add -- file")
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), { "A  file" })
 end
+T["chosen status actions remain repeatable after refresh"] = function()
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "content" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  local action = require("gin.action")
+  local input = vim.ui.input
+  vim.ui.input = function(_, callback)
+    callback("stage")
+  end
+  local ok, err = pcall(action.call, vim.api.nvim_get_current_buf(), "choice", { 2, 2 })
+  vim.ui.input = input
+  assert(ok, err)
+  action.call(vim.api.nvim_get_current_buf(), "repeat", { 3, 3 })
+  MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "one\ntwo\n")
+end
 return T
