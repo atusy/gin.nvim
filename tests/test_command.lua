@@ -178,4 +178,37 @@ for _, view in ipairs({ "GinDiff", "GinLog --oneline" }) do
     end
   end
 end
+
+for _, view in ipairs({ "GinDiff", "GinLog --oneline" }) do
+  T[view .. " keeps repository-relative filters and alternate filename expansion"] = function()
+    vim.fn.writefile({ "root base" }, root .. "/file")
+    H.git(root, "add", "file")
+    H.git(root, "commit", "-m", "root file")
+    local first = vim.trim(H.git(root, "rev-parse", "HEAD"))
+    vim.fn.mkdir(root .. "/sub", "p")
+    vim.fn.writefile({ "sub base" }, root .. "/sub/file")
+    H.git(root, "add", "sub/file")
+    H.git(root, "commit", "-m", "sub file")
+    vim.fn.writefile({ "root changed" }, root .. "/file")
+    vim.fn.writefile({ "sub changed" }, root .. "/sub/file")
+    vim.cmd.cd(root .. "/sub")
+    vim.cmd(view .. " -- file")
+    vim.cmd.edit()
+    if view == "GinDiff" then
+      local output = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+      MiniTest.expect.equality(output:find("+root changed", 1, true) ~= nil, true)
+      MiniTest.expect.equality(output:find("sub changed", 1, true), nil)
+    else
+      local rows = require("gin.log").candidates(0, { 1, 99 })
+      MiniTest.expect.equality(#rows, 1)
+      MiniTest.expect.equality(rows[1].commit, first:sub(1, #rows[1].commit))
+    end
+    vim.cmd.enew()
+    vim.cmd("Gin ++wait add -- #")
+    MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "root changed\n")
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"), "sub base\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "sub changed" })
+  end
+end
 return T

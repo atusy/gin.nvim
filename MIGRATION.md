@@ -317,3 +317,8 @@ buffers, alongside revision/index edit buffers. Git-state fixtures stage through
 verify that the second path stays unstaged. Log expansion currently uses paths
 after an explicit -- separator; full URI and modifier interoperability remains
 under audit.
+
+Subdirectory fixtures now distinguish root/file from sub/file for diff and log
+filters, verify reload output/history, then use the alternate-buffer # expansion
+to stage only root/file. Relative filter paths remain repository-relative,
+matching the pinned upstream; the same-named subdirectory file stays unstaged.

@@ -46,7 +46,8 @@ Currently implemented:
   onto the selected ref, run an exec command, or drop the selected commit.
   `rebase:i` edits the rebase todo through the proxy; `rebase:i:x` also prompts
   for an exec command. Remote deletion deletes the remote ref.
-- `:GinLog [flags] [revision] [-- paths...]` displays commit history. `<CR>`
+- `:GinLog [flags] [revision] [-- paths...]` displays commit history. Paths
+  are repository-relative, including when cwd is a subdirectory. `<CR>`
   shows the selected commit; `yy` yanks its hash. Show actions support edit,
   split, vsplit, and tabedit destinations. Branch `log` actions open GinLog
   at the selected ref with the same destination variants. `cherry-pick` and
