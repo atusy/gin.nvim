@@ -216,4 +216,7 @@ Neovim highlights. `++monochrome` skips forced coloring and persists on reload.
 The processor fixture uses monochrome because uppercase conversion also changes
 ANSI control sequences. Command-post binding belongs to candidate views in the
 pinned source, not GinBuffer; the checklist has been corrected. Extended color,
-attribute reset, Unicode byte-offset and colorscheme behavior still need audits.
+attribute reset and Unicode byte-offset fixtures now verify rendered highlight
+spans. Colorscheme changes restore generated groups using the current terminal
+palette. Broader ANSI control-sequence and cross-view decoration parity remain
+unaudited.
