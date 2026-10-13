@@ -690,3 +690,11 @@ highlight ranges with custom colors and attributes, aliases, reloads, forced
 default color despite color.branch=never, and explicit never/auto/no-color.
 Configuration is unchanged. Other native formatting flags and uncommon color
 settings still require audit.
+
+GinBranch now passes the pinned -vv default to Git and applies subsequent
+verbosity flags to its display. --no-verbose hides commit/details and padding;
+a following --verbose includes commits and ahead/behind status; -vv restores
+upstream names and linked-worktree paths. A native-output fixture covers all
+three modes, reloads and selected branch yanks with a linked branch ahead of its
+upstream. Structured action metadata remains available in every mode. Combined
+short-option spellings and column-layout flags remain to be checked.

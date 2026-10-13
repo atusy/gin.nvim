@@ -17,8 +17,9 @@ end
 
 function M.read(buf, name)
   local parsed = uri.parse(name)
-  local args = { "branch", "--list", "--color=always" }
+  local args = { "branch", "--list", "-vv", "--color=always" }
   local format, all
+  local verbose = 2
   local colored = true
   local objectname = "%(objectname:short)"
   for _, arg in ipairs(parsed.params.args and vim.json.decode(parsed.params.args) or {}) do
@@ -40,6 +41,12 @@ function M.read(buf, name)
         colored = false
       elseif arg == "--color" or arg == "--color=always" then
         colored = true
+      elseif arg == "--no-verbose" then
+        verbose = 0
+      elseif arg == "--verbose" then
+        verbose = verbose + 1
+      elseif arg:match("^%-v+$") then
+        verbose = verbose + #arg - 1
       end
     end
   end
@@ -102,10 +109,15 @@ function M.read(buf, name)
           -2
         ) or "") .. "]")
       or ""
+    if verbose < 2 then
+      tracking = fields[6] ~= "" and (" " .. fields[6]) or ""
+    end
     local linked = row.worktree and row.head ~= "*"
     local marker = linked and "+" or row.head
-    local location = linked and (" (" .. paint("worktree", row.worktree) .. ")") or ""
-    local padded = names[i] .. string.rep(" ", width - vim.fn.strdisplaywidth(names[i]))
+    local location = linked and verbose > 1 and (" (" .. paint("worktree", row.worktree) .. ")")
+      or ""
+    local padded = names[i]
+      .. (verbose > 0 and string.rep(" ", width - vim.fn.strdisplaywidth(names[i])) or "")
     padded = paint(
       row.head == "*" and "current" or linked and "worktree" or remote and "remote" or "local",
       padded
@@ -114,6 +126,7 @@ function M.read(buf, name)
       or row.kind == "alias" and ("  " .. padded .. " -> " .. fields[8]
         :gsub("^refs/heads/", "")
         :gsub("^refs/remotes/", ""))
+      or verbose == 0 and (marker .. " " .. padded)
       or marker .. " " .. padded .. " " .. row.commit .. location .. tracking .. " " .. fields[4]
     for _, line in ipairs(vim.split(display, "\n", { plain = true })) do
       rows[#rows + 1] = row

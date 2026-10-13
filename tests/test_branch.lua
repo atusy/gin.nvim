@@ -45,6 +45,25 @@ T["default branch columns align names by display width"] = function()
     end
   end
 end
+T["branch verbosity flags control display without losing selected refs"] = function()
+  H.git(root, "branch", "--set-upstream-to=main", "topic")
+  H.git(root, "worktree", "add", root .. "/linked", "topic")
+  vim.fn.writefile({ "topic" }, root .. "/linked/file")
+  H.git(root .. "/linked", "commit", "-am", "topic change")
+  for _, flags in ipairs({ "--no-verbose", "--no-verbose --verbose", "--no-verbose -vv" }) do
+    vim.cmd("GinBranch --no-color " .. flags)
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        H.git(root, "branch", "--list", "-vv", "--no-color", unpack(vim.split(flags, " ")))
+      )
+      require("gin.action").call(vim.api.nvim_get_current_buf(), "yank:branch", { 2, 2 })
+      MiniTest.expect.equality(vim.fn.getreg('"'), "topic")
+      vim.cmd.edit()
+    end
+  end
+  H.git(root, "worktree", "remove", root .. "/linked")
+end
 T["default branch colors match Git configuration across reload"] = function()
   H.git(root, "branch", "spare")
   H.git(root, "worktree", "add", root .. "/linked", "topic")
