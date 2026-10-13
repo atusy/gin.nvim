@@ -1035,3 +1035,10 @@ A real stash-show fixture additionally checks the selected reference in the
 show argv and diffjump URI parameter, and the selected stash's combined-diff
 content. Combined (`@@@`) hunk jumps are unsupported by both the pinned
 diffjump parser and the Lua parser; this fixture does not claim to test them.
+
+Log/reflog `GinCommandPost` bindings now call the public asynchronous reload
+utility, as pinned `bare/command.ts` does, instead of reading buffers directly
+inside the event. Hidden views defer Git execution until entry and use normal
+`:edit` handling when reloaded. A real log fixture verifies that the hidden
+view retains its old contents until BufEnter and then shows the new commit.
+Other listing bindings still need the same automatic-reload audit.

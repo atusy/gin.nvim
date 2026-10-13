@@ -332,13 +332,7 @@ function M.read(buf, name)
     group = group,
     pattern = "GinCommandPost",
     callback = function()
-      if vim.api.nvim_buf_is_loaded(buf) then
-        vim.api.nvim_buf_call(buf, function()
-          local view = vim.fn.winsaveview()
-          M.read(buf, name)
-          vim.fn.winrestview(view)
-        end)
-      end
+      require("gin.util").reload(buf)
     end,
   })
   vim.api.nvim_create_autocmd("BufWipeout", {
