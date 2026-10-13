@@ -276,4 +276,9 @@ annotated-force-specific coverage remain pending.
 History fixup:amend and fixup:reword now open editable fixup messages without
 blocking Neovim. The amend fixture verifies the new commit message, staged file
 content and unchanged parent relationship. Reword coverage verifies an unchanged
-commit tree and retained staged content. Instant amend/reword remain pending.
+commit tree and retained staged content. Instant amend/reword now reuse the
+root-aware autosquash implementation after a successful message edit. Real Git
+fixtures verify replacement of the root message, preservation of descendants,
+and amend content; cancellation preserves HEAD and the staged changes. Reword
+with dirty state, autosquash conflicts, and other editor failures still need
+broader coverage.

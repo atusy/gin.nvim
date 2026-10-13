@@ -202,6 +202,25 @@ function M.read(buf, name)
     end
   end
   action.alias(buf, "tag", "tag:annotate")
+  local function instant_squash(commit)
+    local git = require("gin.git")
+    local parent = git.run(
+      { "rev-parse", "--verify", commit .. "^" },
+      { cwd = parsed.root, check = false }
+    )
+    local args = {
+      "-c",
+      "sequence.editor=true",
+      "rebase",
+      "--interactive",
+      "--autostash",
+      "--autosquash",
+      "--quiet",
+    }
+    args[#args + 1] = parent.code == 0 and vim.trim(parent.stdout) or "--root"
+    require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
+    vim.cmd("silent checktime")
+  end
   for _, instant in ipairs({ false, true }) do
     action.define(buf, instant and "fixup:instant-fixup" or "fixup:fixup", function(target, range)
       local rows = M.candidates(target, range)
@@ -214,44 +233,40 @@ function M.read(buf, name)
       local result = git.run({ "commit", "--fixup=" .. commit }, { cwd = parsed.root })
       require("gin.command").finish(result, {}, {})
       if instant then
-        local parent = git.run(
-          { "rev-parse", "--verify", commit .. "^" },
-          { cwd = parsed.root, check = false }
-        )
-        local args = {
-          "-c",
-          "sequence.editor=true",
-          "rebase",
-          "--interactive",
-          "--autostash",
-          "--autosquash",
-          "--quiet",
-        }
-        args[#args + 1] = parent.code == 0 and vim.trim(parent.stdout) or "--root"
-        require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
-        vim.cmd("silent checktime")
+        instant_squash(commit)
       end
     end)
   end
   for _, variant in ipairs({ "amend", "reword" }) do
-    action.define(buf, "fixup:" .. variant, function(target, range)
-      local rows = M.candidates(target, range)
-      if #rows == 0 then
-        return
-      end
-      assert(#rows == 1, "Fixup requires exactly one commit")
-      return require("gin.command").execute({
-        fargs = {
+    for _, instant in ipairs({ false, true }) do
+      local name = "fixup:" .. (instant and "instant-" or "") .. variant
+      action.define(buf, name, function(target, range)
+        local rows = M.candidates(target, range)
+        if #rows == 0 then
+          return
+        end
+        assert(#rows == 1, "Fixup requires exactly one commit")
+        local commit = rows[1].commit
+        local args = {
           "++worktree=" .. parsed.root,
           "commit",
-          "--fixup=" .. variant .. ":" .. rows[1].commit,
-        },
-        smods = {},
-        on_exit = function()
-          vim.cmd("silent checktime")
-        end,
-      })
-    end)
+          "--fixup=" .. variant .. ":" .. commit,
+        }
+        if instant then
+          args[#args + 1] = "--quiet"
+        end
+        return require("gin.command").execute({
+          fargs = args,
+          smods = {},
+          on_exit = function(result)
+            if instant and result.code == 0 then
+              instant_squash(commit)
+            end
+            vim.cmd("silent checktime")
+          end,
+        })
+      end)
+    end
   end
   action.alias(buf, "fixup", "fixup:fixup")
   action.define(buf, "yank:commit", function(target, range)

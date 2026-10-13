@@ -411,4 +411,92 @@ T["reword fixup leaves staged changes out of the new commit"] = function()
   MiniTest.expect.equality(H.git(root, "show", "HEAD:one"), "first\n")
   MiniTest.expect.equality(H.git(root, "show", ":one"), "still staged\n")
 end
+
+for _, variant in ipairs({ "amend", "reword" }) do
+  T["instant " .. variant .. " rewrites a root message and preserves descendants"] = function()
+    if variant == "amend" then
+      vim.fn.writefile({ "amended content" }, root .. "/one")
+      H.git(root, "add", "one")
+    end
+    vim.cmd("GinLog --oneline")
+    local completed = false
+    local event = vim.api.nvim_create_autocmd("User", {
+      pattern = "GinCommandPost",
+      callback = function()
+        completed = true
+      end,
+    })
+    local process = require("gin.action").call(
+      vim.api.nvim_get_current_buf(),
+      "fixup:instant-" .. variant,
+      { 2, 2 }
+    )
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return vim.b.gin_editor_request ~= nil
+      end, 10),
+      true
+    )
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+      "amend! first change",
+      "",
+      "replacement root message",
+    })
+    vim.cmd.Apply()
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return completed
+      end, 10),
+      true
+    )
+    vim.api.nvim_del_autocmd(event)
+    MiniTest.expect.equality(process:wait(5000).code, 0)
+    MiniTest.expect.equality(H.git(root, "rev-list", "--count", "HEAD"), "2\n")
+    MiniTest.expect.equality(
+      H.git(root, "log", "-1", "--format=%s", "HEAD^"),
+      "replacement root message\n"
+    )
+    MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "second change\n")
+    MiniTest.expect.equality(
+      H.git(root, "show", "HEAD:one"),
+      variant == "amend" and "amended content\n" or "first\n"
+    )
+    MiniTest.expect.equality(H.git(root, "show", "HEAD:two"), "second\n")
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+end
+
+T["cancelled instant amend leaves history and staged content intact"] = function()
+  vim.fn.writefile({ "keep staged" }, root .. "/one")
+  H.git(root, "add", "one")
+  vim.cmd("GinLog --oneline")
+  local notified = false
+  local notify = vim.notify
+  vim.notify = function()
+    notified = true
+  end
+  local ok, err = pcall(function()
+    local process =
+      require("gin.action").call(vim.api.nvim_get_current_buf(), "fixup:instant-amend", { 2, 2 })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return vim.b.gin_editor_request ~= nil
+      end, 10),
+      true
+    )
+    vim.cmd.Cancel()
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return notified
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+    MiniTest.expect.equality(H.git(root, "show", ":one"), "keep staged\n")
+    MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-merge"), 0)
+  end)
+  vim.notify = notify
+  assert(ok, err)
+end
 return T
