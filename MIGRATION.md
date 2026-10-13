@@ -810,3 +810,17 @@ refresh hook with the divider. A real colorscheme reload reproduced missing
 time/author colors; default definitions restore them while respecting a theme's
 explicit author style. Additional lifecycle fixtures verify list default links
 survive colorscheme reload and user-defined tag colors survive syntax reload.
+
+GinBuffer buffer reads now display stderr progress while Git is running, matching
+the pinned `command/buffer/edit.ts` executor's null stdout indicator and default
+stderr indicator. A real Git alias waits for acknowledgement from the displayed
+progress before exiting, proving live delivery rather than a final-output echo.
+The fixture also checks ANSI removal, buffer-only stdout and restored editor
+options. Git failure/timeout cleanup has a separate check.
+These reads retain the existing process timeout and processor behavior.
+
+The pinned bare and buffer command parsers do not expose custom indicator names
+as command options; `stdoutIndicator` and `stderrIndicator` are internal executor
+arguments. This change covers the default GinBuffer edit/reload route only.
+FileReadCmd insertion and other buffer executors still need streaming audits;
+custom executor APIs remain unported.

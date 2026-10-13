@@ -47,6 +47,28 @@ T["processors receive Git stdout in the repository directory"] = function()
   result = require("gin.git").run({ "status", "--short" }, { cwd = root, processor = { "pwd" } })
   MiniTest.expect.equality(vim.trim(result.stdout), vim.uv.fs_realpath(root))
 end
+T["progress restores editor options when Git fails or times out"] = function()
+  local more, height = vim.o.more, vim.o.cmdheight
+  local echo = vim.api.nvim_echo
+  vim.api.nvim_echo = function() end
+  local ok, err = pcall(function()
+    MiniTest.expect.error(function()
+      require("gin.git").run({ "not-a-git-command" }, { cwd = root, progress = true })
+    end, "git exited")
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+    local result = require("gin.git").run({ "hash-object", "--stdin" }, {
+      cwd = root,
+      stdin = true,
+      timeout = 20,
+      check = false,
+      progress = true,
+    })
+    MiniTest.expect.equality(result.code, 124)
+    MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+end
 T["processor errors propagate and failed Git commands skip processors"] = function()
   MiniTest.expect.error(function()
     require("gin.git").run(

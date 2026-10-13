@@ -24,6 +24,28 @@ T["GinBuffer opens Git output in an immutable scratch buffer"] = function()
   MiniTest.expect.equality(vim.bo.filetype, "gin-buffer")
   MiniTest.expect.equality(require("gin.worktree").current(), vim.uv.fs_realpath(root))
 end
+T["GinBuffer displays stderr before Git finishes without echoing stdout"] = function()
+  H.git(
+    root,
+    "config",
+    "alias.buffer-progress",
+    [[!printf 'buffer-only\n'; printf '\033[31mwaiting\033[0m\n' >&2; i=0; while test ! -f .git/progress-seen; do i=$((i+1)); test "$i" -lt 100 || exit 9; sleep 0.01; done]]
+  )
+  local echo, output = vim.api.nvim_echo, {}
+  local more, height = vim.o.more, vim.o.cmdheight
+  vim.api.nvim_echo = function(chunks)
+    output[#output + 1] = chunks[1][1]
+    if chunks[1][1] == "waiting" then
+      vim.fn.writefile({}, root .. "/.git/progress-seen")
+    end
+  end
+  local ok, err = pcall(vim.cmd, "GinBuffer buffer-progress")
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(output, { "waiting" })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "buffer-only" })
+  MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
+end
 T["GinBuffer reload preserves special arguments"] = function()
   vim.fn.writefile({ "hello" }, root .. "/space # name")
   vim.cmd([[GinBuffer ls-files --others -- space\ #\ name]])
