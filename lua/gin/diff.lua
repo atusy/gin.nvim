@@ -24,6 +24,7 @@ function M.read(buf, name)
   local output, root = M.output(name)
   buffer.replace(buf, buffer.lines(output), root, "gin-diff")
   vim.bo[buf].syntax = "diff"
+  require("gin.diffjump").setup(buf)
 end
 
 function M.open(root, options)

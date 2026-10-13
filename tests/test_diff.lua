@@ -57,4 +57,79 @@ T["smart diff uses the working tree when the index is unchanged"] = function()
   local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
   MiniTest.expect.equality(content:find("-base\n+working", 1, true) ~= nil, true)
 end
+local function jump(line, keys)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local row = assert(
+    vim.tbl_contains(lines, line)
+      and vim.fn.match(lines, "^" .. vim.fn.escape(line, "\\.*[]~$") .. "$") + 1
+  )
+  vim.api.nvim_win_set_cursor(0, { row, 0 })
+  vim.api.nvim_feedkeys(keys or "\r", "mx", false)
+end
+T["smart jump opens the working file for added lines"] = function()
+  vim.cmd("GinDiff -- sub/file")
+  jump("+working")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0), { 1, 0 })
+end
+T["smart jump opens the index for removed working lines"] = function()
+  vim.cmd("GinDiff -- sub/file")
+  jump("-index")
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
+end
+T["cached jumps select HEAD and index respectively"] = function()
+  vim.cmd("GinDiff --cached -- sub/file")
+  local diff = vim.api.nvim_get_current_buf()
+  jump("-base")
+  MiniTest.expect.equality(vim.bo.modifiable, false)
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "base")
+  vim.api.nvim_set_current_buf(diff)
+  jump("+index")
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
+end
+T["revision jumps use the corresponding revision"] = function()
+  H.git(root, "commit", "-m", "second")
+  vim.cmd("GinDiff HEAD^..HEAD -- sub/file")
+  jump("+index")
+  MiniTest.expect.equality(vim.bo.modifiable, false)
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
+end
+T["jump offsets ignore removed lines and no-newline markers"] = function()
+  local parse = require("gin.diffjump").parse
+  local lines = {
+    "--- a/file",
+    "+++ b/file",
+    "@@ -4,2 +4,2 @@",
+    "-old",
+    "\\ No newline at end of file",
+    "+new",
+    " context",
+  }
+  MiniTest.expect.equality(parse(lines, 7, "new"), { path = "file", lnum = 5 })
+  MiniTest.expect.equality(parse(lines, 7, "old"), { path = "file", lnum = 5 })
+  MiniTest.expect.equality(parse(lines, 3, "new"), nil)
+end
+T["jump decodes Git quoted paths"] = function()
+  local path = "sub/tab\t日本語"
+  vim.fn.writefile({ "old" }, root .. "/" .. path)
+  H.git(root, "add", "--", path)
+  vim.fn.writefile({ "new" }, root .. "/" .. path)
+  require("gin.diff").open(vim.uv.fs_realpath(root), { paths = { path } })
+  jump("+new")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/" .. path)
+end
+T["three-dot old jump resolves the common ancestor"] = function()
+  H.git(root, "commit", "-m", "second")
+  vim.cmd("GinDiff HEAD^...HEAD -- sub/file")
+  jump("-base")
+  MiniTest.expect.equality(vim.bo.modifiable, false)
+  MiniTest.expect.equality(vim.api.nvim_get_current_line(), "base")
+end
+T["reverse diff swaps the working and index jump targets"] = function()
+  vim.cmd("GinDiff -R -- sub/file")
+  jump("-working")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
+end
 return T
