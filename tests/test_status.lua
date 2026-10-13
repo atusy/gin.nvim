@@ -333,4 +333,21 @@ T["configured arguments preserve worktree selection and explicit precedence"] = 
   vim.g.gin_status_default_args, vim.g.gin_status_persistent_args = defaults, persistent
   assert(ok, err)
 end
+T["status refresh preserves cursor positions in every window showing the view"] = function()
+  for _, name in ipairs({ "a", "b", "c" }) do
+    vim.fn.writefile({ name }, root .. "/" .. name)
+  end
+  vim.cmd.GinStatus()
+  local first = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_cursor(first, { 2, 1 })
+  vim.cmd.split()
+  local second = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_cursor(second, { 4, 2 })
+  H.git(root, "add", "a")
+  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(first), { 2, 1 })
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(second), { 4, 2 })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "A  a" })
+  vim.cmd.close()
+end
 return T

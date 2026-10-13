@@ -574,3 +574,15 @@ underline attributes. Dim text continues to use Comment. A regression fixture
 checks the exact public group names; existing fixtures verify color attributes,
 UTF-8 byte spans, reset handling and restoration after ColorScheme. Complete
 ANSI sequence compatibility and read-event behavior remain under audit.
+
+A read-event audit traced the pinned buffer/edit call chain into
+[denops/std v7.0.0 buffer.ts](https://github.com/vim-denops/deno-denops-std/blob/v7.0.0/buffer/buffer.ts).
+Its replace/concrete helpers do not emit BufReadPost: concrete installs cache
+store/restore handlers, while replace overwrites lines and removes the excess.
+No extra BufReadPost emission was added on this evidence. The upstream import
+uses a major-version range, so this inspection alone does not establish the
+behavior of every allowed dependency version.
+
+A real status refresh fixture stages a path while the same view is visible in
+two windows, then verifies updated status text and both cursor positions. The
+existing implementation already passes; no buffer-replacement change was needed.
