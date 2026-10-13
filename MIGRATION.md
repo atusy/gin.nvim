@@ -55,7 +55,8 @@ to prove an action produces the intended Git state.
   completion events and local directory scope.
 - `tests/test_buffer.lua`: scratch output, URI reload with spaces/hashes, split
   modifiers, addressed reads, encoding conversion, insertion marks/read events
-  and failure handling without destination changes.
+  and failure handling without destination changes, plus encoding/fileformat
+  selection for command buffers and reloads.
 - `tests/test_status.lua`: display, staging/unstaging, empty selection, deletion,
   rename, newline/magic/dash paths, path filtering, visual range, event refresh,
   action repeat, local/cached edit navigation, named-register path yanks, restore
@@ -78,8 +79,8 @@ and clean filters, avoiding temporary replacement of working files.
 GinDiff now displays working-tree, cached and revision comparisons and backs the
 status diff actions. Jumps resolve working/index/revision targets, including the
 merge base for three-dot comparisons. File folds show status and change counts.
-Addressed reads support encoding/fileformat overrides; command-buffer
-processor/encoding options remain pending;
+Addressed reads support encoding/fileformat overrides; command buffers also retain encoding/fileformat options on reload.
+Processor support remains pending;
 combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
 with index write-back and status actions; remaining option and visual-range
 compatibility needs an audit. The checklist stays open until those checks finish.
