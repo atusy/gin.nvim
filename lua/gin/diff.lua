@@ -46,8 +46,7 @@ function M.open(root, options)
 end
 
 function M.command(opts)
-  local args = vim.deepcopy(vim.g.gin_diff_persistent_args or {})
-  vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_diff_default_args or {}) or opts.fargs)
+  local args = require("gin.command").arguments("diff", opts.fargs)
   local options, residue = require("gin.command").parse(
     args,
     { "worktree", "opener", "processor", "enc", "encoding", "ff", "fileformat" }

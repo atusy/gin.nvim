@@ -114,8 +114,7 @@ function M.open(root, path, options)
 end
 
 function M.command(opts)
-  local args = vim.deepcopy(vim.g.gin_chaperon_persistent_args or {})
-  vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_chaperon_default_args or {}) or opts.fargs)
+  local args = require("gin.command").arguments("chaperon", opts.fargs)
   local options, residue = require("gin.command").parse(
     args,
     { "worktree", "opener", "no-ours", "no-theirs", "enc", "encoding", "ff", "fileformat" }

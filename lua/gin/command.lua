@@ -1,5 +1,11 @@
 local M = {}
 
+function M.arguments(kind, args)
+  local result = vim.deepcopy(vim.g["gin_" .. kind .. "_persistent_args"] or {})
+  vim.list_extend(result, #args == 0 and (vim.g["gin_" .. kind .. "_default_args"] or {}) or args)
+  return result
+end
+
 ---Normalize Vim filename placeholders and separate ++ options from Git arguments.
 function M.parse(args, allowed)
   local options, residue = {}, {}

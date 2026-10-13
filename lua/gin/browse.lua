@@ -126,8 +126,7 @@ function M.url(root, revision, options)
 end
 
 function M.command(opts)
-  local args = vim.deepcopy(vim.g.gin_browse_persistent_args or {})
-  vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_browse_default_args or {}) or opts.fargs)
+  local args = require("gin.command").arguments("browse", opts.fargs)
   local options, residue = require("gin.command").parse(args, { "worktree", "repository", "yank" })
   local positional = {}
   for _, arg in ipairs(residue) do
