@@ -5,7 +5,7 @@ local M = {}
 function M.output(name, progress)
   local parsed = uri.parse(name)
   local args = { "diff", "--color=always" }
-  for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
+  for _, key in ipairs(parsed.param_order) do
     if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
       local short = #key == 1
       local prefix = key:sub(1, 1) == "-" and "" or short and "-" or "--"
@@ -46,7 +46,13 @@ function M.open(root, options)
     paths[#paths + 1] = require("gin.edit").path(root, path)
   end
   return buffer.open(
-    uri.format("gindiff", root, params, #paths > 0 and vim.json.encode(paths) or nil),
+    uri.format(
+      "gindiff",
+      root,
+      params,
+      #paths > 0 and vim.json.encode(paths) or nil,
+      options.flag_order
+    ),
     options
   )
 end
@@ -57,7 +63,7 @@ function M.command(opts)
     args,
     { "worktree", "opener", "processor", "enc", "encoding", "ff", "fileformat" }
   )
-  options.flags, options.paths = {}, {}
+  options.flags, options.paths, options.flag_order = {}, {}, {}
   local path_mode = false
   for _, arg in ipairs(residue) do
     if path_mode then
@@ -74,6 +80,7 @@ function M.command(opts)
       value = value or ""
       if options.flags[key] == nil then
         options.flags[key] = value
+        options.flag_order[#options.flag_order + 1] = key
       else
         if type(options.flags[key]) ~= "table" then
           options.flags[key] = { options.flags[key] }

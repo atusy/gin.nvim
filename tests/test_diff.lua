@@ -75,6 +75,28 @@ T["GinDiff keeps short flag values in command order"] = function()
     end
   end
 end
+T["GinDiff preserves the first occurrence order of different flags"] = function()
+  vim.fn.writefile({ "before", "base", "after" }, root .. "/sub/file")
+  H.git(root, "add", "sub/file")
+  vim.fn.writefile({ "before", "working", "after" }, root .. "/sub/file")
+  for _, flags in ipairs({
+    { "--unified=5", "-U0" },
+    { "-U0", "--unified=5" },
+  }) do
+    local args = { "diff", "--no-color" }
+    vim.list_extend(args, flags)
+    vim.list_extend(args, { "--", "sub/file" })
+    local expected = H.git(root, unpack(args))
+    vim.cmd("GinDiff " .. table.concat(flags, " ") .. " -- sub/file")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+        expected
+      )
+      vim.cmd.edit()
+    end
+  end
+end
 T["file diff actions honor persistent flags and retain the selected path"] = function()
   vim.fn.writefile({ "base" }, root .. "/sub/%target")
   H.git(root, "add", "sub/%target")

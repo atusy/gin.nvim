@@ -1105,3 +1105,11 @@ context for both `-U5 -U0` and the equivalent parsed spelling `-U5 --U=0`, befor
 and after reload. Reverse diff jumps recognize the normalized `R` key while
 retaining support for existing Lua URIs with `-R`. General malformed-argument
 and legacy URI compatibility remain unverified.
+
+GinDiff also retains the first-occurrence order of distinct flag names through
+URI formatting and parsing. Sorting keys had reversed the effect of
+`--unified=5 -U0`; a real Git fixture checks that ordering and its inverse,
+including reloads. Repeated values stay grouped under their first-occurring
+key, as in the pinned denops std parser/formatter. Lua callers supplying a flags
+map can provide `flag_order`; maps without it retain deterministic sorted keys.
+This preserves command semantics without claiming legacy URI syntax parity.

@@ -3,12 +3,17 @@ local function encode(value)
   return vim.uri_encode(tostring(value), "rfc3986")
 end
 
-function M.format(scheme, root, params, fragment)
-  local query = {}
-  for _, key in ipairs(vim.fn.sort(vim.tbl_keys(params or {}))) do
-    local values = type(params[key]) == "table" and params[key] or { params[key] }
-    for _, value in ipairs(values) do
-      query[#query + 1] = encode(key) .. "=" .. encode(value)
+function M.format(scheme, root, params, fragment, param_order)
+  local query, seen = {}, {}
+  local keys =
+    vim.list_extend(vim.list_slice(param_order or {}), vim.fn.sort(vim.tbl_keys(params or {})))
+  for _, key in ipairs(keys) do
+    if not seen[key] then
+      seen[key] = true
+      local values = type(params[key]) == "table" and params[key] or { params[key] }
+      for _, value in ipairs(values) do
+        query[#query + 1] = encode(key) .. "=" .. encode(value)
+      end
     end
   end
   return scheme
@@ -24,7 +29,7 @@ function M.parse(name)
   local expr, fragment = rest:match("^(.-)#(.*)%$$")
   expr = expr or rest
   local root, query = expr:match("^(.-)%?(.*)$")
-  local params = {}
+  local params, param_order = {}, {}
   for record in (query or ""):gmatch("[^&]+") do
     local key, value = record:match("^([^=]+)=(.*)$")
     if not key then
@@ -33,6 +38,7 @@ function M.parse(name)
     key, value = vim.uri_decode(key), vim.uri_decode(value)
     if params[key] == nil then
       params[key] = value
+      param_order[#param_order + 1] = key
     else
       if type(params[key]) ~= "table" then
         params[key] = { params[key] }
@@ -44,6 +50,7 @@ function M.parse(name)
     scheme = scheme,
     root = vim.uri_decode(root or expr),
     params = params,
+    param_order = param_order,
     fragment = fragment and vim.uri_decode(fragment) or nil,
   }
 end
