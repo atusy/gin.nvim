@@ -417,8 +417,31 @@ function M.command(opts, kind)
     args,
     { "worktree", "opener", "enc", "encoding", "ff", "fileformat", "emojify" }
   )
+  local flags, positional, separator = {}, {}, nil
+  for _, arg in ipairs(residue) do
+    if arg == "--" and not separator then
+      separator = #positional + 1
+      positional[#positional + 1] = arg
+    elseif not separator and (arg:match("^%-[a-zA-Z0-9]") or arg:match("^%-%-[a-zA-Z0-9-]")) then
+      flags[#flags + 1] = arg
+    else
+      positional[#positional + 1] = arg
+    end
+  end
+  if kind == "reflog" then
+    assert(#positional <= 1, "GinReflog accepts at most one positional argument")
+  else
+    assert((separator and separator - 1 or #positional) <= 1, "Invalid number of arguments")
+    if not separator then
+      positional[#positional + 1] = "--"
+    end
+  end
   options.bang, options.smods, options.kind = opts.bang, opts.smods, kind
-  return M.open(require("gin.worktree").current(options.worktree), residue, options)
+  return M.open(
+    require("gin.worktree").current(options.worktree),
+    vim.list_extend(require("gin.flags").group(flags), positional),
+    options
+  )
 end
 
 return M

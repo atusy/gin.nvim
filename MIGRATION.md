@@ -1293,3 +1293,12 @@ the pinned stash command's parse/validation path. A real repository fixture
 mixes repeated -n and --max-count options, verifies both stash rows on open and
 reload, rejects a revision and arguments after -- without replacing the view,
 then applies the older stash with its index while preserving both stash objects.
+
+GinLog/GinReflog command input now separates flag arguments from the revision
+before grouping repeated flag names. GinLog validates at most one revision and
+retains the -- path boundary; GinReflog validates at most one positional ref.
+Real Git fixtures interleave repeated -n/--max-count flags with an explicit ref,
+verify both selected commits on open and reload, reject extra revisions before
+replacing the view, and insert the same rows into an ordinary Lua buffer. A
+GinLog path beginning with -- remains a literal pathspec after the separator.
+Display-default precedence and malformed flag syntax still need separate audit.

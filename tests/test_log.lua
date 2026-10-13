@@ -36,6 +36,38 @@ T["log preserves history order and yanks selected commits"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), entries[1].commit)
 end
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " groups flags while keeping its revision separate"] = function()
+    vim.cmd(command .. " --format=%H -n1 refs/heads/main --max-count=2 -n1")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { second, first })
+      MiniTest.expect.equality(
+        require("gin.log").candidates(0, { 1, 2 }),
+        { { commit = second }, { commit = first } }
+      )
+      vim.cmd.edit()
+    end
+    local name = vim.api.nvim_buf_get_name(0)
+    MiniTest.expect.error(function()
+      vim.cmd(command .. " main main")
+    end)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), name)
+    vim.cmd.enew()
+    vim.bo.filetype = "lua"
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", second, first, "after" }
+    )
+    MiniTest.expect.equality(vim.bo.filetype, "lua")
+    if command == "GinLog" then
+      vim.cmd("GinLog! --format=%H -n1 --max-count=2 -n1 main -- --max-count=1")
+      MiniTest.expect.equality(require("gin.log").candidates(0, { 1, 2 }), {})
+    end
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+end
 for _, kind in ipairs({ "log", "reflog" }) do
   T["legacy " .. kind .. " URI restores selection for reads reloads and actions"] = function()
     H.git(root, "switch", "--detach", first)
