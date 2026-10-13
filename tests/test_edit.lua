@@ -29,6 +29,36 @@ T["GinEdit reads an immutable revision using repository-relative paths"] = funct
   MiniTest.expect.equality(vim.bo.buftype, "nowrite")
   MiniTest.expect.equality(vim.bo.filetype, "lua")
 end
+T["GinEdit reads pinned upstream buffer names"] = function()
+  local name = "ginedit://" .. root .. ";commitish=HEAD#sub/file.lua"
+  require("gin.buffer").open(name, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
+  MiniTest.expect.equality(vim.bo.modifiable, false)
+  MiniTest.expect.equality(vim.bo.filetype, "lua")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
+end
+T["legacy index URIs preserve escaped roots and literal fragment characters"] = function()
+  local original = root
+  vim.cmd.cd(old_cwd)
+  root = root .. " ;%#日本語"
+  assert(vim.uv.fs_rename(original, root))
+  local path = 'sub/space + # "日本語$'
+  vim.fn.writefile({ "index" }, root .. "/" .. path)
+  H.git(root, "add", "--", path)
+  vim.fn.writefile({ "working" }, root .. "/" .. path)
+  local name = "ginedit://" .. original .. " %3B%25%23日本語;#sub/space + # %22日本語$"
+  require("gin.buffer").open(name, {})
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "index" })
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  MiniTest.expect.equality(require("gin.util").expand("%"), root .. "/" .. path)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "edited" })
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "show", ":" .. path), "edited\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path), { "working" })
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "edited" })
+end
 T["writing GinEdit changes only the index from a subdirectory"] = function()
   vim.cmd("GinEdit sub/file.lua")
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "index" })

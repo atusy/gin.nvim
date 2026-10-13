@@ -1178,3 +1178,13 @@ captured output and callback completion; backend failures report through the
 appropriate synchronous/asynchronous route without launching a processor or
 publishing GinCommandPost. The original process-launch and interruption errors
 retain priority if indicator cleanup also fails.
+
+The URI reader now recognizes the pinned denops std semicolon parameter format
+and fragments without Lua's trailing marker, alongside existing Lua URIs. Its
+legacy decoding follows the staged percent decoding and form-query convention
+used by denops std v7. Real GinEdit fixtures verify immutable revision reads and
+reloads, plus index writes without worktree changes. The index fixture includes
+escaped semicolon/percent/hash characters in the repository name and a fragment
+with spaces, plus/hash signs, a quote, Unicode and a literal trailing dollar.
+This establishes GinEdit interoperability for these cases; other command URI
+payloads and exhaustive encoding/malformed-input parity remain under audit.

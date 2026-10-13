@@ -23,17 +23,37 @@ function M.format(scheme, root, params, fragment, param_order)
     .. (fragment and "#" .. encode(fragment) .. "$" or "")
 end
 
+local function legacy_decode(value, excludes)
+  return (
+    value:gsub("%%(%x%x)", function(hex)
+      return excludes and excludes[hex:upper()] and "%" .. hex or string.char(tonumber(hex, 16))
+    end)
+  )
+end
+
 function M.parse(name)
   local scheme, rest = name:match("^(gin[%w]*)://(.*)$")
   assert(scheme, "Invalid Gin URI: " .. name)
-  local expr, fragment = rest:match("^(.-)#(.*)%$$")
+  local head = rest:match("^[^#]*")
+  local legacy = not head:find("?", 1, true)
+    and (head:find(";", 1, true) or (rest:find("#", 1, true) and rest:sub(-1) ~= "$"))
+  if legacy then
+    rest = legacy_decode(rest, { ["25"] = true, ["3B"] = true, ["23"] = true })
+  end
+  local expr, fragment = rest:match(legacy and "^(.-)#(.*)$" or "^(.-)#(.*)%$$")
   expr = expr or rest
-  local root, query = expr:match("^(.-)%?(.*)$")
+  local root, query = expr:match(legacy and "^(.-);(.*)$" or "^(.-)%?(.*)$")
+  if legacy and query then
+    query = legacy_decode(query, { ["25"] = true })
+  end
   local params, param_order = {}, {}
   for record in (query or ""):gmatch("[^&]+") do
     local key, value = record:match("^([^=]+)=(.*)$")
     if not key then
       key, value = record, ""
+    end
+    if legacy then
+      key, value = key:gsub("%+", " "), value:gsub("%+", " ")
     end
     key, value = vim.uri_decode(key), vim.uri_decode(value)
     if params[key] == nil then
