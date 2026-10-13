@@ -354,7 +354,12 @@ function M.read(buf, name)
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
     action.define(buf, "log:" .. opener, function(target, range)
       for _, row in ipairs(M.candidates(target, range)) do
-        require("gin.log").open(parsed.root, { row.target }, { opener = opener })
+        local ref = row.target:find(" ", 1, true) and row.commit
+          or (row.remote and "refs/remotes/" or "refs/heads/") .. row.target
+        require("gin.log").command({
+          fargs = { "++worktree=" .. parsed.root, "++opener=" .. opener, ref },
+          smods = {},
+        })
       end
     end)
   end

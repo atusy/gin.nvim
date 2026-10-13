@@ -58,6 +58,26 @@ T["default and graph formats identify commit headers"] = function()
     MiniTest.expect.equality(first:sub(1, #rows[2].commit), rows[2].commit)
   end
 end
+T["branch log actions honor persistent log filters"] = function()
+  H.git(root, "branch", "%selected")
+  H.git(root, "commit", "--allow-empty", "-m", "unselected")
+  vim.cmd.GinBranch()
+  local branch = vim.api.nvim_get_current_buf()
+  local previous = vim.g.gin_log_persistent_args
+  vim.g.gin_log_persistent_args = { "--max-count=1", "++opener=tabedit" }
+  local tabs = #vim.api.nvim_list_tabpages()
+  local ok, err = pcall(function()
+    require("gin.action").call(branch, "log", { 1, 1 })
+    MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs)
+    for _ = 1, 2 do
+      local rows = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 999 })
+      MiniTest.expect.equality(rows, { { commit = second } })
+      vim.cmd.edit()
+    end
+  end)
+  vim.g.gin_log_persistent_args = previous
+  assert(ok, err)
+end
 T["branch log action opens the selected branch history in a split"] = function()
   H.git(root, "branch", "older", first)
   vim.cmd("GinBranch older")

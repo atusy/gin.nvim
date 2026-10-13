@@ -744,3 +744,10 @@ a persistent split opener, resolves from the remaining theirs pane, then checks
 that only explicit staging clears unmerged index entries. The resulting staged
 blob is asserted. This completes the direct file edit/diff/patch/chaperon
 configuration-path fixes; other action families remain under audit.
+
+Branch log actions now dispatch through GinLog's command handler so persistent
+history filters apply, following action/log.ts. A fixture selects a %prefixed
+branch behind the current branch, applies --max-count=1, verifies the exact
+selected commit across reloads and checks explicit opener precedence. Named
+branches are passed as full refs to avoid Vim filename/option expansion;
+detached display labels use their recorded commit instead.
