@@ -41,7 +41,8 @@ to prove an action produces the intended Git state.
   commit logs, single-side layouts and status conflict tabs.
 - `tests/test_action.lua`: captured choice ranges, repeat, aliases and mapping help.
 - `tests/test_diff.lua`: working/index/revision comparisons, cached reload and smart
-  status target selection.
+  status target selection, working/index/revision jumps, reverse and three-dot
+  comparisons, quoted paths, hunk line offsets and fold rebuilding.
 - `tests/test_patch.lua`: single-hunk staging/unstaging, subdirectory/current-file
   paths, omitted panes, mapping lifecycle and status patch tabs.
 - `tests/test_edit.lua`: revision reads, direct index writes, executable mode, absent
@@ -73,8 +74,10 @@ verified. Index writes use hash-object/update-index with the existing file mode
 and clean filters, avoiding temporary replacement of working files.
 
 GinDiff now displays working-tree, cached and revision comparisons and backs the
-status diff actions. Its read handler, processor/encoding options, navigation and
-folding still need implementation. GinPatch provides three/two-pane diff editing
+status diff actions. Jumps resolve working/index/revision targets, including the
+merge base for three-dot comparisons. File folds show status and change counts.
+Its addressed read handler and processor/encoding options remain pending;
+combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
 with index write-back and status actions; remaining option and visual-range
 compatibility needs an audit. The checklist stays open until those checks finish.
 
@@ -85,7 +88,7 @@ compatibility still needs an audit. When there is no in-progress operation head,
 its dependent supplemental logs are omitted instead of running an invalid log
 command as upstream does.
 
-Next work: diff navigation/folding and the remaining parsed views with direct
+Next work: diff read/options and the remaining parsed views with direct
 Git-state tests. Complete status browse/echo actions as their supporting modules
 become available. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.

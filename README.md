@@ -34,7 +34,10 @@ Currently implemented:
   into another buffer. Encoding and fileformat options are accepted.
 - `:GinDiff [++worktree=path] [++opener=...] [flags] [commitish] [-- paths...]`
   displays a Git comparison. `--cached` compares the index; revision ranges are
-  supported. Paths are repository-relative. Diff jumping/folding is still pending.
+  supported. Paths are repository-relative. `<CR>` jumps to the matching side of
+  a changed line; `g<CR>` selects the old revision and `<C-g><CR>` the new one.
+  File sections have manual folds with status and change counts (`zc`/`zo` to
+  close/open). Customize labels with `g:gin_difffold_prefixes`.
 - `:GinPatch [++no-head] [++no-worktree] [path]` opens HEAD, index, and working-file
   diff panes, focusing the index. The optional path is relative to cwd and defaults
   to the current file. In the index pane, `dor` gets the working hunk and `dol`
