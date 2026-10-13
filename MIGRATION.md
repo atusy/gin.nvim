@@ -47,7 +47,8 @@ to prove an action produces the intended Git state.
 - `tests/test_log.lua`: history order, default/oneline/graph selection, revision
   and path filters, reloads, show/yank actions, branch-to-log navigation,
   cherry-pick, ordinary/mainline revert, reset-mode HEAD/index/worktree effects
-  and keep-mode rejection of local changes.
+  keep-mode rejection of local changes, lightweight tag targets, forced tag
+  replacement and cancellation.
 - `tests/test_tag.lua`: lightweight/annotated tags, pattern reloads, show,
   deletion, named-register yanks, detached checkout, split/tab show views
   and jumps from shown content to historical files.
@@ -136,3 +137,7 @@ interactive editor proxy support is still pending.
 
 GinLog reset actions now cover default/soft/hard/merge/keep modes. Tests assert
 actual HEAD, index and worktree state rather than only command output.
+
+GinLog lightweight tag creation and force replacement are implemented.
+Annotated/signed tag actions and the default annotated-tag alias remain pending
+editor/signing integration.

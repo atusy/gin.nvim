@@ -50,7 +50,9 @@ Currently implemented:
   at the selected ref with the same destination variants. `cherry-pick` and
   `revert` act on the selected commit; `:1`/`:2` variants select a merge parent.
   `reset`, `reset:soft`, `reset:hard`, `reset:merge`, and `reset:keep` reset
-  to the selected commit using the corresponding Git mode.
+  to the selected commit using the corresponding Git mode. `tag:lightweight`
+  prompts for a tag at the selected commit; `tag:lightweight:force` replaces
+  an existing tag. Annotated and signed tag actions remain pending.
 - `:GinTag [flags] [patterns...]` lists tags. `<CR>` shows the selected tag;
   `yy` yanks its name. Actions include `delete`, `switch:detach`, and
   `yank:commit`. `show:split`, `show:vsplit`, and `show:tabedit` choose the
