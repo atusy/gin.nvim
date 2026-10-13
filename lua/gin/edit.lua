@@ -61,7 +61,9 @@ function M.encode(buf)
   local ff = vim.bo[buf].fileformat
   local separator = ff == "dos" and "\r\n" or ff == "mac" and "\r" or "\n"
   local data = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), separator)
-  if vim.bo[buf].endofline or (vim.bo[buf].fixendofline and not vim.bo[buf].binary) then
+  if
+    vim.bo[buf].endofline or (data ~= "" and vim.bo[buf].fixendofline and not vim.bo[buf].binary)
+  then
     data = data .. separator
   end
   if vim.bo[buf].bomb then

@@ -94,4 +94,11 @@ T["noeol content survives a write with fixendofline disabled"] = function()
   vim.cmd.write()
   MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "no newline")
 end
+T["writing an empty index buffer keeps the blob empty"] = function()
+  vim.fn.writefile({}, root .. "/sub/file.lua")
+  H.git(root, "add", "sub/file.lua")
+  vim.cmd("GinEdit sub/file.lua")
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "")
+end
 return T
