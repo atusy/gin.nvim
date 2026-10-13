@@ -2,29 +2,7 @@ local M = {}
 
 function M.path(header)
   local path = header:match("^[^\t]+") or ""
-  if path:sub(1, 1) == '"' then
-    local escapes = { a = "\a", b = "\b", t = "\t", n = "\n", v = "\v", f = "\f", r = "\r" }
-    path = path:sub(2, -2)
-    local decoded, i = {}, 1
-    while i <= #path do
-      local char = path:sub(i, i)
-      if char == "\\" then
-        local octal = path:sub(i + 1, i + 3):match("^[0-7][0-7][0-7]$")
-        if octal then
-          decoded[#decoded + 1] = string.char(tonumber(octal, 8))
-          i = i + 4
-        else
-          local escaped = path:sub(i + 1, i + 1)
-          decoded[#decoded + 1] = escapes[escaped] or escaped
-          i = i + 2
-        end
-      else
-        decoded[#decoded + 1] = char
-        i = i + 1
-      end
-    end
-    path = table.concat(decoded)
-  end
+  path = require("gin.git_path").unquote(path)
   return path:gsub("^[ab]/", "")
 end
 

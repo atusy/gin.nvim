@@ -156,7 +156,7 @@ T["selecting attribution follows a renamed file to its source commit"] = functio
   MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 3)
 end
 T["commit selection decodes quoted historical filenames"] = function()
-  local path = 'sub/日本語\t"file\\name.lua'
+  local path = 'sub/日本語\t"file\\name.lua' .. string.char(92) .. "123"
   H.git(root, "mv", "sub/file.lua", path)
   H.git(root, "commit", "-m", "quoted name")
   vim.fn.writefile({ "new line", "changed", "three" }, root .. "/" .. path)
@@ -169,6 +169,15 @@ T["commit selection decodes quoted historical filenames"] = function()
   require("gin.blame").switch_commit()
   local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(0))
   MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { commit, path })
+  local file = vim.b.gin_blame_file_bufnr
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false)[2], "new line")
+  require("gin.blame").navigate_history("older")
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(0)).fragment,
+    "sub/renamed.lua"
+  )
+  require("gin.blame").navigate_history("newer")
+  MiniTest.expect.equality(require("gin.uri").parse(vim.api.nvim_buf_get_name(0)).fragment, path)
 end
 T["divider selection and an unavailable parent preserve the blame view"] = function()
   vim.cmd("GinBlame " .. first .. " file.lua")

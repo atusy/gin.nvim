@@ -396,3 +396,9 @@ Diff header path decoding now processes C/octal escapes in one pass, avoiding
 a second interpretation of escaped literal backslashes. A real diff fixture
 uses backslashes before octal digits and an escape letter alongside Japanese
 characters; its jump verifies the exact working-file path and line content.
+
+Diff and blame now share a single Git C-quoted filename decoder. The blame
+rename fixture includes literal backslashes before octal digits alongside tabs,
+quotes and Japanese characters, and verifies both directions of history plus
+source content. Diff-specific prefix/timestamp handling stays outside the
+shared decoder.
