@@ -914,3 +914,11 @@ branch deletion. Three real Git trace fixtures cover branch switching, tag
 deletion and stash dropping, asserting progress independently of final messages,
 the resulting refs and preserved working-file contents. Other action execution
 semantics remain subject to the wider command/proxy audit.
+
+The remaining synchronous log/reflog mutations now stream both output channels:
+switch, reset, lightweight tags, shared branch operations, fixup commits and
+instant autosquash. Real trace fixtures independently cover Log and Reflog soft
+reset, proving progress is delivered before final echo and checking HEAD moves
+to the selected commit while index and working content remain intact. Existing
+log action fixtures validate the other mutation results; command/proxy behavior
+beyond streaming remains under audit.

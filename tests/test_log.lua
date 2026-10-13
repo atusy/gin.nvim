@@ -36,6 +36,38 @@ T["log preserves history order and yanks selected commits"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), entries[1].commit)
 end
+for _, kind in ipairs({ "Log", "Reflog" }) do
+  T[kind .. " reset actions stream progress while retaining the index and working tree"] = function()
+    vim.cmd("Gin" .. kind .. " --oneline")
+    local buf, row = vim.api.nvim_get_current_buf(), nil
+    for i = 1, vim.api.nvim_buf_line_count(buf) do
+      local candidate = require("gin.log").candidates(buf, { i, i })[1]
+      if candidate and first:sub(1, #candidate.commit) == candidate.commit then
+        row = i
+        break
+      end
+    end
+    assert(row, "initial commit must be selectable")
+    local trace, echo = vim.env.GIT_TRACE, vim.api.nvim_echo
+    local output = {}
+    vim.env.GIT_TRACE = "1"
+    vim.api.nvim_echo = function(chunks, history)
+      if not history then
+        output[#output + 1] = chunks[1][1]
+      end
+    end
+    local ok, err = pcall(require("gin.action").call, buf, "reset:soft", { row, row })
+    vim.env.GIT_TRACE, vim.api.nvim_echo = trace, echo
+    assert(ok, err)
+    MiniTest.expect.equality(
+      table.concat(output, "\n"):find("built-in: git reset --quiet --soft", 1, true) ~= nil,
+      true
+    )
+    MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")), first)
+    MiniTest.expect.equality(H.git(root, "show", ":two"), "second\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+  end
+end
 T["log revision and path filters survive reload"] = function()
   vim.cmd("GinLog --oneline HEAD -- one")
   vim.cmd.edit()
