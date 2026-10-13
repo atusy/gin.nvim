@@ -7,6 +7,8 @@ This implementation is in progress; see [MIGRATION.md](MIGRATION.md).
 Requires Neovim 0.10+ and Git. No Denops or Deno runtime is required.
 
 Run `make test` for mini.nvim tests and `make check` for formatting.
+Use `make test NVIM_BIN=/path/to/nvim` to test another Neovim installation;
+the harness uses that installation's runtime and bundled parsers.
 Development dependencies are fetched into `.deps/` at the commits in
 `deps-lock.json`. Existing dependency checkouts must match the lock and be clean.
 

@@ -29,7 +29,7 @@ end
 
 local function quote(path)
   if path:find('[%s"\\]') then
-    return vim.json.encode(path)
+    return (vim.json.encode(path):gsub("\\/", "/"))
   end
   return path
 end

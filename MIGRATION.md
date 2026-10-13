@@ -470,3 +470,11 @@ and their buffer-local overrides. Reduced help retains explicitly bound detailed
 actions, and aliases are listed as actions rather than mistaken for user keys.
 The reduced-help hint uses the pinned bordered layout. Tests cover visual-only
 shortcuts, global/local shadowing and alias presentation.
+
+The full 308-case suite passes on official Neovim 0.10.0 and 0.10.4 macOS arm64
+releases. These runs exposed and fixed compound blame filetypes missing their
+Tree-sitter language mapping and older JSON encoding that escaped status path
+separators. The test harness now isolates runtimepath and uses the running
+installation's bundled parsers, avoiding unrelated system-parser ABI conflicts.
+This verifies the exercised behavior at the documented minimum version; the
+remaining migration checklist still applies.

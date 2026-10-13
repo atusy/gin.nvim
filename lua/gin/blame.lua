@@ -153,6 +153,12 @@ function M.read(buf, name, output)
   end
   local signs = { [buf] = vim.fn.sign_getplaced(buf, { group = "*" })[1].signs }
   local ft = vim.filetype.match({ filename = path, buf = buf })
+  if ft and not vim.treesitter.language.get_lang(ft .. ".gin-blame") then
+    vim.treesitter.language.register(
+      vim.treesitter.language.get_lang(ft) or ft:match("^[^.]+"),
+      ft .. ".gin-blame"
+    )
+  end
   buffer.replace(buf, content, parsed.root, ft and ft .. ".gin-blame" or "gin-blame")
   local filewin = vim.api.nvim_get_current_win()
   local navname = uri.format("ginblamenav", parsed.root, parsed.params, path)

@@ -1,7 +1,13 @@
 vim.env.GIT_CONFIG_NOSYSTEM = "1"
 vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
-vim.opt.rtp:prepend(vim.fn.getcwd())
-vim.opt.rtp:append(vim.fn.getcwd() .. "/.deps/mini.nvim")
+local prefix = vim.fs.dirname(vim.fs.dirname(vim.uv.fs_realpath(vim.v.progpath)))
+vim.opt.rtp = {
+  vim.fn.getcwd(),
+  prefix .. "/lib/nvim",
+  vim.env.VIMRUNTIME,
+  vim.fn.getcwd() .. "/.deps/mini.nvim",
+}
+vim.opt.packpath = {}
 require("mini.test").setup({
   collect = {
     find_files = function()
