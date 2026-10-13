@@ -60,7 +60,8 @@ Currently implemented:
   the selected commit.
   `tag`/`tag:annotate` edits an annotated tag message; `tag:annotate:force`
   replaces an existing tag. `tag:sign` and `tag:sign:force` use Git's signing
-  configuration. Fixup amend/reword actions remain pending.
+  configuration. `fixup:amend` edits the message and includes staged changes; `fixup:reword`
+  edits only the message. Their instant autosquash variants remain pending.
 - `:GinReflog [flags] [ref]` displays reflog history with the implemented GinLog
   actions, including show and reset for commits no longer in normal history.
 - `:GinStash [flags]` lists saved changes. Actions include `apply`, `pop`, their

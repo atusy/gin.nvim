@@ -233,6 +233,26 @@ function M.read(buf, name)
       end
     end)
   end
+  for _, variant in ipairs({ "amend", "reword" }) do
+    action.define(buf, "fixup:" .. variant, function(target, range)
+      local rows = M.candidates(target, range)
+      if #rows == 0 then
+        return
+      end
+      assert(#rows == 1, "Fixup requires exactly one commit")
+      return require("gin.command").execute({
+        fargs = {
+          "++worktree=" .. parsed.root,
+          "commit",
+          "--fixup=" .. variant .. ":" .. rows[1].commit,
+        },
+        smods = {},
+        on_exit = function()
+          vim.cmd("silent checktime")
+        end,
+      })
+    end)
+  end
   action.alias(buf, "fixup", "fixup:fixup")
   action.define(buf, "yank:commit", function(target, range)
     local values = {}

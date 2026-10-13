@@ -153,7 +153,7 @@ Signed tag actions use the same proxy with Git signing configuration.
 
 GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
 selected parent (or --root), correcting the pinned double-parent traversal.
-Amend/reword variants remain pending editor integration.
+Amend/reword variants now use the editor proxy; instant variants remain pending.
 
 GinReflog now uses the shared history display and implemented commit actions,
 with separate default/persistent arguments and mapping settings. Its remaining
@@ -272,3 +272,8 @@ The annotated-tag fixture verifies the edited message, tag object type and peele
 target commit. Signed force replacement is verified with an ephemeral SSH key,
 including Git verify-tag and the peeled target. Other signing backends and
 annotated-force-specific coverage remain pending.
+
+History fixup:amend and fixup:reword now open editable fixup messages without
+blocking Neovim. The amend fixture verifies the new commit message, staged file
+content and unchanged parent relationship. Direct reword staging coverage and
+instant amend/reword remain pending.
