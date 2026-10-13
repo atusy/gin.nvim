@@ -212,6 +212,32 @@ function M.read(buf, name)
     end)
   end
   action.alias(buf, "merge", "merge:ff")
+  for _, variant in ipairs({ "rebase", "rebase:x", "rebase:instant-drop" }) do
+    action.define(buf, variant, function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      local args = variant == "rebase:instant-drop"
+          and { "rebase", "--onto", row.target .. "~", row.target, "HEAD" }
+        or { "rebase", row.target }
+      local function execute()
+        run(args)
+        vim.cmd("silent checktime")
+      end
+      if variant == "rebase:x" then
+        vim.ui.input({ prompt = "Execute command after rebase: " }, function(command)
+          if not command or command == "" then
+            return
+          end
+          vim.list_extend(args, { "-x", command })
+          execute()
+        end)
+      else
+        execute()
+      end
+    end)
+  end
   for _, field in ipairs({ "branch", "target", "commit" }) do
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}
