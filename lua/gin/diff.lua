@@ -6,7 +6,7 @@ function M.output(name)
   local parsed = uri.parse(name)
   local args = { "diff" }
   for _, key in ipairs(vim.fn.sort(vim.tbl_keys(parsed.params))) do
-    if key ~= "commitish" then
+    if key ~= "commitish" and key ~= "enc" and key ~= "ff" then
       local prefix = key:sub(1, 1) == "-" and "" or "--"
       local value = parsed.params[key]
       args[#args + 1] = prefix .. key .. (value ~= "" and "=" .. value or "")
@@ -22,7 +22,7 @@ end
 
 function M.read(buf, name)
   local output, root = M.output(name)
-  buffer.replace(buf, buffer.lines(output), root, "gin-diff")
+  buffer.replace_output(buf, output, root, "gin-diff", uri.parse(name).params)
   vim.bo[buf].syntax = "diff"
   require("gin.diffjump").setup(buf)
   require("gin.difffold").setup(buf)
@@ -32,6 +32,7 @@ function M.open(root, options)
   options = options or {}
   local params = vim.deepcopy(options.flags or {})
   params.commitish = options.commitish
+  params.enc, params.ff = options.enc or options.encoding, options.ff or options.fileformat
   local paths = {}
   for _, path in ipairs(options.paths or {}) do
     paths[#paths + 1] = require("gin.edit").path(root, path)
@@ -45,7 +46,10 @@ end
 function M.command(opts)
   local args = vim.deepcopy(vim.g.gin_diff_persistent_args or {})
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_diff_default_args or {}) or opts.fargs)
-  local options, residue = require("gin.command").parse(args, { "worktree", "opener" })
+  local options, residue = require("gin.command").parse(
+    args,
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+  )
   options.flags, options.paths = {}, {}
   local path_mode = false
   for _, arg in ipairs(residue) do

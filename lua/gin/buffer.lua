@@ -32,11 +32,22 @@ function M.lines(output)
   return vim.split(output, "\n", { plain = true })
 end
 
+function M.replace_output(buf, output, root, filetype, options)
+  local lines, decoded = require("gin.edit").decode(output:gsub("\27%[[%d;]*m", ""), options or {})
+  M.replace(buf, lines, root, filetype)
+  vim.bo[buf].modifiable = true
+  for key, value in pairs(decoded) do
+    vim.bo[buf][key] = value
+  end
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].modified = false
+end
+
 function M.read(buf, name)
   local uri = require("gin.uri").parse(name)
   assert(uri.fragment, "Gin buffer requires command arguments")
   local result = require("gin.git").run(require("gin.uri").split(uri.fragment), { cwd = uri.root })
-  M.replace(buf, M.lines(result.stdout), uri.root, uri.params.filetype or "gin-buffer")
+  M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
 end
 
 function M.insert_output(buf, name, output)
@@ -70,12 +81,17 @@ function M.insert(buf, name)
 end
 
 function M.command(opts)
-  local options, args =
-    require("gin.command").parse(opts.fargs, { "worktree", "opener", "filetype", "monochrome" })
+  local options, args = require("gin.command").parse(
+    opts.fargs,
+    { "worktree", "opener", "filetype", "monochrome", "enc", "encoding", "ff", "fileformat" }
+  )
   local root = require("gin.worktree").current(options.worktree)
   local uri = require("gin.uri")
-  local name =
-    uri.format("gin", root, { filetype = options.filetype or "gin-buffer" }, uri.join(args))
+  local name = uri.format("gin", root, {
+    filetype = options.filetype or "gin-buffer",
+    enc = options.enc or options.encoding,
+    ff = options.ff or options.fileformat,
+  }, uri.join(args))
   return M.open(name, { opener = options.opener, bang = opts.bang, smods = opts.smods })
 end
 

@@ -97,4 +97,15 @@ T["failed reads preserve content and do not emit FileReadPost"] = function()
   MiniTest.expect.equality(events, 0)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "keep" })
 end
+T["GinBuffer decoding options survive reload"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) .. "\r" }, root .. "/latin1")
+  H.git(root, "add", "latin1")
+  vim.cmd("GinBuffer ++enc=latin1 ++ff=dos show :latin1")
+  for _ = 1, 2 do
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "café" })
+    MiniTest.expect.equality(vim.bo.fileformat, "dos")
+    MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+    vim.cmd.edit()
+  end
+end
 return T

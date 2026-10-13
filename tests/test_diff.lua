@@ -169,4 +169,16 @@ T["reading a diff URI inserts output without configuring the destination as a di
   MiniTest.expect.equality(vim.bo.filetype, "text")
   MiniTest.expect.equality(vim.bo.modifiable, true)
 end
+T["GinDiff decodes requested encoding without forwarding it as a Git flag"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) }, root .. "/sub/file")
+  vim.cmd("GinDiff ++encoding=latin1 -- sub/file")
+  for _ = 1, 2 do
+    MiniTest.expect.equality(
+      vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), "+café"),
+      true
+    )
+    MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+    vim.cmd.edit()
+  end
+end
 return T
