@@ -211,7 +211,7 @@ function M.command(opts)
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(
     uri.format("gintag", root, {
-      args = vim.json.encode(flags),
+      args = vim.json.encode(require("gin.flags").group(flags)),
       emojify = options.emojify and "" or nil,
       enc = options.enc or options.encoding,
       ff = options.ff or options.fileformat,

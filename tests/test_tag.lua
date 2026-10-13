@@ -30,6 +30,38 @@ T["tag view lists lightweight and annotated tags and yanks names"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), "release")
 end
+T["tag groups repeated flags for display, insertion and deletion"] = function()
+  for _, case in ipairs({
+    { "--ignore-case --no-ignore-case --ignore-case", {} },
+    { "--no-ignore-case --ignore-case --no-ignore-case", { "release" } },
+  }) do
+    vim.cmd("GinTag --format=%(refname:short) " .. case[1] .. " REL*")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        vim.tbl_map(function(row)
+          return row.tag
+        end, vim.b.gin_tags),
+        case[2]
+      )
+      vim.cmd.edit()
+    end
+  end
+  local name = vim.api.nvim_buf_get_name(0)
+  vim.cmd.enew()
+  vim.bo.filetype = "lua"
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.api.nvim_cmd({ cmd = "read", args = { name }, range = { 1 }, magic = { file = false } }, {})
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "before", "release", "after" }
+  )
+  MiniTest.expect.equality(vim.bo.filetype, "lua")
+  require("gin.buffer").open(name, { bang = true })
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "tag", "--list"), "light\n")
+  MiniTest.expect.equality(vim.b.gin_tags, {})
+end
 T["legacy tag URIs retain format and patterns for reads and deletion"] = function()
   local name = "gintag://" .. root .. ";format=%25%28refname%3Ashort%29#missing%2A rel%2A$"
   require("gin.buffer").open(name, {})

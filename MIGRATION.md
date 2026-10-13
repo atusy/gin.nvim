@@ -1279,3 +1279,10 @@ A real Git fixture alternates --ignore-case and --no-ignore-case around an
 uppercase pattern, checks both resulting selections after reload, then switches
 the selected branch and verifies the refreshed current marker. Other native
 listing commands still require the same command-to-URI ordering audit.
+
+GinTag now uses the same first-seen-name grouping when saving native command
+flags. A real Git fixture alternates case-sensitivity flags around an uppercase
+tag pattern, verifies the resulting selection on initial read and reload,
+inserts the filtered output into an ordinary Lua buffer without changing its
+filetype, then deletes only the selected annotated tag while preserving the
+lightweight tag. Log/reflog/stash native flag ordering remains under audit.
