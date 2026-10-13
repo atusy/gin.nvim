@@ -17,6 +17,12 @@ function M.parse(args, allowed)
     else
       if arg:match("^[%%#]") then
         arg = vim.fn.expand(arg)
+        if arg:match("^ginedit://") then
+          local parsed = require("gin.uri").parse(arg)
+          if parsed.fragment then
+            arg = parsed.root .. "/" .. parsed.fragment
+          end
+        end
       else
         arg = arg:gsub("^\\([%%#])", "%1")
       end

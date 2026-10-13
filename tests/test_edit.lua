@@ -121,4 +121,9 @@ T["read into an empty buffer does not add a blank line"] = function()
   vim.api.nvim_cmd({ cmd = "read", args = { vim.fn.fnameescape(name) } }, {})
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "committed" })
 end
+T["Gin filename expansion resolves the path of a revision buffer"] = function()
+  vim.cmd("GinEdit HEAD sub/file.lua")
+  vim.cmd("Gin ++wait add -- %:p")
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "working\n")
+end
 return T
