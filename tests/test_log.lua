@@ -5,6 +5,9 @@ local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
       root = H.repo()
+      H.git(root, "config", "user.name", "Gin Test")
+      H.git(root, "config", "user.email", "gin@example.invalid")
+      H.git(root, "config", "core.editor", "true")
       vim.fn.writefile({ "first" }, root .. "/one")
       H.git(root, "add", ".")
       H.git(root, "commit", "-m", "first change")
@@ -63,5 +66,35 @@ T["branch log action opens the selected branch history in a split"] = function()
   MiniTest.expect.equality(vim.bo.filetype, "gin-log")
   local rows = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 999 })
   MiniTest.expect.equality(rows, { { commit = first } })
+end
+T["cherry-pick applies the selected commit to the current branch"] = function()
+  H.git(root, "checkout", "-b", "target", first)
+  vim.cmd("GinLog --oneline main")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "cherry-pick", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), first .. "\n")
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+end
+T["revert creates an inverse commit while preserving history"] = function()
+  vim.cmd("GinLog --oneline")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "revert", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.filereadable(root .. "/two"), 0)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), second .. "\n")
+  MiniTest.expect.equality(
+    H.git(root, "rev-parse", "HEAD^{tree}"),
+    H.git(root, "rev-parse", first .. "^{tree}")
+  )
+end
+T["revert mainline one removes the merged branch changes"] = function()
+  H.git(root, "checkout", "-b", "side", first)
+  vim.fn.writefile({ "side" }, root .. "/side")
+  H.git(root, "add", "side")
+  H.git(root, "commit", "-m", "side change")
+  H.git(root, "checkout", "main")
+  H.git(root, "merge", "--no-ff", "--no-edit", "side")
+  vim.cmd("GinLog --oneline")
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "revert:1", { 1, 1 })
+  MiniTest.expect.equality(vim.fn.filereadable(root .. "/side"), 0)
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end
 return T

@@ -47,6 +47,27 @@ function M.read(buf, name)
     end)
   end
   action.alias(buf, "show", "show:edit")
+  for _, command in ipairs({ "cherry-pick", "revert" }) do
+    for _, mainline in ipairs({ "", "1", "2" }) do
+      action.define(
+        buf,
+        command .. (mainline ~= "" and ":" .. mainline or ""),
+        function(target, range)
+          local row = M.candidates(target, range)[1]
+          if not row then
+            return
+          end
+          local args = { command }
+          if mainline ~= "" then
+            vim.list_extend(args, { "--mainline", mainline })
+          end
+          args[#args + 1] = row.commit
+          local result = require("gin.git").run(args, { cwd = parsed.root })
+          require("gin.command").finish(result, {}, {})
+        end
+      )
+    end
+  end
   action.define(buf, "yank:commit", function(target, range)
     local values = {}
     for _, row in ipairs(M.candidates(target, range)) do
