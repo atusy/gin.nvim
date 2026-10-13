@@ -29,4 +29,17 @@ T["GinDiff compares the selected working file to the index"] = function()
   MiniTest.expect.equality(content:find("-index\n+working", 1, true) ~= nil, true)
   MiniTest.expect.equality(vim.bo.modifiable, false)
 end
+T["GinDiff cached comparison survives URI reload"] = function()
+  vim.cmd("GinDiff --cached -U0 -- sub/file")
+  vim.cmd.edit()
+  local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
+end
+T["GinDiff compares an explicit revision range"] = function()
+  H.git(root, "commit", "-m", "second")
+  vim.cmd("GinDiff HEAD^..HEAD -- sub/file")
+  local content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
+  MiniTest.expect.equality(content:find("working", 1, true), nil)
+end
 return T
