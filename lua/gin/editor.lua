@@ -1,10 +1,12 @@
 local M = {}
 local requests, serial = {}, 0
-local address
+local address, askpass_launcher
 local script = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)) .. "/editor_client.lua"
 
 function M.environment()
-  if vim.g.gin_proxy_disable_editor and vim.g.gin_proxy_disable_editor ~= 0 then
+  local disable_editor = vim.g.gin_proxy_disable_editor and vim.g.gin_proxy_disable_editor ~= 0
+  local disable_askpass = vim.g.gin_proxy_disable_askpass and vim.g.gin_proxy_disable_askpass ~= 0
+  if disable_editor and disable_askpass then
     return nil
   end
   address = address or vim.fn.serverstart()
@@ -22,7 +24,27 @@ function M.environment()
   }) do
     command[#command + 1] = vim.fn.shellescape(arg)
   end
-  return { GIT_EDITOR = table.concat(command, " "), GIN_EDITOR_ADDRESS = address }
+  local launcher = table.concat(command, " ")
+  if not disable_askpass and not askpass_launcher then
+    -- Git executes GIT_ASKPASS as a path, unlike the GIT_EDITOR shell command.
+    askpass_launcher = vim.fn.tempname()
+    assert(
+      vim.fn.writefile({ "#!/bin/sh", "exec " .. launcher .. ' --askpass "$@"' }, askpass_launcher)
+        == 0
+    )
+    assert(vim.uv.fs_chmod(askpass_launcher, 448))
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+      once = true,
+      callback = function()
+        vim.uv.fs_unlink(askpass_launcher)
+      end,
+    })
+  end
+  return {
+    GIT_EDITOR = not disable_editor and launcher or nil,
+    GIT_ASKPASS = not disable_askpass and askpass_launcher or nil,
+    GIN_EDITOR_ADDRESS = address,
+  }
 end
 
 function M.request(path)
