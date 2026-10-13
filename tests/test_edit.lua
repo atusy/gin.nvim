@@ -39,4 +39,59 @@ T["writing GinEdit changes only the index from a subdirectory"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
   MiniTest.expect.equality(vim.bo.modified, false)
 end
+T["index writes preserve executable mode when the working file is missing"] = function()
+  H.git(root, "update-index", "--chmod=+x", "sub/file.lua")
+  vim.cmd("GinEdit sub/file.lua")
+  vim.fn.delete(root .. "/sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "executable" })
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "ls-files", "--stage", "sub/file.lua"):sub(1, 6), "100755")
+  MiniTest.expect.equality(vim.uv.fs_stat(root .. "/sub/file.lua"), nil)
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "executable\n")
+end
+T["failed index writes keep edits marked modified and preserve both files"] = function()
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "unsaved" })
+  vim.fn.writefile({ "locked" }, root .. "/.git/index.lock")
+  MiniTest.expect.error(function()
+    vim.cmd.write()
+  end, "git exited")
+  MiniTest.expect.equality(vim.bo.modified, true)
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "index\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+end
+T["index writes honor clean filters for the repository path"] = function()
+  vim.fn.writefile({ "sub/file.lua filter=upper" }, root .. "/.gitattributes")
+  H.git(root, "config", "filter.upper.clean", "tr a-z A-Z")
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "filtered" })
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "FILTERED\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+end
+T["BOM and CRLF survive an index write"] = function()
+  local bytes = "\239\187\191first\r\nsecond\r\n"
+  local file = assert(io.open(root .. "/sub/file.lua", "wb"))
+  file:write(bytes)
+  file:close()
+  H.git(root, "add", "sub/file.lua")
+  vim.cmd("GinEdit sub/file.lua")
+  MiniTest.expect.equality(vim.bo.bomb, true)
+  MiniTest.expect.equality(vim.bo.fileformat, "dos")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "first", "second" })
+  vim.cmd.write()
+  MiniTest.expect.equality(
+    require("gin.git").run({ "show", ":sub/file.lua" }, { cwd = root }).stdout,
+    bytes
+  )
+end
+T["noeol content survives a write with fixendofline disabled"] = function()
+  vim.fn.writefile({ "no newline" }, root .. "/sub/file.lua", "b")
+  H.git(root, "add", "sub/file.lua")
+  vim.cmd("GinEdit sub/file.lua")
+  MiniTest.expect.equality(vim.bo.endofline, false)
+  vim.bo.fixendofline = false
+  vim.cmd.write()
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "no newline")
+end
 return T
