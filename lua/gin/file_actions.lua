@@ -86,6 +86,20 @@ function M.setup(buf, gather)
     end)
   end
   action.alias(buf, "patch", "patch:both")
+  for _, variant in ipairs({ "both", "theirs", "ours" }) do
+    action.define(buf, "chaperon:" .. variant, function(target, range)
+      local root = vim.b[target].gin_worktree
+      local entries = gather(target, range)
+      for _, entry in ipairs(entries) do
+        require("gin.chaperon").open(root, entry.path, {
+          opener = "tabedit",
+          ["no-ours"] = variant == "theirs",
+          ["no-theirs"] = variant == "ours",
+        })
+      end
+    end)
+  end
+  action.alias(buf, "chaperon", "chaperon:both")
   for _, spec in ipairs({ { "yank:path", "path" }, { "yank:path:orig", "orig_path" } }) do
     action.define(buf, spec[1], function(target, range)
       local values = {}

@@ -82,4 +82,35 @@ T["default supplements show both commits and their comparison"] = function()
   MiniTest.expect.equality(comparison:find("theirs", 1, true) ~= nil, true)
   MiniTest.expect.equality(comparison:find("ours", 1, true) ~= nil, true)
 end
+T["status chaperon opens the selected conflict in a new tab"] = function()
+  vim.cmd.GinStatus()
+  local tabs = #vim.api.nvim_list_tabpages()
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys("!!", "mx", false)
+  MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
+end
+T["status theirs action resolves using its sole side"] = function()
+  vim.cmd.GinStatus()
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "chaperon:theirs", { 2, 2 })
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+  MiniTest.expect.equality(vim.fn.maparg("dor", "n"), "")
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys("do", "mx", false)
+  vim.cmd.write()
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "before", "theirs", "after" })
+end
+T["GinChaperon defaults to current file and can omit theirs"] = function()
+  vim.cmd.edit("file")
+  vim.cmd("GinChaperon ++no-theirs")
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+  MiniTest.expect.equality(vim.fn.maparg("dol", "n"), "")
+  vim.api.nvim_win_set_cursor(0, { 2, 0 })
+  vim.api.nvim_feedkeys("do", "mx", false)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(0, 0, -1, false),
+    { "before", "ours", "after" }
+  )
+end
 return T

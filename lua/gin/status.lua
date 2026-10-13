@@ -201,6 +201,7 @@ function M.mappings(buf)
       ["=="] = "stash",
       dd = "diff:smart",
       pp = "patch",
+      ["!!"] = "chaperon",
       a = "choice",
       ["<CR>"] = "edit",
       ["."] = "repeat",
