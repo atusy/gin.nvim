@@ -135,4 +135,19 @@ T["edit action opens the selected working file from a subdirectory"] = function(
   )
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "working" })
 end
+T["cached status edit opens the selected index file in a split"] = function()
+  vim.fn.mkdir(root .. "/sub", "p")
+  vim.fn.writefile({ "index" }, root .. "/sub/file.lua")
+  H.git(root, "add", "sub/file.lua")
+  vim.fn.writefile({ "working" }, root .. "/sub/file.lua")
+  vim.cmd.cd(root .. "/sub")
+  vim.cmd.GinStatus()
+  local status_buf = vim.api.nvim_get_current_buf()
+  local windows = #vim.api.nvim_tabpage_list_wins(0)
+  require("gin.action").call(status_buf, "edit:cached:split", { 2, 2 })
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), windows + 1)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "index" })
+  MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+  vim.cmd.close()
+end
 return T

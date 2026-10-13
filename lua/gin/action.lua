@@ -62,9 +62,15 @@ end
 function M.call(buf, name, range)
   local callback = actions[buf] and actions[buf][name]
   assert(callback, "Unknown Gin action: " .. name)
-  return vim.api.nvim_buf_call(buf, function()
-    return callback(buf, vim.deepcopy(range))
-  end)
+  if vim.api.nvim_get_current_buf() ~= buf then
+    local windows = vim.fn.win_findbuf(buf)
+    if #windows > 0 then
+      vim.api.nvim_set_current_win(windows[1])
+    else
+      vim.api.nvim_set_current_buf(buf)
+    end
+  end
+  return callback(buf, vim.deepcopy(range))
 end
 
 function M.list(buf)
