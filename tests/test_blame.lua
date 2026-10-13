@@ -70,4 +70,27 @@ T["moving across blame groups updates commit detail and dividers retain it"] = f
     MiniTest.expect.equality(displayed(), "commit " .. case[2])
   end
 end
+T["reloading either blame pane updates the existing three windows"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav, file, detail =
+    vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr, vim.b.gin_blame_detail_bufnr
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  for i, target in ipairs({ file, nav }) do
+    vim.fn.writefile({ "version " .. i }, root .. "/sub/file.lua")
+    H.git(root, "commit", "-am", "reload " .. i)
+    local commit = vim.trim(H.git(root, "rev-parse", "HEAD"))
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(file, 0, -1, false),
+      { "", "version " .. i }
+    )
+    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[2].commitSha, commit)
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(detail, 0, 1, false),
+      { "commit " .. commit }
+    )
+  end
+end
 return T

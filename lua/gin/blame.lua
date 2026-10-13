@@ -126,9 +126,13 @@ function M.read(buf, name)
   local filewin = vim.api.nvim_get_current_win()
   local navname = uri.format("ginblamenav", parsed.root, parsed.params, path)
   local detailname = uri.format("ginblamedetail", parsed.root, parsed.params, path)
-  local detail = buffer.open(detailname, { opener = "split", smods = { split = "topleft" } })
-  vim.api.nvim_win_set_height(0, 10)
-  vim.wo.winfixheight = true
+  local detail = vim.fn.bufnr(detailname)
+  if detail == -1 or vim.fn.bufwinid(detail) == -1 then
+    detail = buffer.open(detailname, { opener = "split", smods = { split = "topleft" } })
+    vim.api.nvim_win_set_height(0, 10)
+    vim.wo.winfixheight = true
+  end
+  vim.b[detail].gin_blame_detail_last_commit = nil
   buffer.replace(
     detail,
     buffer.lines(
@@ -141,8 +145,13 @@ function M.read(buf, name)
     "git"
   )
   vim.api.nvim_set_current_win(filewin)
-  local nav = buffer.open(navname, { opener = "vsplit", smods = { split = "leftabove" } })
-  vim.api.nvim_win_set_width(0, 60)
+  local nav = vim.fn.bufnr(navname)
+  if nav == -1 or vim.fn.bufwinid(nav) == -1 then
+    nav = buffer.open(navname, { opener = "vsplit", smods = { split = "leftabove" } })
+    vim.api.nvim_win_set_width(0, 60)
+  else
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(nav))
+  end
   buffer.replace(nav, navlines, parsed.root, "gin-blame-nav")
   for _, target in ipairs({ buf, nav, detail }) do
     vim.bo[target].buftype = "nowrite"
@@ -167,6 +176,16 @@ function M.read(buf, name)
       vim.wo[win].scrollbind, vim.wo[win].cursorbind, vim.wo[win].cursorline = true, true, true
     end
   end
+end
+
+function M.read_nav(buf)
+  local file = vim.b[buf].gin_blame_file_bufnr
+  assert(file and vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
+  local win = vim.fn.bufwinid(file)
+  assert(win ~= -1, "GinBlame file window is missing")
+  vim.api.nvim_win_call(win, function()
+    M.read(file, vim.api.nvim_buf_get_name(file))
+  end)
 end
 
 function M.command(opts)

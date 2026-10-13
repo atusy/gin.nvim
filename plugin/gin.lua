@@ -155,3 +155,10 @@ vim.api.nvim_create_autocmd("BufReadCmd", {
     require("gin.blame").read(event.buf, event.match)
   end,
 })
+vim.api.nvim_create_autocmd("BufReadCmd", {
+  group = vim.api.nvim_create_augroup("gin_blame", { clear = false }),
+  pattern = "ginblamenav://*",
+  callback = function(event)
+    require("gin.blame").read_nav(event.buf)
+  end,
+})
