@@ -49,6 +49,20 @@ function M.read(buf, name)
     end)
   end
   action.alias(buf, "show", "show:edit")
+  for _, detach in ipairs({ false, true }) do
+    action.define(buf, detach and "switch:detach" or "switch", function(target, range)
+      local row = M.candidates(target, range)[1]
+      if not row then
+        return
+      end
+      local args = { "switch" }
+      if detach then
+        args[#args + 1] = "--detach"
+      end
+      vim.list_extend(args, { "--", row.commit })
+      require("gin.command").finish(require("gin.git").run(args, { cwd = parsed.root }), {}, {})
+    end)
+  end
   for _, command in ipairs({ "cherry-pick", "revert" }) do
     for _, mainline in ipairs({ "", "1", "2" }) do
       action.define(

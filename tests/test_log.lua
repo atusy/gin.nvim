@@ -185,4 +185,22 @@ T["reflog ref selection and limit survive URI reload"] = function()
   MiniTest.expect.equality(#rows, 1)
   MiniTest.expect.equality(second:sub(1, #rows[1].commit), rows[1].commit)
 end
+for _, command in ipairs({ "GinLog --oneline", "GinReflog" }) do
+  T[command .. " detached switch restores the selected historical tree"] = function()
+    vim.cmd(command)
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "switch:detach", { 2, 2 })
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), first .. "\n")
+    MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "")
+    MiniTest.expect.equality(vim.fn.filereadable(root .. "/two"), 0)
+    MiniTest.expect.equality(H.git(root, "rev-parse", "main"), second .. "\n")
+  end
+end
+T["ordinary log switch rejects a commit without changing HEAD"] = function()
+  vim.cmd("GinLog --oneline")
+  MiniTest.expect.error(function()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 2, 2 })
+  end, "git exited")
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "main\n")
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+end
 return T
