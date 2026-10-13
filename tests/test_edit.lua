@@ -114,6 +114,29 @@ T["read inserts a revision at the requested line"] = function()
   )
   MiniTest.expect.equality(vim.bo.buftype, "")
 end
+T["reading an empty index blob emits FileReadPost without changing text"] = function()
+  vim.fn.writefile({}, root .. "/sub/empty")
+  H.git(root, "add", "sub/empty")
+  local name = require("gin.uri").format("ginedit", root, {}, "sub/empty")
+  vim.cmd.enew()
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+  vim.bo.modified = false
+  local events = {}
+  local id = vim.api.nvim_create_autocmd("FileReadPost", {
+    pattern = "ginedit://*",
+    callback = function(event)
+      events[#events + 1] = { event.match, vim.api.nvim_buf_get_lines(0, 0, -1, false) }
+    end,
+  })
+  local ok, err = pcall(vim.cmd, "1read " .. vim.fn.fnameescape(name))
+  local missing = require("gin.uri").format("ginedit", root, {}, "sub/missing")
+  local failed = not pcall(vim.cmd, "1read " .. vim.fn.fnameescape(missing))
+  vim.api.nvim_del_autocmd(id)
+  assert(ok, err)
+  MiniTest.expect.equality(failed, true)
+  MiniTest.expect.equality(events, { { name, { "before", "after" } } })
+  MiniTest.expect.equality(vim.bo.modified, false)
+end
 T["read into an empty buffer does not add a blank line"] = function()
   vim.cmd("GinEdit HEAD sub/file.lua")
   local name = vim.api.nvim_buf_get_name(0)

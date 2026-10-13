@@ -698,3 +698,11 @@ upstream names and linked-worktree paths. A native-output fixture covers all
 three modes, reloads and selected branch yanks with a linked branch ahead of its
 upstream. Structured action metadata remains available in every mode. Combined
 short-option spellings and column-layout flags remain to be checked.
+
+Successful GinEdit :read operations now emit FileReadPost for empty blobs too,
+consistent with this port's nonempty GinEdit and generic buffer read paths.
+The early empty-output return previously skipped that notification. A fixture
+checks the event's URI and observed unchanged text, an unchanged modified flag,
+and no additional event for a missing index path. This is native read-event
+consistency within the Lua port, not a claim that the pinned Denops append
+implementation explicitly emits the same event.
