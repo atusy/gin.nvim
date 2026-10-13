@@ -765,3 +765,11 @@ edit:command, so GinEdit persistent arguments do not apply. A fixture confirms
 the existing Lua path retains UTF-8 decoding and the current tab despite
 persistent Latin-1/tabedit settings, then jumps back to the correct working
 file. No production change was needed for this distinction.
+
+Lua syntax files now provide the pinned tag, stash and reflog highlight groups
+and default links. Native syntax-engine tests identify hashes, tag names/dates/
+subjects, stash types/branches and reflog selectors/actions/decorations. Stash
+branch and reflog action matching use chained groups/highlight offsets so the
+fields are actually highlighted in Neovim; current_syntax is set after clearing
+definitions. Custom formats outside the native layouts are not inferred by
+these rules. The syntax directory is included in formatter checks.
