@@ -42,6 +42,41 @@ T["GinDiff compares an explicit revision range"] = function()
   MiniTest.expect.equality(content:find("-base\n+index", 1, true) ~= nil, true)
   MiniTest.expect.equality(content:find("working", 1, true), nil)
 end
+T["file diff actions honor persistent flags and retain the selected path"] = function()
+  vim.fn.writefile({ "base" }, root .. "/sub/%target")
+  H.git(root, "add", "sub/%target")
+  H.git(root, "commit", "-m", "target", "--", "sub/%target")
+  vim.fn.writefile({ "index" }, root .. "/sub/%target")
+  H.git(root, "add", "sub/%target")
+  vim.fn.writefile({ "working" }, root .. "/sub/%target")
+  vim.cmd("GinStatus -- sub/%target")
+  local status = vim.api.nvim_get_current_buf()
+  local previous = vim.g.gin_diff_persistent_args
+  vim.g.gin_diff_persistent_args = { "--word-diff=plain", "++opener=tabedit" }
+  local tabs = #vim.api.nvim_list_tabpages()
+  local ok, err = pcall(function()
+    for _, source in ipairs({ "local", "cached", "HEAD", "smart" }) do
+      require("gin.action").call(status, "diff:" .. source, { 2, 2 })
+      local args = { "diff", "--word-diff=plain", "--no-color" }
+      if source == "cached" or source == "smart" then
+        args[#args + 1] = "--cached"
+      elseif source == "HEAD" then
+        args[#args + 1] = "HEAD"
+      end
+      vim.list_extend(args, { "--", "sub/%target" })
+      for _ = 1, 2 do
+        MiniTest.expect.equality(
+          table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n") .. "\n",
+          H.git(root, unpack(args))
+        )
+        vim.cmd.edit()
+      end
+      MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs)
+    end
+  end)
+  vim.g.gin_diff_persistent_args = previous
+  assert(ok, err)
+end
 T["status smart diff selects the cached changes when both sides differ"] = function()
   vim.cmd.GinStatus()
   vim.api.nvim_win_set_cursor(0, { 2, 0 })

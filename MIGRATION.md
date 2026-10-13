@@ -721,3 +721,10 @@ checks decoding and verifies the action's explicit opener overrides a persistent
 opener. The selected path is made absolute before command expansion so a literal
 % prefix remains a filename. Other action-to-command dispatch paths, including
 diff, still need the same configuration audit.
+
+File diff actions now dispatch through GinDiff's command handler so persistent
+flags and decoding/processor options apply. A real-diff fixture verifies
+--word-diff=plain for local, cached, HEAD and smart selections, with distinct
+HEAD/index/worktree contents and a literal % filename under a subdirectory.
+It checks full output across reloads, selected-path isolation and explicit
+action opener precedence. Other direct action open paths remain under audit.

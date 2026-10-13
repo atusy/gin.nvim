@@ -63,12 +63,14 @@ function M.setup(buf, gather)
         local entries = gather(target, range)
         for _, entry in ipairs(entries) do
           local cached = source == "cached" or (source == "smart" and entry.xy:sub(1, 1) ~= " ")
-          require("gin.diff").open(root, {
-            opener = opener,
-            paths = { entry.path },
-            flags = cached and { cached = "" } or {},
-            commitish = source == "HEAD" and "HEAD" or nil,
-          })
+          local args = { "++worktree=" .. root, "++opener=" .. opener }
+          if cached then
+            args[#args + 1] = "--cached"
+          elseif source == "HEAD" then
+            args[#args + 1] = "HEAD"
+          end
+          vim.list_extend(args, { "--", root .. "/" .. entry.path })
+          require("gin.diff").command({ fargs = args, smods = {} })
         end
       end)
     end
