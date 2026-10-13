@@ -32,6 +32,27 @@ T["branch view lists refs and switches the selected branch"] = function()
   H.drain()
   MiniTest.expect.equality(vim.b.gin_branches[2].head, "*")
 end
+T["branch groups repeated flag names before applying patterns"] = function()
+  for _, case in ipairs({
+    { "--ignore-case --no-ignore-case --ignore-case", {} },
+    { "--no-ignore-case --ignore-case --no-ignore-case", { "topic" } },
+  }) do
+    vim.cmd("GinBranch --format=%(refname:short) " .. case[1] .. " TOPIC")
+    for _ = 1, 2 do
+      MiniTest.expect.equality(
+        vim.tbl_map(function(row)
+          return row.target
+        end, vim.b.gin_branches),
+        case[2]
+      )
+      vim.cmd.edit()
+    end
+  end
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "switch", { 1, 1 })
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "topic\n")
+  MiniTest.expect.equality(vim.b.gin_branches[1].head, "*")
+end
 T["legacy branch URIs retain display flags and filtered action targets"] = function()
   local name = "ginbranch://" .. root .. ";format=%25%28refname%3Ashort%29#missing%2A top%2A$"
   require("gin.buffer").open(name, {})
