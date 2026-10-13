@@ -267,6 +267,13 @@ gin#indicator#echo#close(id)                     *gin#indicator#echo#close()*
     restores them after the last user closes. IDs are accepted but unused,
     matching the pinned echo backend.
 
+With progress enabled, require('gin.git').run(args, opts) accepts
+stdout_indicator and stderr_indicator. Each is "echo", "null", or a backend
+name providing gin#indicator#{name}#open/write/close. The stdout default is
+"null" ("echo" with progress = "both"); stderr defaults to "echo". Backends
+receive a distinct ID per channel and decoded line arrays. Captured Git output
+remains unchanged. Backend failures close opened channels and raise an error.
+
 ==============================================================================
 STATUSLINE                                                     *gin-components*
 

@@ -1158,5 +1158,14 @@ empty/unopened writes and retain the pinned backend's ID-independent reference
 counting. Native byte streams and legacy echo calls share one display-state
 lifetime; tests verify restoration only after the final user closes, including
 a mixed legacy/native session. Legacy-only opens preserve `more`, while native
-stream opens continue disabling its prompt. Custom named indicator dispatch
-and the broader internal executor API remain separate audit items.
+stream opens continue disabling its prompt.
+
+Progress-enabled `gin.git.run` now accepts independent `stdout_indicator` and
+`stderr_indicator` names, including the built-in `echo` and `null` backends.
+Named backends call the pinned `gin#indicator#{name}#{open,write,close}` API with
+distinct channel IDs. Real Git fixtures verify ANSI-free displayed lines while
+retaining original captured bytes, null suppression and nonzero Git results.
+Backend open/write/close failures reach the caller after cleanup; a failure
+opening stderr also closes stdout before any Git process starts. Existing raw
+stdout listeners remain active when stdout progress is not selected. The
+broader internal executor API remains subject to audit.

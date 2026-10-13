@@ -1,6 +1,7 @@
 local M = {}
 local active, generation = 0, 0
 local saved
+local serial = 0
 
 function M.open(options)
   if active == 0 then
@@ -54,6 +55,57 @@ function M.open(options)
         generation = generation + 1
         vim.o.more, vim.o.cmdheight = saved.more, saved.cmdheight
         saved = nil
+      end
+    end,
+  }
+end
+
+---Create one output channel for a built-in or Vimscript indicator backend.
+function M.stream(name)
+  if name == "null" then
+    return { write = function() end, close = function() end }
+  elseif name == "echo" then
+    local handle = M.open()
+    return { write = handle.write, close = handle.close }
+  end
+  assert(type(name) == "string", "indicator name must be a string")
+  serial = serial + 1
+  local id = "gin-indicator-" .. serial
+  local function call(method, ...)
+    return vim.fn["gin#indicator#" .. name .. "#" .. method](id, ...)
+  end
+  local opened, err = pcall(call, "open")
+  if not opened then
+    pcall(call, "close")
+    error(err, 0)
+  end
+  local decode = require("gin.stream_text").decoder()
+  local failure, closed
+  return {
+    write = vim.schedule_wrap(function(stream_error, data)
+      if closed or failure then
+        return
+      end
+      if stream_error then
+        failure = stream_error
+        return
+      end
+      local text = vim.trim(decode(data))
+      if text ~= "" then
+        local ok, message = pcall(call, "write", vim.split(text, "\n", { plain = true }))
+        if not ok then
+          failure = message
+        end
+      end
+    end),
+    close = function()
+      if closed then
+        return
+      end
+      closed = true
+      local ok, message = pcall(call, "close")
+      if failure or not ok then
+        error(failure or message, 0)
       end
     end,
   }

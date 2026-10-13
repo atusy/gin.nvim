@@ -59,17 +59,26 @@ local function wait_for(start)
 end
 
 local function with_progress(args, opts)
-  local indicator = require("gin.indicator").open()
+  local indicators = {}
   local ok, result = pcall(function()
-    local stream_opts = vim.tbl_extend("force", opts, { on_stderr = indicator.write_stderr })
-    if opts.progress == "both" then
-      stream_opts.on_stdout = indicator.write
-    end
+    local stream = require("gin.indicator").stream
+    indicators[1] = stream(opts.stdout_indicator or (opts.progress == "both" and "echo" or "null"))
+    indicators[2] = stream(opts.stderr_indicator or "echo")
+    local stream_opts = vim.tbl_extend("force", opts, {
+      on_stdout = (opts.stdout_indicator ~= nil or opts.progress == "both") and indicators[1].write
+        or opts.on_stdout,
+      on_stderr = indicators[2].write,
+    })
     return wait_for(function(done)
       return M.start(args, stream_opts, done)
     end)
   end)
-  indicator.close()
+  for _, indicator in ipairs(indicators) do
+    local closed, message = pcall(indicator.close)
+    if not closed and ok then
+      ok, result = false, message
+    end
+  end
   if not ok then
     error(result, 0)
   end
