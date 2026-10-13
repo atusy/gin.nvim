@@ -272,4 +272,18 @@ T["restore staged leaves the working file untouched"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "working" })
   MiniTest.expect.equality(H.git(root, "show", ":file"), "base\n")
 end
+
+T["status decoding preserves raw staging paths across reload"] = function()
+  local filename = "café"
+  vim.fn.writefile({ "content" }, root .. "/" .. filename)
+  vim.cmd("GinStatus ++enc=latin1 ++ff=unix")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { "?? cafÃ©" })
+  MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
+  MiniTest.expect.equality(vim.bo.fileformat, "unix")
+  MiniTest.expect.equality(vim.b.gin_status_entries[1].path, filename)
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), filename .. "\0")
+  MiniTest.expect.equality(H.git(root, "show", ":" .. filename), "content\n")
+end
 return T

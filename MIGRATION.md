@@ -363,3 +363,10 @@ and decode display output through the shared buffer path. A Latin-1 commit
 subject fixture verifies reload, buffer options and a subsequent switch to the
 original branch and commit. Raw branch/worktree identifiers remain separate
 from display decoding.
+
+Status accepts enc/encoding and ff/fileformat, retaining the normalized options
+in its URI while excluding them from Git flags. Display decoding follows raw
+porcelain parsing. A fixture deliberately decodes a UTF-8 filename as Latin-1,
+then stages it after reload and checks Git's NUL-delimited path and blob content,
+verifying the original path remains the action target. Invalid-UTF-8
+filesystem names could not be exercised on this macOS filesystem.

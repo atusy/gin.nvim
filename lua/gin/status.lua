@@ -38,7 +38,9 @@ function M.read(buf, name)
   local parsed = uri.parse(name)
   local args = { "status", "--short", "--branch", "--ahead-behind", "--untracked-files", "-z" }
   for key, value in pairs(parsed.params) do
-    args[#args + 1] = "--" .. key .. (value ~= "" and "=" .. value or "")
+    if key ~= "enc" and key ~= "ff" then
+      args[#args + 1] = "--" .. key .. (value ~= "" and "=" .. value or "")
+    end
   end
   args[#args + 1] = "--"
   vim.list_extend(args, parsed.fragment and vim.json.decode(parsed.fragment) or {})
@@ -51,7 +53,13 @@ function M.read(buf, name)
       .. (entry.orig_path and quote(entry.orig_path) .. " -> " or "")
       .. quote(entry.path)
   end
-  buffer.replace(buf, lines, parsed.root, "gin-status")
+  buffer.replace_output(
+    buf,
+    table.concat(lines, "\n") .. "\n",
+    parsed.root,
+    "gin-status",
+    parsed.params
+  )
   vim.b[buf].gin_status_entries = entries
   vim.bo[buf].buflisted = false
   vim.bo[buf].modeline = false
@@ -87,7 +95,10 @@ end
 function M.command(opts)
   local args = vim.deepcopy(vim.g.gin_status_persistent_args or {})
   vim.list_extend(args, #opts.fargs == 0 and (vim.g.gin_status_default_args or {}) or opts.fargs)
-  local options, residue = require("gin.command").parse(args, { "worktree", "opener" })
+  local options, residue = require("gin.command").parse(
+    args,
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+  )
   local flags, paths, path_mode = {}, {}, false
   local allowed =
     { "untracked-files", "ignore-submodules", "ignored", "renames", "no-renames", "find-renames" }
@@ -110,7 +121,15 @@ function M.command(opts)
   end
   local root = require("gin.worktree").current(options.worktree)
   return buffer.open(
-    uri.format("ginstatus", root, flags, #paths > 0 and vim.json.encode(paths) or nil),
+    uri.format(
+      "ginstatus",
+      root,
+      vim.tbl_extend("force", flags, {
+        enc = options.enc or options.encoding,
+        ff = options.ff or options.fileformat,
+      }),
+      #paths > 0 and vim.json.encode(paths) or nil
+    ),
     { opener = options.opener, bang = opts.bang, smods = opts.smods }
   )
 end
