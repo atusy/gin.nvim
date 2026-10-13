@@ -153,4 +153,24 @@ T["orphan worktree starts with an empty index"] = function()
   vim.cmd.cd(root)
   H.git(root, "worktree", "remove", root .. "/orphan")
 end
+T["Gin commands refresh branch refs without moving the cursor"] = function()
+  vim.cmd.GinBranch()
+  vim.api.nvim_win_set_cursor(0, { 2, 3 })
+  vim.cmd("silent Gin ++wait branch z-new")
+  MiniTest.expect.equality(#vim.b.gin_branches, 3)
+  MiniTest.expect.equality(vim.b.gin_branches[3].branch, "z-new")
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0), { 2, 3 })
+  vim.cmd("silent Gin ++wait branch -d z-new")
+  MiniTest.expect.equality(#vim.b.gin_branches, 2)
+end
+T["branch refresh registrations are not duplicated by reload"] = function()
+  vim.cmd.GinBranch()
+  local buf = vim.api.nvim_get_current_buf()
+  vim.cmd.edit()
+  vim.cmd.edit()
+  local group = "gin_branch_" .. buf
+  MiniTest.expect.equality(#vim.api.nvim_get_autocmds({ group = group, event = "User" }), 1)
+  vim.api.nvim_buf_delete(buf, { force = true })
+  MiniTest.expect.equality(pcall(vim.api.nvim_get_autocmds, { group = group }), false)
+end
 return T

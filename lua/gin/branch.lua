@@ -50,12 +50,31 @@ function M.read(buf, name)
   require("gin.buffer").replace(buf, #lines > 0 and lines or { "" }, parsed.root, "gin-branch")
   vim.b[buf].gin_branches = rows
   action.setup(buf)
+  local group = vim.api.nvim_create_augroup("gin_branch_" .. buf, { clear = true })
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "GinCommandPost",
+    callback = function()
+      if vim.api.nvim_buf_is_loaded(buf) then
+        vim.api.nvim_buf_call(buf, function()
+          local view = vim.fn.winsaveview()
+          M.read(buf, name)
+          vim.fn.winrestview(view)
+        end)
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    group = group,
+    buffer = buf,
+    once = true,
+    callback = function()
+      vim.api.nvim_del_augroup_by_id(group)
+    end,
+  })
   local function run(args)
     local result = git.run(args, { cwd = parsed.root })
     require("gin.command").finish(result, {}, {})
-    if vim.api.nvim_buf_is_valid(buf) then
-      M.read(buf, name)
-    end
   end
   for _, detach in ipairs({ false, true }) do
     action.define(buf, detach and "switch:detach" or "switch", function(target, range)
