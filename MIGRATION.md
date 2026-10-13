@@ -728,3 +728,11 @@ flags and decoding/processor options apply. A real-diff fixture verifies
 HEAD/index/worktree contents and a literal % filename under a subdirectory.
 It checks full output across reloads, selected-path isolation and explicit
 action opener precedence. Other direct action open paths remain under audit.
+
+Patch file actions now dispatch through GinPatch's command handler, matching
+the pinned action/patch.ts route. Persistent pane/decoding arguments therefore
+apply before the explicit action arguments. A status-action fixture verifies
+that persistent ++no-head yields two panes, the explicit tab opener overrides
+a persistent split opener, and applying one hunk changes only that part of the
+index while preserving the working file. The path remains anchored to the
+selected repository even when invoked from a subdirectory.

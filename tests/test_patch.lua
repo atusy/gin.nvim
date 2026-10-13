@@ -37,6 +37,28 @@ T["GinPatch stages only the chosen hunk from a subdirectory"] = function()
   MiniTest.expect.equality(index:find("changed last", 1, true), nil)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[10], "changed last")
 end
+T["status patch honors persistent pane settings and stages the chosen hunk"] = function()
+  vim.cmd.GinStatus()
+  local status = vim.api.nvim_get_current_buf()
+  local tabs = #vim.api.nvim_list_tabpages()
+  local previous = vim.g.gin_patch_persistent_args
+  vim.g.gin_patch_persistent_args = { "++no-head", "++opener=split" }
+  local ok, err = pcall(function()
+    require("gin.action").call(status, "patch:both", { 2, 2 })
+    MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_feedkeys("dor", "mx", false)
+    vim.cmd.write()
+    local index = H.git(root, "show", ":sub/file")
+    MiniTest.expect.equality(index:find("changed first", 1, true) ~= nil, true)
+    MiniTest.expect.equality(index:find("changed last", 1, true), nil)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[10], "changed last")
+  end)
+  vim.g.gin_patch_persistent_args = previous
+  assert(ok, err)
+end
 T["GinPatch can unstage one hunk without a working-tree pane"] = function()
   H.git(root, "add", "sub/file")
   vim.cmd("GinPatch ++no-worktree file")

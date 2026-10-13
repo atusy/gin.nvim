@@ -82,11 +82,14 @@ function M.setup(buf, gather)
       local root = vim.b[target].gin_worktree
       local entries = gather(target, range)
       for _, entry in ipairs(entries) do
-        require("gin.patch").open(root, entry.path, {
-          opener = "tabedit",
-          ["no-head"] = variant == "worktree",
-          ["no-worktree"] = variant == "head",
-        })
+        local args = { "++worktree=" .. root, "++opener=tabedit" }
+        if variant == "worktree" then
+          args[#args + 1] = "++no-head"
+        elseif variant == "head" then
+          args[#args + 1] = "++no-worktree"
+        end
+        args[#args + 1] = root .. "/" .. entry.path
+        require("gin.patch").command({ fargs = args, smods = {} })
       end
     end)
   end
