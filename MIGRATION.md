@@ -1120,3 +1120,9 @@ directly to path parsing had left the display prefix attached to actual paths
 and mislabeled ordinary modifications as renames. The real-file prefix fixture
 now covers repeated values and verifies both the folded label and the contents
 of the file reached by a jump.
+
+Diff path decoding now applies `--no-prefix`, `--src-prefix` and `--dst-prefix`
+in their saved flag order. Previously the presence of `--no-prefix` always
+overrode explicit prefixes even when Git applied those prefixes later. Real
+file fixtures cover both complete overrides, each one-sided override and a
+reverse diff; they assert folded path labels and the contents reached by jumps.

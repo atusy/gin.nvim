@@ -1,13 +1,20 @@
 local M = {}
 
-function M.prefixes(params)
-  if params["no-prefix"] ~= nil then
-    return { old = "", new = "" }
-  end
-  local prefixes = { old = params["src-prefix"] or "a/", new = params["dst-prefix"] or "b/" }
-  for side, value in pairs(prefixes) do
+function M.prefixes(params, order)
+  local prefixes = { old = "a/", new = "b/" }
+  for _, key in ipairs(order or { "src-prefix", "dst-prefix", "no-prefix" }) do
+    local value = params[key]
     if type(value) == "table" then
-      prefixes[side] = value[#value]
+      value = value[#value]
+    end
+    if value ~= nil then
+      if key == "no-prefix" then
+        prefixes.old, prefixes.new = "", ""
+      elseif key == "src-prefix" then
+        prefixes.old = value
+      elseif key == "dst-prefix" then
+        prefixes.new = value
+      end
     end
   end
   if params.R ~= nil or params["-R"] ~= nil or params.reverse ~= nil then
@@ -95,7 +102,7 @@ function M.jump(side, options)
   if side == "smart" then
     side = lines[cursor[1]]:sub(1, 1) == "-" and "old" or "new"
   end
-  local target = M.parse(lines, cursor[1], side, M.prefixes(parsed.params))
+  local target = M.parse(lines, cursor[1], side, M.prefixes(parsed.params, parsed.param_order))
   if not target then
     return
   end

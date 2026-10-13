@@ -367,6 +367,11 @@ end
 
 for _, flags in ipairs({
   "--no-prefix",
+  "--no-prefix --src-prefix=old.+/ --dst-prefix=new.+/",
+  "--src-prefix=old.+/ --dst-prefix=new.+/ --no-prefix",
+  "--src-prefix=old.+/ --no-prefix --dst-prefix=new.+/",
+  "--dst-prefix=new.+/ --no-prefix --src-prefix=old.+/",
+  "-R --no-prefix --src-prefix=old.+/ --dst-prefix=new.+/",
   "--src-prefix=old.+/ --dst-prefix=new.+/",
   "--src-prefix=ignored/ --src-prefix=old.+/ --dst-prefix=ignored/ --dst-prefix=new.+/",
   "-R --no-prefix",
