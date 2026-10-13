@@ -132,4 +132,30 @@ T["reverse diff swaps the working and index jump targets"] = function()
   jump("-working")
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), vim.uv.fs_realpath(root) .. "/sub/file")
 end
+T["diff folds summarize file changes and rebuild on reload"] = function()
+  vim.cmd("GinDiff -- sub/file")
+  MiniTest.expect.equality(vim.wo.foldmethod, "manual")
+  MiniTest.expect.equality(vim.fn.foldlevel(3), 1)
+  vim.cmd("normal! zM")
+  MiniTest.expect.equality(vim.fn.foldtextresult(3), "[.] sub/file (+1 -1)")
+  H.git(root, "checkout", "--", "sub/file")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.fn.foldlevel(1), 0)
+end
+T["fold sections distinguish file headers from removed content"] = function()
+  local sections = require("gin.difffold").sections({
+    "diff --git a/one b/one",
+    "--- a/one",
+    "+++ b/one",
+    "@@ -1 +1 @@",
+    "--- removed",
+    "+++ added",
+    "diff --git a/two b/two",
+    "--- a/two",
+    "+++ /dev/null",
+    "@@ -1 +0,0 @@",
+    "-old",
+  })
+  MiniTest.expect.equality(sections, { { first = 2, last = 6 }, { first = 8, last = 11 } })
+end
 return T
