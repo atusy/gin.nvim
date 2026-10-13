@@ -105,6 +105,38 @@ function M.read(buf, name)
       end
     )
   end
+  for _, instant in ipairs({ false, true }) do
+    action.define(buf, instant and "fixup:instant-fixup" or "fixup:fixup", function(target, range)
+      local rows = M.candidates(target, range)
+      if #rows == 0 then
+        return
+      end
+      assert(#rows == 1, "Fixup requires exactly one commit")
+      local commit = rows[1].commit
+      local git = require("gin.git")
+      local result = git.run({ "commit", "--fixup=" .. commit }, { cwd = parsed.root })
+      require("gin.command").finish(result, {}, {})
+      if instant then
+        local parent = git.run(
+          { "rev-parse", "--verify", commit .. "^" },
+          { cwd = parsed.root, check = false }
+        )
+        local args = {
+          "-c",
+          "sequence.editor=true",
+          "rebase",
+          "--interactive",
+          "--autostash",
+          "--autosquash",
+          "--quiet",
+        }
+        args[#args + 1] = parent.code == 0 and vim.trim(parent.stdout) or "--root"
+        require("gin.command").finish(git.run(args, { cwd = parsed.root }), {}, {})
+        vim.cmd("silent checktime")
+      end
+    end)
+  end
+  action.alias(buf, "fixup", "fixup:fixup")
   action.define(buf, "yank:commit", function(target, range)
     local values = {}
     for _, row in ipairs(M.candidates(target, range)) do
