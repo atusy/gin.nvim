@@ -322,3 +322,11 @@ Subdirectory fixtures now distinguish root/file from sub/file for diff and log
 filters, verify reload output/history, then use the alternate-buffer # expansion
 to stage only root/file. Relative filter paths remain repository-relative,
 matching the pinned upstream; the same-named subdirectory file stays unstaged.
+
+Log/reflog ++emojify now uses a vendored Unicode map derived from the pinned
+upstream dependency @lambdalisue/github-emoji 1.0.0. Its source checksum and MIT
+license are recorded under vendor/github-emoji. Conversion runs before ANSI
+highlight span calculation and leaves unknown/image-only names literal.
+Fixtures cover reload, opt-in behavior, commit selection, compound Unicode
+sequences and overlapping name delimiters. Other emojify views/actions remain
+pending.

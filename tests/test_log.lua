@@ -666,4 +666,20 @@ for _, command in ipairs({ "cherry-pick", "revert" }) do
     end
   end
 end
+
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " emojify survives reload without changing commit selection"] = function()
+    H.git(root, "commit", "--allow-empty", "-m", ":sparkles: :+1: :unknown:rocket: :octocat:")
+    local head = vim.trim(H.git(root, "rev-parse", "HEAD"))
+    vim.cmd(command .. " ++emojify --oneline")
+    vim.cmd.edit()
+    local line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+    MiniTest.expect.equality(line:find("✨ 👍 :unknown🚀 :octocat:", 1, true) ~= nil, true)
+    local row = require("gin.log").candidates(0, { 1, 1 })[1]
+    MiniTest.expect.equality(row.commit, head:sub(1, #row.commit))
+    vim.cmd(command .. " --oneline")
+    local plain = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+    MiniTest.expect.equality(plain:find(":sparkles: :+1:", 1, true) ~= nil, true)
+  end
+end
 return T

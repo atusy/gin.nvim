@@ -337,6 +337,7 @@ function M.open(root, args, options)
     uri.format("gin" .. (options.kind or "log"), root, {
       enc = options.enc or options.encoding,
       ff = options.ff or options.fileformat,
+      emojify = options.emojify and "" or nil,
     }, vim.json.encode(args)),
     options
   )
@@ -351,7 +352,7 @@ function M.command(opts, kind)
   )
   local options, residue = require("gin.command").parse(
     args,
-    { "worktree", "opener", "enc", "encoding", "ff", "fileformat" }
+    { "worktree", "opener", "enc", "encoding", "ff", "fileformat", "emojify" }
   )
   options.bang, options.smods, options.kind = opts.bang, opts.smods, kind
   return M.open(require("gin.worktree").current(options.worktree), residue, options)

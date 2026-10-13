@@ -34,6 +34,9 @@ end
 
 function M.replace_output(buf, output, root, filetype, options)
   local lines, decoded = require("gin.edit").decode(output, options or {})
+  if options and options.emojify ~= nil then
+    lines = vim.tbl_map(require("gin.emoji").emojify, lines)
+  end
   local plain, marks = require("gin.ansi").parse(lines)
   M.replace(buf, plain, root, filetype)
   require("gin.ansi").apply(buf, marks)
