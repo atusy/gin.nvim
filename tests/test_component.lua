@@ -50,4 +50,53 @@ T["components asynchronously publish branch traffic and worktree values"] = func
   MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
   vim.api.nvim_del_autocmd(autocmd)
 end
+T["command events refresh no-upstream detached and unborn branches"] = function()
+  local branch = require("gin.component.branch")
+  local traffic = require("gin.component.traffic")
+  branch.ascii()
+  H.git(root, "switch", "-c", "topic")
+  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "topic" and traffic.ascii() == ""
+    end, 10),
+    true
+  )
+  H.git(root, "switch", "--detach", "HEAD")
+  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == ""
+    end, 10),
+    true
+  )
+  H.git(root, "switch", "--orphan", "unborn")
+  vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "unborn"
+    end, 10),
+    true
+  )
+end
+T["leaving a repository clears cached component values"] = function()
+  local worktree = require("gin.component.worktree")
+  worktree.full()
+  require("gin.component").refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == vim.uv.fs_realpath(root)
+    end, 10),
+    true
+  )
+  vim.cmd.cd(vim.fs.dirname(root))
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == ""
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(require("gin.component.branch").ascii(), "")
+  MiniTest.expect.equality(require("gin.component.traffic").ascii(), "")
+end
 return T
