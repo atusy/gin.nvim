@@ -492,5 +492,11 @@ for final reporting and processors. The indicator restores command-line height
 after idle output and restores options after the last concurrent command closes;
 silent commands suppress it. Tests gate a real Git alias until progress is
 observed, verify final output/events, and cover silent and concurrent lifecycles.
-Streaming for synchronous commands and buffer reads, custom indicator APIs and
-chunk-boundary decoding remain under audit.
+Streaming for synchronous commands and buffer reads and custom indicator APIs
+remain under audit.
+
+Progress display retains incomplete UTF-8 and SGR escape sequences between
+chunks, independently for stdout and stderr. Tests cover every byte boundary of
+two-, three- and four-byte characters, interleaved streams, and EOF handling for
+truncated characters/escape sequences. Non-UTF-8 stream encodings and other
+terminal control sequences remain under audit.

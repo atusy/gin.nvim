@@ -10,12 +10,13 @@ function M.open()
   end
   active = active + 1
   local closed = false
-  return {
-    write = vim.schedule_wrap(function(_, data)
-      if closed or not data then
+  local function stream()
+    local decode = require("gin.stream_text").decoder()
+    return vim.schedule_wrap(function(_, data)
+      if closed then
         return
       end
-      local text = vim.trim(data:gsub("\27%[[%d;]*m", ""))
+      local text = vim.trim(decode(data))
       if text == "" then
         return
       end
@@ -30,7 +31,11 @@ function M.open()
           vim.o.cmdheight = saved.cmdheight
         end
       end, 500)
-    end),
+    end)
+  end
+  return {
+    write = stream(),
+    write_stderr = stream(),
     close = function()
       if closed then
         return

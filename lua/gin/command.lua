@@ -104,7 +104,7 @@ function M.execute(opts)
       env = env,
       timeout = false,
       on_stdout = indicator and indicator.write,
-      on_stderr = indicator and indicator.write,
+      on_stderr = indicator and indicator.write_stderr,
     },
     vim.schedule_wrap(function(result)
       if indicator then
