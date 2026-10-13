@@ -970,3 +970,12 @@ boundary tests run real Git/processors and verify no default deadline is passed.
 Separate long-running checks completed a Git alias after 31.02 seconds and a Gin
 output processor after 31.32 seconds. These slow checks are kept outside the
 routine suite; the current execution table and help reflect the new policy.
+
+The public Lua `gin.util.expand(expr)` now supplies the filename-expansion
+utility corresponding to upstream `gin#util#expand`, and command argument
+expansion uses it. Fixtures cover native filename modifiers, edit/diff/log file
+resolution, single-path diff fragments and views with no usable file path.
+Lua log URIs retain their argv representation, resolving paths after `--`.
+Malformed URI data is contained rather than raising from expansion. This adds
+the Lua API; it does not supply legacy Vimscript function-name shims or close
+the separate URI-format compatibility audit.

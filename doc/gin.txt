@@ -129,6 +129,12 @@ the current filename. Example: >
     :GinDiff --cached -- src/main.lua
     :GinBuffer ++opener=split log --oneline -10
 <
+require('gin.util').expand(expr)                              *gin-util-expand*
+    Expand a Vim filename expression. For GinEdit, GinDiff and file-filtered
+    GinLog buffers, return the first represented file's absolute path. Views
+    without a file path and unrecognized URI data retain their expanded name.
+    Commands use the same function for % and # arguments.
+
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
 decoding on commands that support them. ++processor accepts a command with its
@@ -210,7 +216,8 @@ asks whether to apply. Git credential prompts use masked Neovim input.
 With filetype plugins enabled, gitcommit/gitrebase buffers get :Accept (:wq)
 and :Cancel (:cq) aliases unless already defined. Disable them with
 g:gin_proxy_disable_accept_and_cancel_aliases = 1. Proxy buffers retain their
-request-specific :Apply and :Cancel. ++wait proxy integration remains pending.
+request-specific :Apply and :Cancel. ++wait services proxy requests while waiting;
+see |gin-limitations| for the remaining interactive-editing validation limit.
 
 ==============================================================================
 STATUSLINE                                                     *gin-components*
