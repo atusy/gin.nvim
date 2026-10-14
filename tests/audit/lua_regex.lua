@@ -1,5 +1,20 @@
 -- Experimental no-flags ECMAScript candidate; not used by Gin actions.
 local M = {}
+local casefold = require("tests.audit.regex_casefold")
+local equivalents = {}
+for cp, canonical in pairs(casefold) do
+  equivalents[canonical] = equivalents[canonical] or { canonical }
+  table.insert(equivalents[canonical], cp)
+end
+local function same_char(a, b, ignore_case)
+  if ignore_case then
+    return (casefold[a] or a) == (casefold[b] or b)
+  end
+  return a == b
+end
+local function line_terminator(cp)
+  return cp == 10 or cp == 13 or cp == 0x2028 or cp == 0x2029
+end
 local identifiers = require("tests.audit.unicode_identifiers")
 local function identifier_char(cp, first)
   if cp == 36 or cp == 95 or not first and (cp == 0x200C or cp == 0x200D) then
@@ -73,19 +88,22 @@ local function class_matches(node, cp)
     return false
   end
   local found = false
-  for _, item in ipairs(node.items) do
-    if item.kind == "range" then
-      found = found or (cp >= item.first and cp <= item.last)
-    elseif item.kind == "literal" then
-      found = found or cp == item.value
-    else
-      local hit = item.name:lower() == "d" and cp >= 48 and cp <= 57
-        or item.name:lower() == "w" and word(cp)
-        or item.name:lower() == "s" and space(cp)
-      if item.name == item.name:upper() then
-        hit = not hit
+  local candidates = node.flags.i and equivalents[casefold[cp] or cp] or nil
+  for _, cp in ipairs(candidates or { cp }) do
+    for _, item in ipairs(node.items) do
+      if item.kind == "range" then
+        found = found or (cp >= item.first and cp <= item.last)
+      elseif item.kind == "literal" then
+        found = found or cp == item.value
+      else
+        local hit = item.name:lower() == "d" and cp >= 48 and cp <= 57
+          or item.name:lower() == "w" and word(cp)
+          or item.name:lower() == "s" and space(cp)
+        if item.name == item.name:upper() then
+          hit = not hit
+        end
+        found = found or hit
       end
-      found = found or hit
     end
   end
   return node.negated and not found or not node.negated and found
@@ -122,6 +140,7 @@ end
 function M.compile(pattern)
   local source, cursor, count, names = units(pattern), 1, 0, {}
   local total_captures, has_named = capture_info(source)
+  local flags = { i = false, m = false, s = false }
   local function peek()
     return ascii(source[cursor])
   end
@@ -312,6 +331,7 @@ function M.compile(pattern)
       expect("]")
       return node
     elseif take("(") then
+      local outer_flags = flags
       local kind, positive, direction, number = "capture", true, 1, nil
       local name
       if take("?") then
@@ -329,6 +349,23 @@ function M.compile(pattern)
           else
             name = capture_name()
           end
+        elseif peek():match("^[ims-]$") then
+          kind, flags = "group", copy(flags)
+          local seen = {}
+          local function modifiers(enabled)
+            while peek():match("^[ims]$") do
+              local flag = peek()
+              assert(not seen[flag], "Invalid regular expression: repeated modifier")
+              seen[flag], flags[flag] = true, enabled
+              cursor = cursor + 1
+            end
+          end
+          modifiers(true)
+          if take("-") then
+            modifiers(false)
+          end
+          assert(next(seen), "Invalid regular expression: empty modifiers")
+          expect(":")
         else
           error("Invalid regular expression: group prefix")
         end
@@ -342,6 +379,7 @@ function M.compile(pattern)
         end
       end
       local child = disjunction()
+      flags = outer_flags
       expect(")")
       return {
         kind = kind,
@@ -363,6 +401,7 @@ function M.compile(pattern)
   local function term()
     local first_capture = count + 1
     local node = atom()
+    node.flags = flags
     local minimum, maximum
     if take("*") then
       minimum, maximum = 0, math.huge
@@ -527,8 +566,10 @@ function M.compile(pattern)
           end
           return repeat_match(0, position, captures)
         elseif kind == "start" or kind == "finish" or kind == "boundary" then
-          local matched = kind == "start" and position == 1
-            or kind == "finish" and position == #input + 1
+          local matched = kind == "start"
+              and (position == 1 or node.flags.m and line_terminator(input[position - 1]))
+            or kind == "finish"
+              and (position == #input + 1 or node.flags.m and line_terminator(input[position]))
           if kind == "boundary" then
             matched = word(input[position - 1]) ~= word(input[position])
             if node.negated then
@@ -549,21 +590,16 @@ function M.compile(pattern)
           local length = capture and capture[2] - capture[1] or 0
           local start = direction == 1 and position or position - length
           for offset = 0, length - 1 do
-            if input[start + offset] ~= input[capture[1] + offset] then
+            if not same_char(input[start + offset], input[capture[1] + offset], node.flags.i) then
               return nil
             end
           end
           return continuation(position + length * direction, captures)
         else
           local cp = input[direction == 1 and position or position - 1]
-          local matched = kind == "literal" and cp == node.value
+          local matched = kind == "literal" and same_char(cp, node.value, node.flags.i)
             or kind == "class" and class_matches(node, cp)
-            or kind == "dot"
-              and cp ~= nil
-              and cp ~= 10
-              and cp ~= 13
-              and cp ~= 0x2028
-              and cp ~= 0x2029
+            or kind == "dot" and cp ~= nil and (node.flags.s or not line_terminator(cp))
           if matched then
             return continuation(position + direction, captures)
           end

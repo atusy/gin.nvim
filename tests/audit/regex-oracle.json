@@ -2541,5 +2541,570 @@
     "expected": {
       "status": "compile-error"
     }
+  },
+  {
+    "name": "modifiers-scoped-ignore-case",
+    "pattern": "^(?i:a)b$",
+    "input": "Ab",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-scope-ends",
+    "pattern": "^(?i:a)b$",
+    "input": "AB",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-nested-disable",
+    "pattern": "^(?i:a(?-i:b)c)$",
+    "input": "AbC",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          98,
+          67
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-nested-disable-no-match",
+    "pattern": "^(?i:a(?-i:b)c)$",
+    "input": "ABC",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-multiple-alternatives",
+    "pattern": "^(?i:a|b)$",
+    "input": "B",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          66
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-quantified",
+    "pattern": "^(?i:a)+$",
+    "input": "aAA",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          65,
+          65
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-no-capture-number",
+    "pattern": "^(?i:a)(b)\\1$",
+    "input": "Abb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          98,
+          98
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-backreference",
+    "pattern": "^(a)(?i:\\1)$",
+    "input": "aA",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          65
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-backreference-local",
+    "pattern": "^(?i:(a))\\1$",
+    "input": "Aa",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-named-reference",
+    "pattern": "^(?<x>a)(?i:\\k<x>)$",
+    "input": "aA",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          65
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-forward-reference",
+    "pattern": "^(?i:\\1)(a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-lookahead",
+    "pattern": "^(?i:(?=a)a)$",
+    "input": "A",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-lookbehind",
+    "pattern": "(?i:(?<=a)b)",
+    "input": "AB",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          66
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-class-range",
+    "pattern": "^(?i:[a-z]+)$",
+    "input": "ABCxyz",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          66,
+          67,
+          120,
+          121,
+          122
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-class-inverted",
+    "pattern": "^(?i:[^a])$",
+    "input": "A",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-class-range-punctuation",
+    "pattern": "^(?i:[Z-a]+)$",
+    "input": "z[A",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          122,
+          91,
+          65
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-class-builtins",
+    "pattern": "^(?i:[\\W])$",
+    "input": "A",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-class-complement-union",
+    "pattern": "^(?i:[\\W_a]+)$",
+    "input": "A_!",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          95,
+          33
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-nonascii-pair",
+    "pattern": "^(?i:éσ)$",
+    "input": "Éς",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          201,
+          962
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-nonascii-class",
+    "pattern": "^(?i:[µ])$",
+    "input": "Μ",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          924
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-nonascii-range",
+    "pattern": "^(?i:[α-ω])$",
+    "input": "Μ",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          924
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-long-s-excluded",
+    "pattern": "^(?i:[a-z])$",
+    "input": "ſ",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-kelvin-excluded",
+    "pattern": "^(?i:k)$",
+    "input": "K",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-ohm-excluded",
+    "pattern": "^(?i:ω)$",
+    "input": "Ω",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-multichar-uppercase-excluded",
+    "pattern": "^(?i:ß)$",
+    "input": "SS",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-astral-case-excluded",
+    "pattern": "^(?i:𐐀)$",
+    "input": "𐐨",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-boundary-ascii",
+    "pattern": "^(?i:\\ba\\b)$",
+    "input": "A",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-boundary-nonascii",
+    "pattern": "(?i:\\bſ\\b)",
+    "input": "ſ",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-multiline",
+    "pattern": "(?m:^(a)$)",
+    "input": "x\na\ny",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-multiline-cr",
+    "pattern": "(?m:^(a)$)",
+    "input": "x\ra\ry",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-multiline-wide",
+    "pattern": "(?m:^(a)$)",
+    "input": "x a y",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-multiline-disabled",
+    "pattern": "(?m:(?-m:^a$))",
+    "input": "x\na\ny",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-multiline-scope-ends",
+    "pattern": "(?m:^a)$",
+    "input": "a\nx",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-dotall",
+    "pattern": "^(?s:(.+))$",
+    "input": "a\n\r  b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          10,
+          13,
+          8232,
+          8233,
+          98
+        ],
+        [
+          97,
+          10,
+          13,
+          8232,
+          8233,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-dotall-disabled",
+    "pattern": "^(?s:(?-s:.))$",
+    "input": "\n",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-dotall-scope-ends",
+    "pattern": "^(?s:.).$",
+    "input": "a\n",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-combined",
+    "pattern": "(?ims:^(a.b)$)",
+    "input": "x\nA\nB\ny",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          10,
+          66
+        ],
+        [
+          65,
+          10,
+          66
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-add-remove",
+    "pattern": "^(?is:a(?m-is:^b$))",
+    "input": "Ab",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "modifiers-empty-remove",
+    "pattern": "^(?i-:a)$",
+    "input": "A",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-remove-only",
+    "pattern": "^(?-ims:a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "modifiers-empty-invalid",
+    "pattern": "(?-:a)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-duplicate-invalid",
+    "pattern": "(?ii:a)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-overlap-invalid",
+    "pattern": "(?i-i:a)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-duplicate-remove-invalid",
+    "pattern": "(?-ii:a)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-unsupported-invalid",
+    "pattern": "(?u:a)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-missing-colon-invalid",
+    "pattern": "(?ia)",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "modifiers-add-remove-nested",
+    "pattern": "^(?is:a.(?m-is:^b$).c)$",
+    "input": "A\nb\nC",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          65,
+          10,
+          98,
+          10,
+          67
+        ]
+      ]
+    }
   }
 ]

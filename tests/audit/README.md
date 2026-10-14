@@ -55,7 +55,7 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-159-case corpus passes, including the initial cases that reject the C candidate
+206-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
 references), class context, octal digit limits and quantifier binding on
@@ -69,12 +69,11 @@ Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 
 This is not an adopted runtime backend and no Gin action calls it. Its output is
 a list of UTF-16 capture arrays (full match first, unmatched groups null), not
-the strings needed by action parsers. Known unimplemented areas include
-inline modifier groups. Some valid JavaScript
-patterns therefore raise an unsupported-syntax error. Input encoding edge cases, large patterns/inputs,
-recursion limits, resource bounds and a broader differential corpus must also be
-audited before integration. Passing the initial corpus does not establish full
-ECMAScript compatibility.
+the strings needed by action parsers. Scoped `i`, `m` and `s` modifier groups
+are implemented for the exercised grammar. Grammar completeness, input encoding
+edge cases, large patterns/inputs, recursion limits, resource bounds and a
+broader differential corpus must still be audited before integration. Passing
+this corpus does not establish full ECMAScript compatibility.
 
 Capture names use checked-in Unicode 17.0 `ID_Start` / `ID_Continue` ranges
 generated from Node v26.8.2, plus ECMAScript's dollar/underscore/joiner rules.
@@ -100,3 +99,18 @@ while nested or sequential declarations of the same name are rejected. A named
 backreference selects the participating capture, preserving numbered captures
 and unmatched slots. The oracle covers forward references, repetitions,
 backtracking, lookaround and escaped equivalent names.
+
+Scoped modifiers preserve their enclosing settings on exit. Ignore-case matching
+uses a generated Unicode 17.0 table for ECMAScript's **non-Unicode** Canonicalize
+operation, shared by literals, class membership and backreferences. It excludes
+multi-unit uppercase expansions and non-ASCII-to-ASCII mappings; astral letters
+remain UTF-16 units. Regenerate or verify the test-only table with:
+
+```sh
+node scripts/regex-casefold.mjs --write
+node scripts/regex-casefold.mjs --check
+```
+
+The modifier cases include nested enable/disable scopes, lookaround, repetitions,
+Unicode case exceptions, negated classes, line terminators and invalid syntax.
+This still does not establish complete grammar or resource compatibility.

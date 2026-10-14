@@ -1506,3 +1506,10 @@ capture. Twenty-one Node-oracle cases cover alternatives, repeated capture
 clearing, backtracking, lookaround and invalid duplicate declarations, bringing
 the corpus to 159. This remains test-only pending the remaining syntax, resource
 and integration work.
+
+The experimental matcher supports scoped `i`, `m` and `s` modifier groups,
+including nested removal and restoration on group exit. Literal, class and
+backreference comparison uses a reproducible Unicode 17.0 non-Unicode
+canonicalization table, while multiline anchors and dot-all apply locally.
+Forty-seven added Node-oracle cases bring the corpus to 206. Broad differential
+validation, resource/encoding limits and production integration remain open.
