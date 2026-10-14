@@ -20,6 +20,80 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["display options match every pinned Gin ftplugin"] = function()
+  local root = vim.fn.getcwd()
+  local files = {}
+  for _, path in ipairs(vim.fn.glob(root .. "/.deps/vim-gin/ftplugin/gin-*.vim", false, true)) do
+    files[#files + 1] = vim.fn.fnamemodify(path, ":t:r")
+  end
+  MiniTest.expect.equality(#files, 10)
+  local function inspect(directory, extension)
+    local script = ([=[
+      local ok, err = pcall(function()
+        vim.opt.runtimepath:prepend(%q)
+        local data = vim.json.decode(%q)
+        vim.opt.runtimepath:prepend(data.directory)
+        local result = {}
+        local options = {'list', 'spell', 'wrap', 'foldenable', 'cursorline',
+          'modeline', 'buflisted', 'winfixbuf', 'foldlevel', 'commentstring',
+          'comments', 'formatoptions'}
+        for _, name in ipairs(data.files) do
+          for _, initial in ipairs({false, true}) do
+            vim.wo.winfixbuf = false
+            vim.cmd.enew({bang=true})
+            for _, option in ipairs(options) do
+              if option == 'foldlevel' then
+                vim.wo.foldlevel = 7
+              elseif option == 'commentstring' then
+                vim.bo.commentstring = 'custom %%s'
+              elseif option == 'comments' then
+                vim.bo.comments = ':custom'
+              elseif option == 'formatoptions' then
+                vim.bo.formatoptions = 'tcq'
+              else
+                vim.api.nvim_set_option_value(option, initial, {scope='local'})
+              end
+            end
+            vim.cmd.source(data.directory .. '/ftplugin/' .. name .. data.extension)
+            -- Both implementations defer the diff window's fold level.
+            if name == 'gin-diff' then
+              assert(vim.wait(1000, function() return vim.wo.foldlevel == 1 end))
+            end
+            local values = {}
+            for _, option in ipairs(options) do
+              values[option] = vim.api.nvim_get_option_value(option, {scope='local'})
+            end
+            values.did_ftplugin = vim.b.did_ftplugin
+            result[name .. tostring(initial)] = values
+          end
+        end
+        io.stdout:write(vim.json.encode(result))
+      end)
+      if not ok then io.stderr:write(tostring(err)); vim.cmd('cquit 1') end
+    ]=]):format(
+      root,
+      vim.json.encode({ files = files, directory = directory, extension = extension })
+    )
+    local result = vim
+      .system({
+        vim.v.progpath,
+        "--headless",
+        "--clean",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "-c",
+        "lua " .. script,
+        "-c",
+        "qa!",
+      }, { text = true })
+      :wait(10000)
+    assert(result.code == 0, result.stderr)
+    return vim.json.decode(result.stdout)
+  end
+  MiniTest.expect.equality(inspect(root, ".lua"), inspect(root .. "/.deps/vim-gin", ".vim"))
+end
 for _, kind in ipairs({ "branch", "status", "log", "reflog", "tag", "stash" }) do
   T[kind .. " filetype applies and undoes list display options"] = function()
     vim.bo.filetype = "gin-" .. kind

@@ -2194,3 +2194,20 @@ This closes the default-attribute inventory for the four syntax files. It does
 not claim identical matching at every byte position: the previously documented
 Stash branch/Reflog action fixes and custom-theme preservation remain deliberate
 differences from the pinned syntax implementation.
+
+## Filetype display option audit
+
+`test_ftplugin.lua` inventories all ten pinned `ftplugin/gin-*.vim` files and
+compares their display settings with the Lua files in separate fresh Neovim
+processes. Each file is loaded with both boolean initial values; the comparison
+covers list, spell, wrap, foldenable, cursorline, modeline, buflisted, winfixbuf,
+foldlevel, commentstring, comments, formatoptions and the initialization marker.
+The diff fold level is observed after its deferred initialization. Child errors
+and timeouts fail the test. A temporary GinBuffer modeline change makes the new
+audit fail, demonstrating that untouched options are part of the contract too.
+
+This verifies initial display settings on the tested Neovim runtimes, not the
+full filetype lifecycle or mapping behavior. Existing tests separately exercise
+mapping installation and cleanup. Lua additionally restores list display options
+through `b:undo_ftplugin`; the pinned list ftplugins do not supply that cleanup.
+The gitcommit/gitrebase ftplugin subdirectories are outside this inventory.
