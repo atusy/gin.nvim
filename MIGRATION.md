@@ -2775,3 +2775,19 @@ value. Selecting only the ordinary file clears the register. Repository status
 is unchanged. The expected empty-row behavior follows status/edit.ts's origPath
 projection and action/yank.ts's newline join. These cases extend functional
 evidence without closing the broader status checklist.
+
+## Unstage intent conversion failure ordering
+
+The pinned action/stage.ts handles unstage:intent-to-add by resetting newly
+added files, converting them to intent-to-add, then resetting other selected
+files. Lua previously reset both groups before conversion. If a newly added
+file disappeared after status was displayed, conversion failed after the other
+files had already lost their staged contents.
+
+The Lua action now preserves the pinned ordering. A real Git regression deletes
+the new file after opening status and confirms that conversion fails while the
+other file retains its staged content. The earlier successful reset still
+refreshes status. Restoring and staging the missing file, refreshing the view
+and retrying converts it to an empty intent entry and unstages the other file,
+preserving both working files. The regression failed against the old ordering
+because the tracked index contained HEAD content instead of its staged content.

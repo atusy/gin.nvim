@@ -189,10 +189,11 @@ function M.action(buf, name, range)
       if unstage then
         if name == "unstage:intent-to-add" and entry.xy == "A " then
           intent[#intent + 1] = entry.path
-        end
-        paths[#paths + 1] = entry.path
-        if entry.orig_path then
-          paths[#paths + 1] = entry.orig_path
+        else
+          paths[#paths + 1] = entry.path
+          if entry.orig_path then
+            paths[#paths + 1] = entry.orig_path
+          end
         end
       elseif name == "stage" or name == "stage:intent-to-add" then
         if name == "stage:intent-to-add" and entry.xy == "??" then
@@ -220,9 +221,10 @@ function M.action(buf, name, range)
       run(vim.list_extend({ "add", "--ignore-errors", "--force", "--intent-to-add", "--" }, intent))
     end
   end
-  if not unstage then
-    add_intent()
+  if unstage and #intent > 0 then
+    run(vim.list_extend({ "reset", "--quiet", "--" }, intent))
   end
+  add_intent()
   if #removed > 0 then
     run(vim.list_extend({ "rm", "--quiet", "--ignore-unmatch", "--cached", "--" }, removed))
   end
@@ -230,9 +232,6 @@ function M.action(buf, name, range)
     local args = unstage and { "reset", "--quiet", "--" }
       or { "add", "--ignore-errors", "--force", "--" }
     run(vim.list_extend(args, paths))
-  end
-  if unstage then
-    add_intent()
   end
 end
 
