@@ -112,7 +112,12 @@ for _, wait in ipairs({ false, true }) do
         end, 10),
         true
       )
-      child.type_keys("gg0i", "discard this draft", "<Esc>", case[2])
+      local ok, err = pcall(child.type_keys, "gg0i", "discard this draft", "<Esc>", case[2])
+      if not ok then
+        -- MiniTest samples v:errmsg after nvim_input. Synchronous cancellation
+        -- can finish before that sample and expose the expected Git failure.
+        assert(wait and tostring(err):find("Git prompt cancelled", 1, true), err)
+      end
       MiniTest.expect.equality(
         vim.wait(5000, function()
           return child.lua_get("_G.gin_test_exit ~= nil")

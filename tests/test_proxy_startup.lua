@@ -23,32 +23,51 @@ local T = MiniTest.new_set({
   },
 })
 
-T["terminal Git inherits the editor proxy at plugin startup"] = function()
-  vim.fn.writefile({ "content" }, root .. "/file")
-  H.git(root, "add", "file")
-  child.cmd("runtime plugin/gin-proxy.lua")
-  child.lua([[
+for _, cancel in ipairs({ false, true }) do
+  T["terminal Git inherits the editor proxy " .. (cancel and "and cancels without changing staged content" or "at plugin startup")] = function()
+    vim.fn.writefile({ "content" }, root .. "/file")
+    H.git(root, "add", "file")
+    child.cmd("runtime plugin/gin-proxy.lua")
+    child.lua([[
     vim.fn.termopen({ 'git', '-c', 'core.editor=false', 'commit' }, {
       on_exit = function(_, code) _G.gin_terminal_exit = code end,
     })
   ]])
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return child.lua_get("vim.b.gin_editor_request ~= nil or _G.gin_terminal_exit ~= nil")
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(child.lua_get("vim.b.gin_editor_request ~= nil"), true)
-  child.type_keys("gg0i", "terminal commit", "<Esc>", ":Apply<CR>")
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return child.lua_get("_G.gin_terminal_exit ~= nil")
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(child.lua_get("_G.gin_terminal_exit"), 0)
-  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "terminal commit\n")
-  MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("vim.b.gin_editor_request ~= nil or _G.gin_terminal_exit ~= nil")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("vim.b.gin_editor_request ~= nil"), true)
+    child.type_keys("gg0i", "terminal commit", "<Esc>", cancel and ":Cancel<CR>" or ":Apply<CR>")
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("_G.gin_terminal_exit ~= nil")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("_G.gin_terminal_exit == 0"), not cancel)
+    if cancel then
+      MiniTest.expect.equality(H.git(root, "rev-list", "--all"), "")
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/.git/COMMIT_EDITMSG"), {})
+      MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "A  file\n")
+    else
+      MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "terminal commit\n")
+      MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+    end
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
+    MiniTest.expect.equality(
+      child.lua_get([[(function()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.b[buf].gin_editor_request then return false end
+    end
+    return true
+  end)()]]),
+      true
+    )
+  end
 end
 for _, restart in ipairs({ false, true }) do
   T[restart and "terminal askpass follows a listener recreated by Gin" or "terminal Git inherits askpass without a Gin command"] = function()

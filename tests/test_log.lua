@@ -957,7 +957,7 @@ for _, command in ipairs({ "cherry-pick", "revert" }) do
     local ok, err = pcall(function()
       local process = require("gin.action").call(vim.api.nvim_get_current_buf(), command, { 1, 1 })
       MiniTest.expect.equality(
-        vim.wait(5000, function()
+        vim.wait(30000, function()
           return process:is_closing()
         end, 10),
         true

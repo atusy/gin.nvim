@@ -23,7 +23,7 @@ scope, not proof of complete upstream parity.
 - [x] GinBrowse: remote URL generation and opening (functional scope audited below).
 - [x] GinCd, GinLcd, GinTcd and worktree context.
 - [x] Shared actions: choice, repeat, help, range handling and Plug mappings (functional scope audited below).
-- [ ] Editor/askpass proxies, commit/rebase integration.
+- [x] Editor/askpass proxies, commit/rebase integration (functional scope audited below).
 - [x] Branch/traffic/worktree components and component events (functional scope audited below).
 - [ ] Help, syntax, highlights, options and default mappings in Lua.
 - [ ] Full command/action audit against the pinned source and real Git-state integration tests.
@@ -3579,3 +3579,52 @@ new Gin environment request.
 Validation: all 1,314 mini.test cases across 49 groups pass. The 26 proxy
 startup/askpass cases pass on Neovim 0.10.0. `make check` and `git diff --check`
 pass.
+
+## Editor and askpass functional audit
+
+The proxy item now covers the pinned user workflows in `proxy/server.ts`,
+`proxy/{editor,askpass}.ts`, `autoload/gin/internal/proxy.vim` and the commit/
+rebase ftplugins. Lua uses Neovim RPC and headless Neovim launchers instead of
+the pinned Deno TCP transport; the internal wire protocol is not a compatibility
+API. The functional coverage is as follows.
+
+| Pinned behavior | Lua evidence |
+| --- | --- |
+| Export Git editor and askpass environment on startup | `test_proxy_startup.lua`: terminal commit and credential fill without Gin commands, independent opt-outs, preserved inherited values and repeated-source guard. |
+| Open editor with configured opener, silently | `test_editor.lua` validates opener failures and suppressed file-read messages; `test_editor_interaction.lua` exercises edit/split/vsplit/tabedit/preview with actual keyboard input, asynchronously and with `++wait`. |
+| Apply writes the message and allows Git to proceed | Commit content/tree checks in editor and terminal tests; synchronous GinBuffer commit in the interaction suite. |
+| Cancel rejects Git and clears the editor file | Editor tests preserve index/working data; terminal cancellation verifies no commit, empty COMMIT_EDITMSG, staged content retained and no remaining editor-buffer request. |
+| Quit confirmation and apply-without-confirm | `test_editor.lua` covers positive/default/rejected answers and the setting; keyboard tests cover write/quit acceptance and quit rejection. |
+| Interactive rebase uses repeated editor requests | Consecutive reword tests verify rewritten subjects, commit ancestry, trees and cleared rebase state; cancellation of an edited todo preserves history/index/worktree. |
+| Masked credential prompts and prompt failure | `test_askpass.lua` uses real credential fill and controlled responses/errors; keyboard interaction tests exercise native inputsecret, including its interrupted empty response. |
+| Proxies during synchronous commands and output processors | Editor, askpass and interaction suites cover `++wait`, progress-enabled execution, GinBuffer and processors. |
+| Commit/rebase Accept/Cancel aliases | `test_editor_aliases.lua` covers both filetypes, existing global/local commands, disabling values, repeat sourcing and undo cleanup. |
+| Recovery and failed apply | Listener recovery tests cover per-command and exported terminal addresses. A failed write preserves the request for retry; opener failures release Git without overwriting unsaved work. |
+
+The terminal cancellation case passed without production changes. The combined
+Neovim 0.10 interaction run also exposed a test timing issue: mini.test samples
+`v:errmsg` after `nvim_input`, so an expected synchronous Git cancellation may be
+reported directly by `type_keys` if it completes before the sample. That test
+now permits only the expected `Git prompt cancelled` error in `++wait` mode;
+it still requires a completed nonzero Git exit and unchanged repository state.
+All other input errors remain failures.
+
+This closes the proxy functional checklist, not the overall migration audit.
+The process-wide opt-out settings are startup settings; already-running shell
+environments are not rewritten after listener recovery. Custom external proxy
+protocols and the broader command/options/API compatibility audit remain outside
+this functional claim.
+
+
+The first full audit run exposed a separate five-second test deadline in the
+hook-credential cherry-pick case. Its late failure then surfaced in the next
+revert case. Both cases passed in isolation. These hook fixtures launch multiple
+Git/headless-Neovim processes; their completion wait now allows 30 seconds while
+retaining all exit, prompt, ancestry/tree and clean-worktree assertions. This
+changes the test deadline only, not production execution policy. The failed full
+run is retained in `/tmp/gin-proxy-audit-full.log`.
+
+Validation: the complete rerun passes all 1,315 mini.test cases in 49 groups
+(`/tmp/gin-proxy-audit-full-recheck.log`). The 34 isolated startup/editor/askpass
+interaction cases pass on Neovim 0.10.0 after the expected-cancellation test fix.
+`make check` and `git diff --check` pass.
