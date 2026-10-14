@@ -487,4 +487,20 @@ for _, format in ipairs({ "dos", "mac" }) do
     )
   end
 end
+T["failed clean conversion retains the index working file and unsaved buffer"] = function()
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "unsaved conversion" })
+  local before = H.git(root, "ls-files", "--stage")
+  vim.fn.writefile({ "sub/file.lua filter=reject" }, root .. "/.git/info/attributes")
+  H.git(root, "config", "filter.reject.clean", "false")
+  H.git(root, "config", "filter.reject.required", "true")
+  MiniTest.expect.error(function()
+    vim.cmd.write()
+  end, "git exited")
+  MiniTest.expect.equality(vim.bo.modified, true)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "unsaved conversion" })
+  MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), before)
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "index\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+end
 return T

@@ -14,7 +14,7 @@ scope, not proof of complete upstream parity.
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [ ] GinBranch, GinTag: parsed views and ref actions.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
-- [ ] GinEdit: revision and index buffers with write-back; working files via edit actions.
+- [x] GinEdit: revision and index buffers with write-back; working files via edit actions (functional scope audited below).
 - [ ] GinDiff: revision selection, read and diff navigation/folding.
 - [x] GinPatch: staging/unstaging partial changes (functional scope audited below).
 - [x] GinChaperon: conflict panes and resolution (functional scope audited below).
@@ -139,9 +139,10 @@ rename leaves the index. This differs from upstream's destination-only reset.
 Shared choice/repeat/help/alias dispatch and file edit/yank actions are now
 implemented. Their complete mapping and customization compatibility still needs
 an audit. GinEdit supports revision and index reads, addressed reads and index
-writes; binary/encoding edge cases and full upstream option parity remain to be
-verified. Index writes use hash-object/update-index with the existing file mode
-and clean filters, avoiding temporary replacement of working files.
+writes; its functional audit and tested encoding boundaries are recorded below.
+Full upstream option parity remains open. Index writes use hash-object/update-index
+with the existing file mode and clean filters, avoiding temporary replacement
+of working files.
 
 GinDiff now displays working-tree, cached and revision comparisons and backs the
 status diff actions. Jumps resolve working/index/revision targets, including the
@@ -3083,3 +3084,37 @@ bomb and UTF-16LE fileencoding enabled. Literal CR inside a line is preserved,
 separators are LF, and no final newline is added when endofline is off. The tests
 compare raw bytes and verify the working file is unchanged. The old encoder
 failed by adding a UTF-16LE BOM and converting the separator to CRLF.
+
+## GinEdit functional completion audit
+
+The pinned `denops/gin/command/edit/{main,command,edit,read,write,util}.ts`
+provide command dispatch, revision/index opening, addressed insertion and index
+write-back. The Lua routes are `plugin/gin-edit.lua` and `lua/gin/edit.lua`,
+with shared opening and decoding options in `lua/gin/buffer.lua`.
+
+| Functional scope | Exercised evidence |
+| --- | --- |
+| Revision and index reads | `tests/test_edit.lua` opens repository-relative paths from a subdirectory, checks immutable revision buffers and editable index buffers, and reads pinned upstream URI names with escaped roots/fragments. |
+| Index-only write-back | Real Git blob assertions distinguish HEAD, index and working content; executable mode survives a missing working file, and symlink mode/target remain intact. |
+| Filters and failure retention | Path-specific clean filters run for regular files and are bypassed for symlinks. Index-lock, required clean-filter and UCS-2 conversion failures preserve unsaved edits and existing index/working content. |
+| Addressed reads | Insertion positions, change marks, empty source/destination buffers, FileReadPost and explicit decoding overrides are checked without changing destination encoding options. |
+| Write completion | Successful writes clear modified and publish completion; eventignore suppression and a failing post-write hook have separate assertions. |
+| Data representation | Native Neovim comparisons cover mixed LF/CRLF, Mac embedded LF, Unicode byte order/BOM and binary write formatting. Embedded NUL, empty blobs and no-final-newline writes have dedicated cases. |
+| Consumers | Patch transfer tests persist selected hunks through the index buffer; Chaperon reads index stages. Shared edit actions cover working-file and revision targets in their existing functional audit. |
+
+The final failure fixture makes a required clean filter reject a changed buffer,
+then compares the entire staged-entry listing, original index blob, working
+file and still-modified buffer. This tests failure before index publication,
+complementing the existing index-lock failure after object hashing.
+
+The checked scope is functional, not byte-for-byte Denops parity. Upstream
+writes by temporarily replacing the working file and running git add; this port
+hashes and updates the index directly. Native Neovim end-of-line and binary
+write rules, unchanged working files, and retained unsaved edits on write
+failure are deliberate behavior choices. The Unicode codec rejects malformed
+or unrepresentable input; exhaustive encoding aliases, malformed-input
+replacement behavior and automatic encoding detection are not certified here.
+The broad command/options/API compatibility checklist remains open.
+
+Validation: all 41 GinEdit cases pass on minimum Neovim 0.10.0. `make check`
+and the integrated full suite pass (1,257 cases in 48 groups).
