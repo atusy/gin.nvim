@@ -2113,5 +2113,24 @@ both settings before changing the current buffer/window, window list, buffer
 contents, modified/diff flags, working file or index stages. Height is validated
 even when supplements are disabled, as in the pinned code. Existing supplement
 fixtures verify the normal three supporting views and a configured height.
-This does not establish complete configuration parity: mapping-disable setting
-types and the other command-specific options still require their own audit.
+This does not establish complete configuration parity. Mapping-disable setting
+types are covered below; other command-specific options remain under audit.
+
+## Patch and Chaperon mapping setting types
+
+The pinned implementation and help disagree on
+`gin_patch_disable_default_mappings` and
+`gin_chaperon_disable_default_mappings`: both command implementations assert
+`is.Boolean` with a false default, while the corresponding help entries document
+a default of 0. The Lua port retains its existing boolean/numeric flag support,
+including the documented 0/1 convention. This is an explicit compatibility
+extension over the pinned
+runtime assertion; it is not exact type-validation parity.
+
+Both layouts now reject strings, null and tables before opening or modifying
+panes. The shared mapping helper validates and captures the setting once per
+open. Six invalid-setting regressions preserve buffer/window state, working
+files and index entries. Eight valid-setting cases cover false, true, 0 and 1
+for both commands, checking the default key and executing the retained Plug
+action through real partial staging or conflict resolution. Existing numeric
+flags remain supported and the help now states the accepted setting types.

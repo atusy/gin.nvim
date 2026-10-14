@@ -233,6 +233,8 @@ Example: >lua
 <
 Set g:gin_{kind}_disable_default_mappings = 1 to disable default keys for status,
 branch, tag, log, reflog, stash, diff, buffer, blame, patch or chaperon.
+Patch and Chaperon accept boolean or numeric flags; other types are rejected
+before opening panes. Disabling default keys retains the <Plug> actions.
 
                                              *g:gin_difffold_prefixes*
 Customize fold labels with added, deleted, modified and renamed keys. Missing

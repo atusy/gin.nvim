@@ -49,6 +49,7 @@ function M.open(root, path, options)
     supplement_height = 10
   end
   assert(type(supplement_height) == "number", "g:gin_chaperon_supplement_height must be a number")
+  local disabled = mapping.disabled("chaperon")
   local edit = require("gin.edit")
   path = edit.path(root, path)
   local worktree = require("gin.buffer").open(root .. "/" .. path, options)
@@ -82,8 +83,6 @@ function M.open(root, path, options)
     vim.api.nvim_buf_set_lines(worktree, 0, -1, false, stripped)
   end
   mapping.reset(worktree)
-  local disabled = vim.g.gin_chaperon_disable_default_mappings
-  disabled = disabled ~= nil and disabled ~= false and disabled ~= 0
   if theirs then
     mapping.reset(theirs)
     mapping.bind(theirs, "diffput", "diffput", worktree, "dp", disabled)

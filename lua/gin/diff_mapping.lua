@@ -1,5 +1,15 @@
 local M = {}
 
+function M.disabled(kind)
+  local name = "gin_" .. kind .. "_disable_default_mappings"
+  local value = vim.g[name]
+  assert(
+    value == nil or type(value) == "boolean" or type(value) == "number",
+    "g:" .. name .. " must be a boolean or number"
+  )
+  return value ~= nil and value ~= false and value ~= 0
+end
+
 function M.reset(buf)
   local plugs = {}
   for _, name in ipairs({ "diffput", "diffget", "diffget-l", "diffget-r" }) do

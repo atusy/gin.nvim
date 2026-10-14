@@ -21,9 +21,47 @@ local T = MiniTest.new_set({
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(old_cwd)
       H.cleanup(root)
+      vim.g.gin_patch_disable_default_mappings = nil
     end,
   },
 })
+for _, value in ipairs({ false, true, 0, 1 }) do
+  T["mapping flag " .. tostring(value) .. " retains working Plug actions"] = function()
+    vim.g.gin_patch_disable_default_mappings = value
+    vim.cmd("GinPatch file")
+    local disabled = value == true or value == 1
+    MiniTest.expect.equality(vim.fn.maparg("dor", "n"), disabled and "" or "<Plug>(gin-diffget-r)")
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_feedkeys(
+      vim.api.nvim_replace_termcodes("<Plug>(gin-diffget-r)", true, false, true),
+      "mx",
+      false
+    )
+    vim.cmd.write()
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"):match("^[^\n]+"), "changed first")
+  end
+end
+for _, value in ipairs({ "true", vim.NIL, {} }) do
+  T["mapping configuration rejects " .. vim.inspect(value) .. " before opening panes"] = function()
+    vim.cmd.edit("file")
+    local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local index = H.git(root, "ls-files", "--stage")
+    local windows = vim.api.nvim_tabpage_list_wins(0)
+    vim.g.gin_patch_disable_default_mappings = value
+    MiniTest.expect.error(function()
+      vim.cmd("GinPatch file")
+    end, "g:gin_patch_disable_default_mappings must be a boolean or number")
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+    MiniTest.expect.equality(vim.api.nvim_get_current_win(), win)
+    MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), lines)
+    MiniTest.expect.equality(vim.bo[buf].modified, false)
+    MiniTest.expect.equality(vim.wo[win].diff, false)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), lines)
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+  end
+end
 T["GinPatch stages only the chosen hunk from a subdirectory"] = function()
   vim.cmd("GinPatch file")
   MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)

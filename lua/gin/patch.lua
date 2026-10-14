@@ -3,6 +3,7 @@ local mapping = require("gin.diff_mapping")
 
 function M.open(root, path, options)
   options = options or {}
+  local disabled = mapping.disabled("patch")
   local edit = require("gin.edit")
   path = edit.path(root, path)
   local index = edit.open(root, path, options)
@@ -34,8 +35,6 @@ function M.open(root, path, options)
   if worktree then
     mapping.reset(worktree)
   end
-  local disabled = vim.g.gin_patch_disable_default_mappings
-  disabled = disabled ~= nil and disabled ~= false and disabled ~= 0
   if head then
     mapping.bind(head, "diffput", "diffput", index, "dp", disabled)
     mapping.bind(index, "diffget-l", "diffget", head, "dol", disabled)
