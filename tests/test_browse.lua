@@ -181,6 +181,68 @@ for _, case in ipairs({
     MiniTest.expect.equality(H.git(root, "remote", "get-url", "origin"), remote .. "\n")
   end
 end
+for _, outcome in ipairs({ "success", "missing handler", "spawn failure" }) do
+  T["GinBrowse dispatches its URL through the native opener: " .. outcome] = function()
+    local open, system, executable = vim.ui.open, vim.system, vim.fn.executable
+    local urls, launches = {}, {}
+    local expected = "https://github.com/owner/repo/commit/" .. hash
+    vim.ui.open = function(url)
+      urls[#urls + 1] = url
+      if outcome == "missing handler" then
+        return nil, "browser handler unavailable"
+      end
+      return open(url)
+    end
+    vim.fn.executable = function(name)
+      if
+        vim.tbl_contains({ "xdg-open", "wslview", "rundll32", "explorer.exe", "lemonade" }, name)
+      then
+        return 1
+      end
+      return executable(name)
+    end
+    vim.system = function(command, options, callback)
+      if command[1] == "git" then
+        return system(command, options, callback)
+      end
+      launches[#launches + 1] = { command = command, options = options }
+      if outcome == "spawn failure" then
+        error("browser spawn failure", 0)
+      end
+      return {}
+    end
+    local ok, err = pcall(function()
+      local function browse()
+        vim.cmd("GinBrowse --commit ++yank=a HEAD")
+      end
+      if outcome == "success" then
+        browse()
+      else
+        MiniTest.expect.error(
+          browse,
+          outcome == "missing handler" and "browser handler unavailable" or "browser spawn failure"
+        )
+      end
+      MiniTest.expect.equality(urls, { expected })
+      MiniTest.expect.equality(vim.fn.getreg("a"), expected)
+      MiniTest.expect.equality(#launches, outcome == "missing handler" and 0 or 1)
+      if #launches > 0 then
+        local command = launches[1].command
+        MiniTest.expect.equality(command[#command], expected)
+        MiniTest.expect.equality(launches[1].options.detach, true)
+      end
+    end)
+    vim.ui.open, vim.system, vim.fn.executable = open, system, executable
+    assert(ok, err)
+  end
+end
+T["GinBrowse bare yank options use the unnamed register"] = function()
+  for _, option in ipairs({ "++yank", "++yank=" }) do
+    vim.fn.setreg('"', "unchanged")
+    vim.cmd("GinBrowse --home --no-browser " .. option)
+    MiniTest.expect.equality(vim.fn.getreg('"'), "https://github.com/owner/repo")
+  end
+end
 T["GinBrowse no-browser yanks a current-file URL with a range"] = function()
   vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/space # file.md"))
   vim.cmd("1,2GinBrowse --no-browser ++yank=a")

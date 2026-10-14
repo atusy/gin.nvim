@@ -19,7 +19,7 @@ scope, not proof of complete upstream parity.
 - [ ] GinPatch: staging/unstaging partial changes.
 - [ ] GinChaperon: conflict panes and resolution.
 - [ ] GinBlame: blame navigation, history and detail.
-- [ ] GinBrowse: remote URL generation and opening.
+- [x] GinBrowse: remote URL generation and opening (functional scope audited below).
 - [x] GinCd, GinLcd, GinTcd and worktree context.
 - [ ] Shared actions: choice, repeat, help, range handling and Plug mappings.
 - [ ] Editor/askpass proxies, commit/rebase integration.
@@ -2706,3 +2706,30 @@ the merge body, with remote HEAD pointing to trunk. Tests cover lookup from the
 topic commit, the GinBrowse command on the merge, and the history browse:pr:yank
 action for GitHub, GitLab and an aliased host. Missing-request errors are checked
 for both supported request providers and the unsupported Bitbucket route.
+
+
+## Browse functional-scope completion audit
+
+The pinned browse dispatcher and command wrapper are accounted for by the Lua
+command and action handlers. The functional checklist is now complete:
+
+| Public behavior | Current evidence |
+| --- | --- |
+| Revision/path selection, Ex ranges and repository/worktree options | Real file, directory, revision and status/history action fixtures; zero address and path-suffix cases |
+| home, commit, permalink and request routes | GitHub/GitLab/Bitbucket routes, real merge ancestry and GitLab aliases; unsupported/missing-request errors |
+| Remote selection and aliases | Containment/ancestry and origin preference, explicit remote, validated alias dictionaries |
+| Argument handling | Shared flag grammar, separator/literal paths, repeated remote rejection; default/persistent settings audit |
+| Copy and no-browser output | Named registers, bare yank forms, current-file range URLs and action variants |
+| Open dispatch and errors | Native vim.ui.open reaches vim.system with the generated URL; missing-handler and spawn errors propagate after the requested yank |
+
+The open tests replace only the process launch while exercising the native
+opener, and simulate opener availability for portability. They do not launch an
+external browser or prove OS application registration. Removing the plugin's
+open call makes all three dispatch cases fail. Bare ++yank and ++yank= are also
+verified to populate the unnamed register.
+
+Compatibility boundaries remain explicit: native Neovim opening replaces
+systemopen; request lookup uses git-browse 1.1.6 and local remote HEAD/main;
+nested GitLab repository paths and literal filename handling retain the Lua
+implementation's extensions. The URL tests establish the supported remote forms,
+not complete WHATWG canonicalization. Other migration checklist items remain open.
