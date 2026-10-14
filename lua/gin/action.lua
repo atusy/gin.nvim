@@ -68,8 +68,8 @@ function M.define(buf, name, callback)
 end
 
 function M.alias(buf, name, target)
-  M.define(buf, name, function(_, range)
-    return M.call(buf, target, range)
+  M.define(buf, name, function(_, range, from_mapping)
+    return M.call(buf, target, range, from_mapping)
   end)
   vim.keymap.set(
     { "n", "x", "s", "o" },
@@ -130,7 +130,7 @@ function M.help(buf, reduced)
   return table.concat(lines, "\n")
 end
 
-function M.call(buf, name, range)
+function M.call(buf, name, range, from_mapping)
   if vim.api.nvim_get_current_buf() ~= buf then
     local windows = vim.fn.win_findbuf(buf)
     if #windows > 0 then
@@ -156,13 +156,13 @@ function M.call(buf, name, range)
   local ok, result = pcall(function()
     local entry = actions[buf] and actions[buf][name]
     if entry and mapping.callback == entry.dispatch then
-      return entry.callback(buf, vim.deepcopy(range))
+      return entry.callback(buf, vim.deepcopy(range), from_mapping)
     elseif mapping.callback and mapping.expr == 0 then
       return mapping.callback()
     end
     local target = (mapping.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$")
     if target and mapping.expr == 0 then
-      return M.call(buf, target, range)
+      return M.call(buf, target, range, from_mapping)
     end
     vim.api.nvim_feedkeys(
       vim.api.nvim_replace_termcodes(plug .. "<Ignore>", true, false, true),
@@ -226,7 +226,7 @@ function M.setup(buf, gather, target_field, echo_gather)
         end
         local function invoke()
           vim.b[target].denops_action_previous = name
-          return M.call(target, name, range)
+          return M.call(target, name, range, from_mapping)
         end
         -- Input providers may complete after the mapping callback has returned.
         if from_mapping then
@@ -242,14 +242,14 @@ function M.setup(buf, gather, target_field, echo_gather)
       vim.api.nvim_echo({ { M.help(target, name == "help"), "None" } }, false, {})
     end)
   end
-  M.define(buf, "repeat", function(target, range)
+  M.define(buf, "repeat", function(target, range, from_mapping)
     local name = vim.b[target].denops_action_previous
     if not name or name == vim.NIL or name == 0 or name == "" then
       vim.api.nvim_echo({ { "[gin] Nothing to repeat", "None" } }, false, {})
       return
     end
     assert(type(name) == "string", "b:denops_action_previous must be a string")
-    M.call(target, name, range)
+    M.call(target, name, range, from_mapping)
   end)
 end
 

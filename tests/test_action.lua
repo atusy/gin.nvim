@@ -457,4 +457,43 @@ for _, name in ipairs({ "echo", "help", "help:all" }) do
     vim.g.gin_action_output = nil
   end
 end
+for _, choice in ipairs({ "choice", "choice-alias" }) do
+  T["repeating " .. choice .. " preserves its deferred error boundary"] = function()
+    local action = require("gin.action")
+    local buf = vim.api.nvim_get_current_buf()
+    action.setup(buf)
+    local ranges, completed = {}, nil
+    action.define(buf, "failure", function(_, range)
+      ranges[#ranges + 1] = range
+      error("chosen action failed", 0)
+    end)
+    local input = vim.ui.input
+    vim.ui.input = function(_, callback)
+      completed = callback
+    end
+    local echo, messages = vim.api.nvim_echo, {}
+    vim.api.nvim_echo = function(chunks, history)
+      messages[#messages + 1] = { chunks, history }
+    end
+    local ok, err = pcall(function()
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "one", "two", "three" })
+      vim.api.nvim_win_set_cursor(0, { 2, 0 })
+      action.alias(buf, "choice-alias", "choice")
+      vim.b.denops_action_previous = choice
+      vim.fn.maparg("<Plug>(gin-action-repeat)", "n", false, true).callback()
+      vim.api.nvim_win_set_cursor(0, { 3, 0 })
+      completed("failure")
+      vim.fn.maparg("<Plug>(gin-action-repeat)", "n", false, true).callback()
+    end)
+    vim.ui.input, vim.api.nvim_echo = input, echo
+    assert(ok, err)
+    MiniTest.expect.equality(ranges, { { 2, 2 }, { 3, 3 } })
+    MiniTest.expect.equality(messages, {
+      { { { "[gin]: chosen action failed", "ErrorMsg" } }, false },
+      { { { "[gin]: chosen action failed", "ErrorMsg" } }, false },
+    })
+    MiniTest.expect.equality(vim.b.denops_action_previous, "failure")
+    MiniTest.expect.equality(action.range(), { 3, 3 })
+  end
+end
 return T
