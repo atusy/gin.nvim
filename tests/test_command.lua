@@ -651,4 +651,46 @@ for _, wait in ipairs({ false, true }) do
     MiniTest.expect.equality(events, 0)
   end
 end
+T["final command display formats NUL and trailing newline as a Blob"] = function()
+  local echo, displayed = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    displayed = chunks[1][1]
+  end
+  local ok, err = pcall(
+    require("gin.command").finish,
+    { code = 0, stdout = "A\0\nB\n", stderr = "" },
+    { eventignore_all = true },
+    {}
+  )
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  assert(displayed == "0z41000A42.0A", "Unexpected final display: " .. vim.inspect(displayed))
+end
+for _, case in ipairs({
+  { "single NUL", "\0", nil, "0z00" },
+  { "ANSI", "\27[31mA\0B\27[0m\n", nil, "0z4100420A" },
+  { "DOS", "A\0\r\nB\r\n", "dos", "0z41000A42.0A" },
+  { "Mac", "A\0\rB\r", "mac", "0z41000A42.0A" },
+  { "Unix", "A\0\r\nB\r\n", "unix", "0z41000D0A.420D0A" },
+  { "BOM", "\239\187\191A\0B\n", nil, "0z4100420A" },
+  { "Japanese", "日\0本\n", nil, "0zE697A500.E69CAC0A" },
+}) do
+  T["final NUL display normalizes " .. case[1] .. " before Blob conversion"] = function()
+    local echo, displayed = vim.api.nvim_echo, nil
+    vim.api.nvim_echo = function(chunks)
+      displayed = chunks[1][1]
+    end
+    local result = { code = 0, stdout = case[2], stderr = "" }
+    local ok, returned = pcall(
+      require("gin.command").finish,
+      result,
+      { ff = case[3], eventignore_all = true },
+      {}
+    )
+    vim.api.nvim_echo = echo
+    assert(ok, returned)
+    assert(displayed == case[4], "Unexpected final display: " .. vim.inspect(displayed))
+    assert(returned == result and returned.stdout == case[2], "Raw result was changed")
+  end
+end
 return T

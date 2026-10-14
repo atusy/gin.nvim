@@ -4113,3 +4113,44 @@ Mac and Unix separators. For example `A\0\r\nB\r\n` becomes
 a leading UTF-8 BOM disappear before Blob conversion; trailing normalized LF
 remains in the Blob. Reference results are in
 `/tmp/gin-command-nul-expanded-upstream.json`.
+
+## Final command NUL display
+
+Final command output now converts NUL-containing messages to Vim Blob notation
+after decoding, fileformat normalization and ANSI removal, before ordinary
+trailing-newline display trimming. The initial regression exposed literal NUL
+and a missing final LF instead of `0z41000A42.0A`. Raw process result objects and
+bytes remain unchanged. Mini.test cases cover a single NUL, ANSI, UTF-8 BOM,
+Japanese characters and DOS/Mac/Unix normalization against captured upstream
+results. Assertions avoid mini.test's Blob-as-String diagnostic limitation.
+
+All 89 command/indicator tests pass on Neovim 0.10.0. Twenty complete live command
+displays, including progress and final output, match the pinned upstream.
+Formatting and diff checks pass. The full suite passes 4,574 cases across
+59 groups (`/tmp/gin-command-nul-full.log`).
+
+## Bare Gin functional audit ledger
+
+Pinned entrypoints are `plugin/gin.vim`, `command/bare/{main,command}.ts`,
+`util/cmd.ts`, `git/executor.ts` and `util/indicator_stream.ts`.
+
+| Behavior | Current evidence |
+| --- | --- |
+| Arbitrary Git commands, async/default and ++wait | `test_command.lua` stages real files and checks index paths and completion events in both routes. |
+| Argument expansion and ++ option parsing | Current/alternate filename helpers, separators produced by expansion, literal plus-prefixed paths, duplicate options, bare wait removal and ECMAScript line terminators have fixtures. |
+| Decode combined stdout/stderr, normalize newlines, remove ANSI | Command tests and live malformed-encoding/NUL matrices exercise the final-output route and raw-result retention. |
+| Progress lifecycle | Indicator suites cover stream boundaries, concurrent settings restoration, backend failures, public wrappers and NUL Blob notation. |
+| Completion notifications | Command tests cover coalescing, eventignore at dispatch and no success event after Git, processor, backend or decoding errors. |
+| Editor/askpass handling during waits | Proxy/editor interaction tests exercise keyboard-driven commit/rebase and credentials. |
+| Postprocessors | Lua accepts ++processor on bare Gin as an extension; pinned bare main.ts does not accept it, although GinBuffer/GinDiff do. Shared processor execution is separately covered. |
+
+A six-case live modifier probe shows a remaining user-facing mismatch. Pinned
+`silent Gin ++wait` still displays progress and suppresses the final success
+message; `silent!` also suppresses the friendly final error but still has
+progress. Lua suppresses all progress for both silent forms. Pinned normal and
+silent failures return through friendlyCall, whereas Lua ++wait raises an
+exception. Both implementations emit one completion event on success and none
+on failure. Redirection also captures Lua's suppressed exception text under
+silent!, so redirection output is not by itself proof of visible UI output.
+The modifier/error contract remains open; the bare-command checklist is not yet
+closed. Evidence: `/tmp/gin-command-modifiers-{upstream,lua}.json`.

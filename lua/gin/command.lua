@@ -215,6 +215,9 @@ function M.finish(result, options, mods)
     output = output:gsub("\r\n", "\n")
   end
   output = require("gin.csi").strip(output)
+  if output:find("\0", 1, true) then
+    output = vim.fn.string(output)
+  end
   if output ~= "" and not mods.silent then
     vim.api.nvim_echo({ { output:gsub("\n$", ""), "None" } }, true, {})
   end
