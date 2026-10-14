@@ -3106,5 +3106,153 @@
         ]
       ]
     }
+  },
+  {
+    "name": "quantifier-without-atom",
+    "pattern": "{1}",
+    "input": "",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-without-atom-reversed",
+    "pattern": "{2,1}",
+    "input": "",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-without-atom-after-quantifier",
+    "pattern": "a{1}{2}",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-without-atom-after-alternative",
+    "pattern": "(a|{2})",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-without-atom-open-upper",
+    "pattern": "{1,}",
+    "input": "",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-without-atom-range",
+    "pattern": "{1,2}",
+    "input": "",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "quantifier-incomplete-literal",
+    "pattern": "^({1)$",
+    "input": "{1",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          123,
+          49
+        ],
+        [
+          123,
+          49
+        ]
+      ]
+    }
+  },
+  {
+    "name": "quantifier-missing-minimum-literal",
+    "pattern": "^({,2})$",
+    "input": "{,2}",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          123,
+          44,
+          50,
+          125
+        ],
+        [
+          123,
+          44,
+          50,
+          125
+        ]
+      ]
+    }
+  },
+  {
+    "name": "quantifier-nondigit-literal",
+    "pattern": "^({x})$",
+    "input": "{x}",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          123,
+          120,
+          125
+        ],
+        [
+          123,
+          120,
+          125
+        ]
+      ]
+    }
+  },
+  {
+    "name": "quantifier-escaped-literal",
+    "pattern": "^(\\{1})$",
+    "input": "{1}",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          123,
+          49,
+          125
+        ],
+        [
+          123,
+          49,
+          125
+        ]
+      ]
+    }
+  },
+  {
+    "name": "quantifier-class-literal",
+    "pattern": "^([{1}]+)$",
+    "input": "{1}",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          123,
+          49,
+          125
+        ],
+        [
+          123,
+          49,
+          125
+        ]
+      ]
+    }
   }
 ]

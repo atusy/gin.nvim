@@ -210,6 +210,17 @@ const cases = [
   ['modifiers-unsupported-invalid', String.raw`(?u:a)`, 'a'],
   ['modifiers-missing-colon-invalid', String.raw`(?ia)`, 'a'],
   ['modifiers-add-remove-nested', String.raw`^(?is:a.(?m-is:^b$).c)$`, 'A\nb\nC'],
+  ['quantifier-without-atom', '{1}', ''],
+  ['quantifier-without-atom-reversed', '{2,1}', ''],
+  ['quantifier-without-atom-after-quantifier', 'a{1}{2}', 'a'],
+  ['quantifier-without-atom-after-alternative', '(a|{2})', 'a'],
+  ['quantifier-without-atom-open-upper', '{1,}', ''],
+  ['quantifier-without-atom-range', '{1,2}', ''],
+  ['quantifier-incomplete-literal', '^({1)$', '{1'],
+  ['quantifier-missing-minimum-literal', '^({,2})$', '{,2}'],
+  ['quantifier-nondigit-literal', '^({x})$', '{x}'],
+  ['quantifier-escaped-literal', String.raw`^(\{1})$`, '{1}'],
+  ['quantifier-class-literal', '^([{1}]+)$', '{1}'],
 ];
 const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
 const records = cases.map(([name, pattern, input]) => {

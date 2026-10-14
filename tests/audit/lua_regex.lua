@@ -390,6 +390,21 @@ function M.compile(pattern)
         direction = direction,
       }
     end
+    if peek() == "{" then
+      local after = cursor + 1
+      while ascii(source[after]):match("^[0-9]$") do
+        after = after + 1
+      end
+      if after > cursor + 1 then
+        if ascii(source[after]) == "," then
+          after = after + 1
+          while ascii(source[after]):match("^[0-9]$") do
+            after = after + 1
+          end
+        end
+        assert(ascii(source[after]) ~= "}", "Invalid regular expression: quantifier without atom")
+      end
+    end
     assert(
       source[cursor] and not peek():match("^[*+?)]$"),
       "Invalid regular expression: unexpected token"

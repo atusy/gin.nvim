@@ -1513,3 +1513,12 @@ backreference comparison uses a reproducible Unicode 17.0 non-Unicode
 canonicalization table, while multiline anchors and dot-all apply locally.
 Forty-seven added Node-oracle cases bring the corpus to 206. Broad differential
 validation, resource/encoding limits and production integration remain open.
+
+A deterministic optional Node/mini.nvim differential audit now compares 1,248
+short patterns across 22,470 cases. Its first run found three orphan braced
+quantifiers accepted as literals by the candidate. The compiler now rejects
+complete quantifiers without an atom while retaining malformed/escaped/class
+braces as literals. Eleven permanent oracle cases bring the normal corpus to
+217, and all generated comparisons pass. The audit checks process termination
+and a complete result report; it does not establish resource limits or full
+compatibility, and no production parser uses the candidate yet.

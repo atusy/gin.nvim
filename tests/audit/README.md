@@ -55,7 +55,7 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-206-case corpus passes, including the initial cases that reject the C candidate
+217-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
 references), class context, octal digit limits and quantifier binding on
@@ -114,3 +114,24 @@ node scripts/regex-casefold.mjs --check
 The modifier cases include nested enable/disable scopes, lookaround, repetitions,
 Unicode case exceptions, negated classes, line terminators and invalid syntax.
 This still does not establish complete grammar or resource compatibility.
+
+## Generated differential audit
+
+From the repository root, run `node scripts/regex-differential.mjs`. Set
+`GIN_REGEX_NVIM` to test a different Neovim binary. Node builds a deterministic
+corpus of 1,248 short patterns and 22,470 comparisons covering combinations of
+repetition, alternatives, captures, backreferences, assertions, classes and
+selected malformed syntax. Invalid patterns count as one compilation comparison;
+valid patterns are matched against 19 short inputs.
+
+A separate Neovim process runs the optional mini.nvim audit, with a 60-second
+process timeout. Signals, errors, nonzero exit codes and missing/incomplete
+result reports fail. Fixtures and complete mismatch reports remain in the
+printed temporary directory; stderr is retained in the output. The runner also
+rejects a zero-exit process that did not produce a completion report.
+
+The initial audit exposed three accepted orphan-quantifier patterns (`{1}`,
+`{2,1}`, `a{1}{2}`) that JavaScript rejects. These were fixed and added to the
+normal regression corpus alongside literal-brace controls. All generated
+comparisons now pass. This finite grammar and short-input audit does not measure
+large-input behavior, resource bounds or full ECMAScript compatibility.
