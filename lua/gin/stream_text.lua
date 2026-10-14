@@ -7,7 +7,7 @@ function M.decoder()
     if data == nil then
       local tail = pending ~= "" and pending:byte() ~= 27 and "�" or ""
       pending = ""
-      return tail
+      return tail, tail ~= ""
     end
     local text = pending .. data
     pending = ""
@@ -29,7 +29,8 @@ function M.decoder()
     if width and #text - start + 1 < width then
       pending, text = text:sub(start) .. pending, text:sub(1, start - 1)
     end
-    return csi.strip(text)
+    -- A complete control sequence is output even when stripping leaves no text.
+    return csi.strip(text), text ~= ""
   end
 end
 

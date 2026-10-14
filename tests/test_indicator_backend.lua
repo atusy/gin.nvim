@@ -77,6 +77,27 @@ T["custom indicators receive whitespace chunks as an empty line"] = function()
   MiniTest.expect.equality(events[3], { "close", events[1][2] })
 end
 
+T["custom indicators receive completed ANSI-only output without EOF writes"] = function()
+  local sequence = "\27[31m"
+  for split = 1, #sequence do
+    vim.cmd("let g:gin_test_indicator_events = []")
+    local stream = require("gin.indicator").stream("gin_test")
+    stream.write(nil, sequence:sub(1, split))
+    H.drain()
+    MiniTest.expect.equality(#vim.g.gin_test_indicator_events, split == #sequence and 2 or 1)
+    if split < #sequence then
+      stream.write(nil, sequence:sub(split + 1))
+    end
+    stream.write(nil, nil)
+    H.drain()
+    stream.close()
+    local events = vim.g.gin_test_indicator_events
+    MiniTest.expect.equality(#events, 3)
+    MiniTest.expect.equality(events[2], { "write", events[1][2], { "" } })
+    MiniTest.expect.equality(events[3], { "close", events[1][2] })
+  end
+end
+
 for _, failure in ipairs({ "write", "close" }) do
   T["backend " .. failure .. " failures close both channels and reach the caller"] = function()
     vim.g.gin_test_indicator_failure = failure

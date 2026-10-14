@@ -1572,3 +1572,11 @@ empty line, as the pinned `IndicatorStream` does after trimming. The regression
 uses a real Git alias and checks raw captured output plus open/write/close
 notifications; EOF does not add a write notification. This check does not cover
 all chunk-boundary or decoder differences from the upstream TextDecoder.
+
+Custom indicator output also distinguishes a completed ANSI-only sequence from
+an incomplete decoder fragment. Complete sequences notify the backend with an
+empty line after stripping, while partial fragments wait for completion and EOF
+does not produce an extra notification. A deterministic mini.test exercises
+every byte split of an SGR sequence. Incremental decoding remains intentional:
+the pinned TextDecoder decodes each input chunk independently, so this is not a
+claim of identical notifications for arbitrary upstream chunk boundaries.
