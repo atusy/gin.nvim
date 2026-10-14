@@ -20,7 +20,7 @@ function M.open(options)
     end
     vim.o.cmdheight = math.max(vim.o.cmdheight, math.min(#lines, math.max(1, vim.o.lines - 1)))
     vim.cmd.redraw()
-    vim.api.nvim_echo({ { table.concat(lines, "\n"), "None" } }, false, {})
+    vim.api.nvim_echo({ { vim.fn.join(lines, "\n"), "None" } }, false, {})
     generation = generation + 1
     local version = generation
     vim.defer_fn(function()

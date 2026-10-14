@@ -169,4 +169,10 @@ T["legacy and native indicators share the original display settings"] = function
   vim.o.more, vim.o.cmdheight = more, height
   assert(ok, err)
 end
+T["progress displays NUL-containing lines using Vim Blob notation"] = function()
+  local output = capture(function(indicator)
+    indicator.write_lines({ "A\0", "plain", "\0�A\0" })
+  end)
+  MiniTest.expect.equality(output, { "0z4100\nplain\n0z00EFBFBD.4100" })
+end
 return T

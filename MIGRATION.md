@@ -4079,3 +4079,37 @@ representation without changing stream bytes or custom callback payloads.
 This fix remains to be applied after the current command-decoding validation.
 Evidence: `/tmp/gin-indicator-encoding-matrix-upstream.json` and a headless
 `vim.fn.join` probe yielding the same Blob representations.
+
+## Echo indicator NUL display
+
+The built-in echo indicator now joins lines with Vim's join, matching the pinned
+backend's Blob formatting for NUL-containing strings. The initial mini.test
+regression compared `A\0` and a longer NUL/replacement-character line against
+`0z4100` and `0z00EFBFBD.4100`, and failed before the change. Ordinary lines remain
+plain text. Raw process bytes, UTF-8 progress decoding and custom indicator
+callbacks are unchanged.
+
+The complete eleven-case command display probe now agrees with the pinned
+upstream including the formerly different UTF-16 progress text. All 81 command
+and indicator tests pass on Neovim 0.10.0; formatting and diff checks pass.
+The full suite passes 4,566 cases across 59 groups
+(`/tmp/gin-indicator-nul-full.log`).
+
+### Remaining NUL final-display difference
+
+An added live `Gin ++wait` probe with UTF-8 bytes `41 00 42` confirms that the
+pinned final echo also receives a Blob and renders `0z410042`; Lua still renders
+`A^@B`. For `41 00 0A 42 0A`, upstream renders the entire final message as
+`0z41000A42.0A`, including its trailing line ending. The progress indicator
+formats each split line separately, and that portion now agrees. Final-output
+handling must therefore stringify the complete NUL-containing message before
+any ordinary trailing-newline display trimming. This remains a separate fix
+following indicator validation. Evidence: `/tmp/gin-command-nul-matrix-*.json`.
+
+The expanded final-NUL probe confirms normalization order for single NUL,
+ANSI-colored NUL content, leading UTF-8 BOM, Japanese text, and explicit DOS,
+Mac and Unix separators. For example `A\0\r\nB\r\n` becomes
+`0z41000A42.0A` under DOS but `0z41000D0A.420D0A` under Unix. ANSI decoration and
+a leading UTF-8 BOM disappear before Blob conversion; trailing normalized LF
+remains in the Blob. Reference results are in
+`/tmp/gin-command-nul-expanded-upstream.json`.
