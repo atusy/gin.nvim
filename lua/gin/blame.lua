@@ -58,7 +58,7 @@ end
 -- Use line porcelain so filename/previous metadata belongs to each line,
 -- including when the same commit contributed lines from different paths.
 function M.parse(output)
-  local result = { commits = {}, lines = {} }
+  local result = { commits = vim.empty_dict(), lines = {} }
   local group_sizes = {}
   local entry, metadata
   for line in (output .. "\n"):gmatch("([^\n]*)\n") do
@@ -153,7 +153,7 @@ function M.update_detail(buf, lnum)
     return
   end
   local parsed = parse_name(vim.api.nvim_buf_get_name(buf))
-  local line = (vim.b[buf].gin_blame_line_map or {})[lnum]
+  local line = (vim.b[buf].gin_blame_line_map or {})[tostring(lnum)]
   local commit = lnum == 1 and (parsed.params.commitish or "HEAD")
     or (type(line) == "table" and line.commitSha)
   if not commit or vim.b[detail].gin_blame_detail_last_commit == commit then
@@ -190,7 +190,8 @@ function M.read(buf, name, output)
       line.content = line.content:gsub("\r$", "")
     end
   end
-  local content, navlines, map, reverse, dividers = {}, {}, {}, {}, {}
+  local content, navlines, dividers = {}, {}, {}
+  local map, reverse = vim.empty_dict(), vim.empty_dict()
   local previous
   local width = #tostring(#result.lines)
   for _, line in ipairs(result.lines) do
@@ -207,7 +208,7 @@ function M.read(buf, name, output)
         .. emojify(line.metadata.summary, parsed.params)
     end
     content[#content + 1], navlines[#navlines + 1] = line.content, label
-    map[#content], reverse[line.lineNumber] = line, #content
+    map[tostring(#content)], reverse[tostring(line.lineNumber)] = line, #content
     previous = line.commitSha
   end
   local signs = { [buf] = vim.fn.sign_getplaced(buf, { group = "*" })[1].signs }
@@ -357,7 +358,8 @@ local function visit(current, parsed, revision, path, position, source_line)
   end
   vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
   M.read(file, vim.api.nvim_buf_get_name(file), output)
-  local physical = source_line and (vim.b[file].gin_blame_file_line_to_physical[position] or 1)
+  local physical = source_line
+      and (vim.b[file].gin_blame_file_line_to_physical[tostring(position)] or 1)
     or position
   physical = math.min(physical, vim.api.nvim_buf_line_count(file))
   for _, buf in ipairs({ file, nav }) do
@@ -379,7 +381,7 @@ end
 function M.switch_commit()
   local current = vim.api.nvim_get_current_buf()
   local row = vim.api.nvim_win_get_cursor(0)[1]
-  local line = (vim.b[current].gin_blame_line_map or {})[row]
+  local line = (vim.b[current].gin_blame_line_map or {})[tostring(row)]
   if type(line) ~= "table" then
     return
   end

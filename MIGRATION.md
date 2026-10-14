@@ -2315,3 +2315,21 @@ on the old flat author string before the fix. Existing encoded-author and rename
 fixtures continue exercising per-line metadata. This resolves the shared record
 shape difference noted above; Lua's additional per-line metadata remains an
 extension, and complete result parity is not claimed for malformed porcelain.
+
+## Blame dictionary types and empty files
+
+Blame's commit dictionary and its physical-line/source-line lookup dictionaries
+now remain Vim dictionaries, including when empty. The old Lua tables serialized
+as lists; nonempty lookup tables also used numeric Lua indices and introduced
+list slots for divider lines. The pinned implementation uses record keys, so the
+Lua buffer dictionaries now use decimal string keys and omit divider entries.
+Detail lookup, commit selection and cursor restoration convert their numeric
+line numbers at this boundary. Lua consumers of these buffer variables should
+likewise use string keys; Vimscript dictionary indexing accepts line numbers.
+
+Two real Git fixtures assert `v:t_dict` for all three dictionaries and `v:t_list`
+for result lines in both panes. The populated case checks the exact physical keys
+and reverse mapping; the committed empty-file case checks empty dictionaries,
+an empty line array and blank displayed buffers. Both tests failed with list
+rather than dictionary types before the fix. Existing navigation, detail,
+encoding, rename and pane-restoration tests run against the corrected keys.

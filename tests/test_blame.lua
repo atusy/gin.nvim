@@ -29,6 +29,49 @@ local T = MiniTest.new_set({
     end,
   },
 })
+for _, empty in ipairs({ false, true }) do
+  T["blame preserves dictionary types for " .. (empty and "empty" or "populated") .. " files"] = function()
+    local path = "file.lua"
+    if empty then
+      path = "empty.txt"
+      vim.fn.writefile({}, root .. "/sub/" .. path)
+      H.git(root, "add", "sub/" .. path)
+      H.git(root, "commit", "-m", "empty file")
+    end
+    vim.cmd("GinBlame " .. path)
+    for _, buf in ipairs({ vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr }) do
+      vim.api.nvim_buf_call(buf, function()
+        for _, expr in ipairs({
+          "gin_blame_result.commits",
+          "gin_blame_line_map",
+          "gin_blame_file_line_to_physical",
+        }) do
+          MiniTest.expect.equality(vim.fn.eval("type(b:" .. expr .. ")"), vim.fn.eval("v:t_dict"))
+        end
+        MiniTest.expect.equality(
+          vim.fn.eval("type(b:gin_blame_result.lines)"),
+          vim.fn.eval("v:t_list")
+        )
+      end)
+      if empty then
+        MiniTest.expect.equality(vim.b[buf].gin_blame_result.lines, {})
+        MiniTest.expect.equality(vim.b[buf].gin_blame_result.commits, vim.empty_dict())
+        MiniTest.expect.equality(vim.b[buf].gin_blame_line_map, vim.empty_dict())
+        MiniTest.expect.equality(vim.b[buf].gin_blame_file_line_to_physical, vim.empty_dict())
+        MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), { "" })
+      else
+        MiniTest.expect.equality(
+          vim.fn.sort(vim.tbl_keys(vim.b[buf].gin_blame_line_map)),
+          { "2", "4", "6" }
+        )
+        MiniTest.expect.equality(
+          vim.b[buf].gin_blame_file_line_to_physical,
+          { ["1"] = 2, ["2"] = 4, ["3"] = 6 }
+        )
+      end
+    end
+  end
+end
 T["blame exposes structured commit metadata in both panes"] = function()
   vim.cmd("GinBlame file.lua")
   local person = { name = "Gin Test", email = "gin@example.invalid", time = vim.NIL }
@@ -52,7 +95,7 @@ T["blame exposes structured commit metadata in both panes"] = function()
   }
   for _, buf in ipairs({ vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr }) do
     MiniTest.expect.equality(vim.b[buf].gin_blame_result.commits, commits)
-    MiniTest.expect.equality(vim.b[buf].gin_blame_line_map[4].metadata.author, "Gin Test")
+    MiniTest.expect.equality(vim.b[buf].gin_blame_line_map["4"].metadata.author, "Gin Test")
   end
 end
 T["blame lines retain group sizes when continuation headers omit them"] = function()
@@ -145,14 +188,17 @@ T["blame opens synchronized attribution and committed content from a subdirector
   MiniTest.expect.equality(lines, { "", "one", "", "changed", "", "three" })
   local map = vim.b[nav].gin_blame_line_map
   MiniTest.expect.equality(
-    { map[2].commitSha, map[4].commitSha, map[6].commitSha },
+    { map["2"].commitSha, map["4"].commitSha, map["6"].commitSha },
     { first, second, first }
   )
   MiniTest.expect.equality(
-    { map[2].originalLineNumber, map[4].lineNumber, map[6].originalLineNumber },
+    { map["2"].originalLineNumber, map["4"].lineNumber, map["6"].originalLineNumber },
     { 1, 2, 3 }
   )
-  MiniTest.expect.equality(vim.b[file].gin_blame_file_line_to_physical, { 2, 4, 6 })
+  MiniTest.expect.equality(
+    vim.b[file].gin_blame_file_line_to_physical,
+    { ["1"] = 2, ["2"] = 4, ["3"] = 6 }
+  )
   MiniTest.expect.equality(vim.bo[file].filetype, "lua.gin-blame")
   MiniTest.expect.equality(vim.bo[file].modifiable, false)
   for _, buf in ipairs({ nav, file }) do
@@ -299,7 +345,7 @@ T["legacy blame paths survive reload and history navigation"] = function()
       vim.api.nvim_buf_get_lines(file, 0, -1, false),
       { "", "one", "", "changed", "", "three" }
     )
-    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[4].commitSha, second)
+    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["4"].commitSha, second)
     local lines = vim.api.nvim_buf_get_lines(detail, 0, -1, false)
     MiniTest.expect.equality(lines[1], "commit " .. revision)
     MiniTest.expect.equality(table.concat(lines, "\n"):find("✨ rename", 1, true) ~= nil, true)
@@ -402,7 +448,7 @@ T["reloading either blame pane updates the existing three windows"] = function()
       vim.api.nvim_buf_get_lines(file, 0, -1, false),
       { "", "version " .. i }
     )
-    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[2].commitSha, commit)
+    MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["2"].commitSha, commit)
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(detail, 0, 1, false),
       { "commit " .. commit }
@@ -473,7 +519,7 @@ T["navigation reload restores a hidden paired file"] = function()
   MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufnr, file)
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(file), name)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), { "", "restored" })
-  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[2].commitSha, commit)
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["2"].commitSha, commit)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. commit })
   for _, target in ipairs({ nav, file }) do
     MiniTest.expect.equality(vim.wo[vim.fn.bufwinid(target)].winfixbuf, true)
@@ -505,7 +551,7 @@ T["legacy navigation reload resolves its paired file by name"] = function()
     vim.api.nvim_buf_get_lines(file, 0, -1, false),
     { "", "one", "two", "three" }
   )
-  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[3].commitSha, first)
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["3"].commitSha, first)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. first })
   MiniTest.expect.equality({
     vim.b[nav].gin_blame_file_bufnr,
@@ -547,7 +593,7 @@ T["navigation reload uses its revision rather than the paired file URI"] = funct
     vim.api.nvim_buf_get_lines(file, 0, -1, false),
     { "", "one", "", "changed", "", "three" }
   )
-  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[4].commitSha, second)
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["4"].commitSha, second)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. second })
 end
 T["navigation reload uses the stored file fragment"] = function()
@@ -569,7 +615,7 @@ T["navigation reload uses the stored file fragment"] = function()
   local restored = vim.b[file].gin_blame_nav_bufnr
   MiniTest.expect.equality(vim.api.nvim_buf_get_name(restored), name)
   MiniTest.expect.equality(vim.b[restored].gin_blame_file_fragment, "sub/file.lua")
-  MiniTest.expect.equality(vim.b[restored].gin_blame_line_map[4].commitSha, second)
+  MiniTest.expect.equality(vim.b[restored].gin_blame_line_map["4"].commitSha, second)
 end
 T["navigation reload rejects missing stored context"] = function()
   vim.cmd("GinBlame file.lua")
@@ -621,7 +667,7 @@ T["legacy navigation recreates a missing file buffer"] = function()
     vim.api.nvim_buf_get_lines(file, 0, -1, false),
     { "", "one", "two", "three" }
   )
-  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[3].commitSha, first)
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map["3"].commitSha, first)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. first })
   MiniTest.expect.equality({
     vim.b[nav].gin_blame_file_bufnr,
@@ -871,7 +917,7 @@ T["blame retains encoding and fileformat options through reload and history"] = 
   vim.cmd("GinBlame ++enc=latin1 ++ff=dos file.lua")
   local file = vim.b.gin_blame_file_bufnr
   local function check()
-    MiniTest.expect.equality(vim.b[file].gin_blame_line_map[2].metadata.author, "José")
+    MiniTest.expect.equality(vim.b[file].gin_blame_line_map["2"].metadata.author, "José")
     MiniTest.expect.equality(
       vim.api.nvim_buf_get_lines(file, 0, -1, false),
       { "", "café", "second" }
@@ -1021,7 +1067,7 @@ T["blame reload decoding overrides work from either synchronized pane"] = functi
         { vim.bo[buf].fileencoding, vim.bo[buf].fileformat },
         { "utf-8", "unix" }
       )
-      MiniTest.expect.equality(vim.b[buf].gin_blame_line_map[2].metadata.author, "José")
+      MiniTest.expect.equality(vim.b[buf].gin_blame_line_map["2"].metadata.author, "José")
     end
     MiniTest.expect.equality(vim.api.nvim_buf_get_name(file), file_name)
     MiniTest.expect.equality(vim.api.nvim_buf_get_name(nav), nav_name)
