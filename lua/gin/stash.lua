@@ -146,9 +146,7 @@ function M.read(buf, name)
       vim.api.nvim_del_augroup_by_id(group)
     end,
   })
-  if
-    not vim.g.gin_stash_disable_default_mappings or vim.g.gin_stash_disable_default_mappings == 0
-  then
+  if require("gin.ftplugin").default_mappings(buf, "stash") then
     for key, name in pairs({
       a = "choice",
       ["."] = "repeat",

@@ -15,6 +15,9 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+        vim.g["gin_" .. kind .. "_disable_default_mappings"] = nil
+      end
       vim.cmd.enew({ bang = true })
       vim.cmd("setlocal foldmethod< foldenable< foldlevel<")
       vim.cmd.cd(cwd)
@@ -73,15 +76,41 @@ local function default_maps(buf)
   return result
 end
 for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
-  T[kind .. " default mappings match the pinned ftplugin"] = function()
-    local expected_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_call(expected_buf, function()
-      vim.cmd.source(cwd .. "/.deps/vim-gin/ftplugin/gin-" .. kind .. ".vim")
-    end)
-    local expected = default_maps(expected_buf)
-    vim.api.nvim_buf_delete(expected_buf, { force = true })
+  for _, disabled in ipairs({ 0, 1 }) do
+    T[kind .. " default mappings match the pinned ftplugin with disable=" .. disabled] = function()
+      vim.g["gin_" .. kind .. "_disable_default_mappings"] = disabled
+      local expected_buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_call(expected_buf, function()
+        vim.cmd.source(cwd .. "/.deps/vim-gin/ftplugin/gin-" .. kind .. ".vim")
+      end)
+      local expected = default_maps(expected_buf)
+      vim.api.nvim_buf_delete(expected_buf, { force = true })
+      vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
+      MiniTest.expect.equality(default_maps(vim.api.nvim_get_current_buf()), expected)
+      vim.cmd.edit()
+      H.drain()
+      MiniTest.expect.equality(default_maps(vim.api.nvim_get_current_buf()), expected)
+    end
+  end
+end
+for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+  T[kind .. " reload preserves a user default-key override"] = function()
     vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
-    MiniTest.expect.equality(default_maps(vim.api.nvim_get_current_buf()), expected)
+    local buf = vim.api.nvim_get_current_buf()
+    local default = vim.fn.maparg("yy", "n")
+    local rhs = "<Cmd>let g:gin_test_mapping = 1<CR>"
+    vim.keymap.set("n", "yy", rhs, { buffer = buf })
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.fn.maparg("yy", "n"), rhs)
+    vim.keymap.del("n", "yy", { buffer = buf })
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.fn.maparg("yy", "n"), "")
+    vim.bo[buf].filetype = "text"
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.fn.maparg("yy", "n"), default)
   end
 end
 return T

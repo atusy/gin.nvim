@@ -387,10 +387,7 @@ function M.read(buf, name)
       vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
     end)
   end
-  if
-    not vim.g.gin_branch_disable_default_mappings
-    or vim.g.gin_branch_disable_default_mappings == 0
-  then
+  if require("gin.ftplugin").default_mappings(buf, "branch") then
     for key, name in pairs({
       a = "choice",
       ["."] = "repeat",

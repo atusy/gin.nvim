@@ -238,10 +238,7 @@ function M.mappings(buf)
   end
   action.alias(buf, "reset", "unstage")
   require("gin.file_actions").setup(buf, M.candidates)
-  if
-    not vim.g.gin_status_disable_default_mappings
-    or vim.g.gin_status_disable_default_mappings == 0
-  then
+  if require("gin.ftplugin").default_mappings(buf, "status") then
     vim.keymap.set(
       "n",
       "yy",

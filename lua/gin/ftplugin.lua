@@ -25,4 +25,27 @@ function M.list(kind)
     )
 end
 
+-- Default keys belong to the filetype lifecycle, not each content refresh.
+function M.default_mappings(buf, kind)
+  local previous = vim.b[buf]._gin_list_mappings
+  if previous == kind then
+    return false
+  end
+  if previous == nil then
+    vim.api.nvim_create_autocmd("FileType", {
+      buffer = buf,
+      callback = function()
+        local installed = vim.b[buf]._gin_list_mappings
+        if type(installed) == "string" and vim.bo[buf].filetype ~= "gin-" .. installed then
+          -- Keep a sentinel so later initializations reuse this buffer-local autocmd.
+          vim.b[buf]._gin_list_mappings = false
+        end
+      end,
+    })
+  end
+  vim.b[buf]._gin_list_mappings = kind
+  local disabled = vim.g["gin_" .. kind .. "_disable_default_mappings"]
+  return not disabled or disabled == 0
+end
+
 return M

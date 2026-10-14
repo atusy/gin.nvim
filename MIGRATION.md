@@ -1410,3 +1410,12 @@ status help to Normal mode. Action Plug definitions and aliases cover the same
 modes; actual Select/operator-pending key sequences verify one callback with
 the expected range and no unintended text edit. This does not complete the
 separate audit of user overrides, disabled defaults or non-list mappings.
+
+List default-key installation now follows a per-buffer filetype lifecycle.
+Reloading content retains user overrides and explicit key removals, while
+leaving and returning to the list filetype initializes defaults again. This
+matches the pinned list ftplugins' one-time setup guard instead of replacing
+keys on every read. Six real-list tests cover override, removal and filetype
+transition; the upstream mapping comparison now also covers disabled defaults
+before and after reload. Plug action redefinition and arbitrary FileType-hook
+ordering remain separate compatibility concerns.
