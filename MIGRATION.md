@@ -1427,3 +1427,12 @@ fixtures verify initial FileType-hook overrides and their retention on reload;
 six more verify that disabling filetype plugins suppresses default keys while
 leaving explicitly callable Plug actions available. This covers ordinary
 post-ftplugin customization, not every possible autocmd registration order.
+
+Diff and GinBuffer jump defaults now come from their ftplugins, preserving
+later FileType-hook overrides and honoring `filetype plugin off`. The missing
+GinBuffer ftplugin is present, and both use the pinned `zv` mapping suffix.
+Plug registration remains in diff-jump initialization. Tests compare enabled
+and disabled default-key tables against the locked ftplugins and verify
+customization through initial display and reload. Patch/chaperon source checks
+confirm their explicit Normal/Visual mode lists; their full mapping lifecycle
+and diff-jump Plug modes remain separate audit items.

@@ -87,4 +87,18 @@ function M.setup_mappings(buf, kind)
   vim.keymap.set({ "x", "s" }, "y", "<Plug>(gin-action-yank:" .. field .. ")<Esc>", options)
 end
 
+function M.jump_mappings(buf, kind)
+  if not M.default_mappings(buf, kind) then
+    return
+  end
+  for key, side in pairs({ ["<CR>"] = "smart", ["g<CR>"] = "old", ["<C-g><CR>"] = "new" }) do
+    vim.keymap.set(
+      "n",
+      key,
+      "<Plug>(gin-diffjump-" .. side .. ")zv",
+      { buffer = buf, remap = true }
+    )
+  end
+end
+
 return M

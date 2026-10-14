@@ -16,7 +16,16 @@ local T = MiniTest.new_set({
     end,
     post_case = function()
       vim.cmd("filetype plugin on")
-      for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+      for _, kind in ipairs({
+        "status",
+        "branch",
+        "log",
+        "reflog",
+        "tag",
+        "stash",
+        "diff",
+        "buffer",
+      }) do
         vim.g["gin_" .. kind .. "_disable_default_mappings"] = nil
       end
       vim.cmd.enew({ bang = true })
@@ -57,14 +66,13 @@ for _, command in ipairs({ "GinStatus", "GinLog", "GinReflog", "GinTag", "GinSta
     end
   end
 end
-local function default_maps(buf)
+local function default_maps(buf, prefix)
+  prefix = prefix or "<Plug>(gin-action-"
   local result = {}
   for _, mode in ipairs({ "n", "x", "s", "o" }) do
     result[mode] = {}
     for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-      if
-        not map.lhs:find("<Plug>", 1, true) and (map.rhs or ""):find("<Plug>(gin-action-", 1, true)
-      then
+      if not map.lhs:find("<Plug>", 1, true) and (map.rhs or ""):find(prefix, 1, true) then
         result[mode][map.lhs] = {
           rhs = map.rhs,
           noremap = map.noremap,
@@ -140,6 +148,55 @@ for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) d
       { n = {}, x = {}, s = {}, o = {} }
     )
     MiniTest.expect.equality(vim.fn.maparg("<Plug>(gin-action-choice)", "n", false, true).buffer, 1)
+  end
+end
+for _, case in ipairs({
+  { "diff", "GinDiff -- file" },
+  { "buffer", "GinBuffer ++diffjump=HEAD diff HEAD -- file" },
+}) do
+  for _, disabled in ipairs({ 0, 1 }) do
+    T[case[1] .. " jump mappings match the pinned ftplugin with disable=" .. disabled] = function()
+      vim.g["gin_" .. case[1] .. "_disable_default_mappings"] = disabled
+      local expected_buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_call(expected_buf, function()
+        vim.cmd.source(cwd .. "/.deps/vim-gin/ftplugin/gin-" .. case[1] .. ".vim")
+      end)
+      local expected = default_maps(expected_buf, "<Plug>(gin-diffjump-")
+      vim.api.nvim_buf_delete(expected_buf, { force = true })
+      vim.cmd(case[2])
+      MiniTest.expect.equality(
+        default_maps(vim.api.nvim_get_current_buf(), "<Plug>(gin-diffjump-"),
+        expected
+      )
+    end
+  end
+  T[case[1] .. " jump defaults respect filetype plugin off"] = function()
+    vim.cmd("filetype plugin off")
+    vim.cmd(case[2])
+    MiniTest.expect.equality(
+      default_maps(vim.api.nvim_get_current_buf(), "<Plug>(gin-diffjump-"),
+      { n = {}, x = {}, s = {}, o = {} }
+    )
+    MiniTest.expect.equality(
+      vim.fn.maparg("<Plug>(gin-diffjump-smart)", "n", false, true).buffer,
+      1
+    )
+  end
+  T[case[1] .. " jump defaults follow ftplugin order and preserve overrides"] = function()
+    vim.fn.writefile({ "changed" }, root .. "/file")
+    local rhs = "<Cmd>let g:gin_test_mapping = 3<CR>"
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "gin-" .. case[1],
+      once = true,
+      callback = function(event)
+        vim.keymap.set("n", "<CR>", rhs, { buffer = event.buf })
+      end,
+    })
+    vim.cmd(case[2])
+    MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), rhs)
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), rhs)
   end
 end
 return T

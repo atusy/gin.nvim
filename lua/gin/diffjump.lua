@@ -121,22 +121,11 @@ function M.jump(side, options)
   vim.cmd("normal! zv")
 end
 
-function M.setup(buf, kind)
+function M.setup(buf)
   for _, side in ipairs({ "old", "new", "smart" }) do
     vim.keymap.set("n", "<Plug>(gin-diffjump-" .. side .. ")", function()
       M.jump(side)
     end, { buffer = buf })
-  end
-  local disabled = vim.g["gin_" .. (kind or "diff") .. "_disable_default_mappings"]
-  if not disabled or disabled == 0 then
-    for key, side in pairs({ ["<CR>"] = "smart", ["g<CR>"] = "old", ["<C-g><CR>"] = "new" }) do
-      vim.keymap.set(
-        "n",
-        key,
-        "<Plug>(gin-diffjump-" .. side .. ")",
-        { buffer = buf, remap = true }
-      )
-    end
   end
 end
 

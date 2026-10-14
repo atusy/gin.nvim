@@ -397,7 +397,7 @@ for _, disabled in ipairs({ false, true }) do
       for key, side in pairs({ ["<CR>"] = "smart", ["g<CR>"] = "old", ["<C-g><CR>"] = "new" }) do
         MiniTest.expect.equality(
           vim.fn.maparg(key, "n"),
-          disabled and "" or ("<Plug>(gin-diffjump-" .. side .. ")")
+          disabled and "" or ("<Plug>(gin-diffjump-" .. side .. ")zv")
         )
         MiniTest.expect.equality(
           type(vim.fn.maparg("<Plug>(gin-diffjump-" .. side .. ")", "n", false, true).callback),

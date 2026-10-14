@@ -84,7 +84,7 @@ function M.read(buf, name)
   })
   M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
   if uri.params.diffjump then
-    require("gin.diffjump").setup(buf, "buffer")
+    require("gin.diffjump").setup(buf)
   end
   if uri.params.difffold ~= nil then
     require("gin.difffold").setup(buf)
