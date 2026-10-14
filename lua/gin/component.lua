@@ -19,13 +19,16 @@ local function publish(result, version)
 end
 
 local function run(args, cwd, version, callback)
-  git.start(args, { cwd = cwd }, function(result)
+  local ok, err = pcall(git.start, args, { cwd = cwd }, function(result)
     vim.schedule(function()
       if version == generation then
         callback(result)
       end
     end)
   end)
+  if not ok and vim.o.verbose > 0 then
+    vim.notify(tostring(err), vim.log.levels.ERROR)
+  end
 end
 
 function M.refresh()

@@ -1714,3 +1714,10 @@ queries. A real repository renamed with a trailing space verifies full/name
 components and the existing upstream/ahead/behind values; a valid empty directory
 at the trimmed path makes the regression fail deterministically without a spawn
 error. This follows the pinned finder's preservation of the first output line.
+
+Component Git spawn exceptions are now caught at the refresh boundary, retaining
+the last published values. As in the pinned component failure handler, diagnostics
+are emitted only with verbose enabled. Fault injection covers discovery, branch
+and traffic launch failures (including launches from scheduled callbacks), then
+restores Git execution and verifies a subsequent real branch change refreshes
+successfully. This does not change how ordinary nonzero Git exits are handled.

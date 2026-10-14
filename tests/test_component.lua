@@ -153,6 +153,50 @@ T["leaving a repository clears cached component values"] = function()
   MiniTest.expect.equality(require("gin.component.branch").ascii(), "")
   MiniTest.expect.equality(require("gin.component.traffic").ascii(), "")
 end
+T["component spawn failures retain cached values and allow a later refresh"] = function()
+  local component = require("gin.component")
+  local branch = require("gin.component.branch")
+  branch.ascii()
+  component.refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "main -> origin/main"
+    end, 10),
+    true
+  )
+  local git = require("gin.git")
+  original_start = git.start
+  for _, stage in ipairs({ "--show-toplevel", "--abbrev-ref", "--left-right" }) do
+    local failed = false
+    git.start = function(args, opts, callback)
+      if args[2] == stage then
+        failed = true
+        error("test Git spawn failure", 0)
+      end
+      return original_start(args, opts, callback)
+    end
+    component.refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return failed
+      end, 10),
+      true
+    )
+    H.drain()
+    MiniTest.expect.equality(branch.ascii(), "main -> origin/main")
+    MiniTest.expect.equality(require("gin.component.traffic").ascii(), "^1v1")
+  end
+  git.start = original_start
+  original_start = nil
+  H.git(root, "switch", "-c", "recovered")
+  component.refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "recovered"
+    end, 10),
+    true
+  )
+end
 T["late results from another repository cannot replace current components"] = function()
   local component = require("gin.component")
   local branch = require("gin.component.branch")
