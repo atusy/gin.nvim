@@ -1734,3 +1734,10 @@ search, matching the truthy `options.worktree` selection in the pinned
 `git/worktree.ts`. A mini.test case exercises both Lua and Vimscript public APIs,
 first with a file in another repository and then with an unnamed buffer whose
 cwd supplies the repository. Nonempty invalid paths still fail without fallback.
+
+Explicit worktree expressions now pass through the Gin-aware filename expander
+before repository discovery, as in the pinned resolver. An implicit file-view
+context still uses the view's root; an explicit `%` can select a nested repository
+containing the expanded file. A real nested Git repository exercises both public
+APIs across native and legacy GinEdit/GinDiff/GinLog URI formats. This shared
+resolver also handles explicit worktree options supplied by command handlers.

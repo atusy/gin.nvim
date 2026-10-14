@@ -137,6 +137,28 @@ T["public worktree utility resolves the current view and explicit paths"] = func
     util.worktree(42)
   end, "string")
 end
+T["explicit file view expressions discover the file repository"] = function()
+  local nested = root .. "/nested"
+  vim.fn.mkdir(nested)
+  H.git(nested, "init", "--initial-branch=nested")
+  vim.fn.writefile({ "nested file" }, nested .. "/file")
+  for _, scheme in ipairs({ "ginedit", "gindiff", "ginlog" }) do
+    for _, legacy in ipairs({ false, true }) do
+      local fragment = scheme == "ginedit" and "nested/file"
+        or vim.json.encode(
+          scheme == "ginlog" and not legacy and { "--", "nested/file" } or { "nested/file" }
+        )
+      local name = legacy and (scheme .. "://" .. root .. ";#" .. fragment)
+        or require("gin.uri").format(scheme, root, {}, fragment)
+      vim.cmd.enew({ bang = true })
+      vim.api.nvim_buf_set_name(0, name)
+      -- Implicit context belongs to the view; explicit expressions expand its file.
+      MiniTest.expect.equality(require("gin.util").worktree(), vim.uv.fs_realpath(root))
+      MiniTest.expect.equality(require("gin.util").worktree("%"), vim.uv.fs_realpath(nested))
+      MiniTest.expect.equality(vim.fn["gin#util#worktree"]("%"), vim.uv.fs_realpath(nested))
+    end
+  end
+end
 T["legacy worktree utility preserves optional path arguments"] = function()
   vim.fn.mkdir(root .. "/sub", "p")
   vim.cmd.enew()
