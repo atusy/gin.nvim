@@ -315,4 +315,27 @@ for _, operation in ipairs({ "cherry-pick", "rebase", "revert" }) do
     MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
   end
 end
+for _, side in ipairs({ "ours", "theirs" }) do
+  T[side .. " diffput resolves the working buffer before explicit write and stage"] = function()
+    local working = vim.fn.readfile(root .. "/sub/file")
+    local index = H.git(root, "ls-files", "--stage")
+    local panes = require("gin.chaperon").command({ fargs = { "file" }, smods = {} })
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(panes[side]))
+    vim.api.nvim_win_set_cursor(0, { 2, 0 })
+    vim.api.nvim_feedkeys("dp", "mx", false)
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(panes.worktree, 0, -1, false),
+      { "before", side, "after" }
+    )
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(panes.worktree))
+    vim.cmd.write()
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "before", side, "after" })
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+    vim.cmd("Gin ++wait add -- %:p")
+    MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged"), "")
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"), "before\n" .. side .. "\nafter\n")
+  end
+end
 return T

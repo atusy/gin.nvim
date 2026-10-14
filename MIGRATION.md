@@ -16,8 +16,8 @@ scope, not proof of complete upstream parity.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
 - [ ] GinEdit: revision and index buffers with write-back; working files via edit actions.
 - [ ] GinDiff: revision selection, read and diff navigation/folding.
-- [ ] GinPatch: staging/unstaging partial changes.
-- [ ] GinChaperon: conflict panes and resolution.
+- [x] GinPatch: staging/unstaging partial changes (functional scope audited below).
+- [x] GinChaperon: conflict panes and resolution (functional scope audited below).
 - [ ] GinBlame: blame navigation, history and detail.
 - [x] GinBrowse: remote URL generation and opening (functional scope audited below).
 - [x] GinCd, GinLcd, GinTcd and worktree context.
@@ -149,19 +149,19 @@ merge base for three-dot comparisons. File folds show status and change counts.
 Addressed reads support encoding/fileformat overrides; command buffers also retain encoding/fileformat options on reload.
 Buffer/diff processors transform successful Git output and survive reloads/reads;
 combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
-with index write-back and status actions; remaining option and visual-range
-compatibility needs an audit. The checklist stays open until those checks finish.
+with index write-back and status actions. Its functional completion audit and
+Visual-range compatibility boundary are recorded below.
 
 GinChaperon provides conflict panes, directional resolution mappings, supporting
 commit logs and status actions. Opening the view edits only the buffer; writing
-and staging remain separate steps. Full option, conflict-type and visual-range
-compatibility still needs an audit. When there is no in-progress operation head,
+and staging remain separate steps. Its functional completion audit is recorded
+below; full shared option compatibility remains in the command audit.
+When there is no in-progress operation head,
 its dependent supplemental logs are omitted instead of running an invalid log
 command as upstream does.
 
 Next work: remaining buffer/diff options and parsed views with direct
-Git-state tests. Complete status browse/echo actions as their supporting modules
-become available. Audit every pinned command, option, mapping, event and component
+Git-state tests. Audit every pinned command, option, mapping, event and component
 before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
@@ -2833,8 +2833,8 @@ differences remain explicit: NUL-delimited Git output preserves literal paths;
 display quoting/sorting uses the decoded paths; unstage handles both sides of a
 rename while reset remains destination-only; empty selections for Git mutation
 file actions are no-ops. This is not an exact display-byte or unrestricted URI interoperability
-claim. The broader command/URI audit and the independent Patch, Chaperon and
-other command checklists remain open.
+claim. The broader command/URI audit remains open; subsequent Patch and Chaperon
+functional audits are recorded below.
 
 ## Patch working-pane decoding
 
@@ -2956,3 +2956,35 @@ The tests also verify fixed-height supplement windows, final working-pane focus,
 and unchanged index and disk content. This exercises every alias in the pinned
 chaperon/util.ts inventory through a real stopped Git operation; no production
 change was needed.
+
+## Patch and Chaperon functional-scope completion audit
+
+The pinned patch/main.ts and chaperon/main.ts argument routes and their
+command.ts pane initialization routines map to gin.patch, gin.chaperon,
+gin.diff_mapping and the shared opener. Functional evidence now covers the
+following responsibilities, beyond simply registering mappings:
+
+| Responsibility | Evidence |
+| --- | --- |
+| Path and command entry | Explicit subdirectory paths, current-file defaults, status actions, default/persistent argument inventory, explicit worktree and duplicate-option handling |
+| Pane construction | Three panes, either side omitted, both sides omitted, tab/split/vsplit/preview opening, index/working focus and reused-buffer window identity |
+| Patch transfers | Index diffget from HEAD/worktree; HEAD/worktree diffput to index; index diffput and worktree diffget; untouched hunk and storage-location checks |
+| Visual selection | Forward/reverse ranges spanning two changes with a third excluded, real index writes, and a range-removal mutation that fails all four cases |
+| Conflict resolution | Removal of conflict blocks, ours/theirs diffget and diffput, working-buffer changes before write, unchanged unmerged stages until explicit staging, final stage-zero blob contents |
+| Reopening and read options | Fresh reused index/stage contents, preservation of unsaved index/manual resolution buffers, explicit Patch decoding and raw working-file write-back |
+| Mapping configuration | Default/Plug mappings, disabled defaults, invalid setting rejection before layout changes, stale mapping cleanup and retained user mappings |
+| Supplemental history | Real merge/cherry-pick/rebase/revert conflicts, exact Git log content, actual stage 2/3 blobs, height/focus and unchanged repository state |
+
+New Chaperon side-diffput tests complete both transfer directions: resolving
+from either side changes the working buffer first, writing updates only the
+working file, and an explicit Gin add clears unmerged stages and records the
+chosen content. These checks close the two functional checklist items above.
+
+Compatibility boundaries are retained rather than counted as exact parity:
+mapping-disable settings accept the documented numeric extension; omitted panes
+do not leave unusable directional mappings; Lua Visual mappings pass an explicit
+range; native diff boundaries determine the resulting edits. Conflict stripping
+matches the pinned seven-character markers followed by a space, not arbitrary
+custom marker sizes. Shared command modifiers/options and unrestricted URI/API
+compatibility remain part of the separate full command audit. Completing these
+functional items does not complete the overall migration.
