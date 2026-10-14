@@ -10,7 +10,7 @@ scope, not proof of complete upstream parity.
 - [x] Pin upstream and mini.nvim; headless mini.test harness.
 - [x] Git process execution and worktree discovery (files, subdirectories, symlinks, linked worktrees).
 - [ ] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events.
-- [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
+- [x] GinBuffer: command output buffers, URI reads, reload and decorations (functional scope audited below).
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [x] GinBranch, GinTag: parsed views and ref actions (functional scope audited below).
 - [x] GinLog, GinReflog: parsed views, navigation and commit actions (functional scope audited below).
@@ -3475,3 +3475,35 @@ GinBuffer lifecycle/API audit remain separate outstanding work.
 Validation: all 1,301 mini.test cases in 48 groups pass, including all 24
 GinBuffer cases. Those 24 cases also pass on Neovim 0.10.0. `make check` and
 `git diff --check` pass.
+
+## GinBuffer functional audit
+
+The checked GinBuffer item covers its command-output workflow, URI reads,
+decorations and optional unified-diff features. It does not close the final
+cross-command option/API/encoding audit.
+
+| Pinned route / behavior | Lua evidence |
+| --- | --- |
+| `command/buffer/command.ts`: build an output URI and open the requested view | `test_buffer.lua` checks immutable output, split modifiers and a preview with explicit encoding/format while preserving focus; `test_show.lua` covers edit, split, vsplit and tabedit consumers and repeated reload. |
+| `command/buffer/edit.ts`: execute Git, run processor, decode and replace | `test_buffer.lua` checks processor reuse, explicit encoding/format, stderr progress without echoing captured stdout, failures and successful retries. |
+| ANSI decorations, monochrome and emoji replacement | `test_buffer.lua` checks highlight spans, removal in monochrome mode and emoji-dependent byte positions across reload and read. |
+| `command/buffer/read.ts`: insert processed output | Addressed reads check inserted lines, marks, destination options and events; empty output, explicit encoding, both-channel progress and failed execution are covered. |
+| Optional diff jump and fold setup | Empty `++diffjump` resolves HEAD and its parent with source navigation; mapping-disable behavior is checked separately. A direct `++difffold` command checks fold summary and clearing obsolete folds after reload, with index/working-file assertions. |
+| Output lifetime and repeated reads | Native and legacy URI cases preserve special arguments; execution/decode failures retain the last successful display. An unload/reopen failure keeps the snapshot, a subsequent success updates it, and wipeout removes it. |
+| Interactive commands inside the output view | `test_editor_interaction.lua` commits through synchronous GinBuffer using keyboard input and verifies the resulting commit subject. |
+
+The added lifecycle, preview and fold cases pass without production changes.
+The source comparison uses pinned `24cce091cfa32c013bc53cf4ff8f721d6690cf24`,
+including `command/buffer/{main,command,edit,read}.ts`; no haiku55 input is used.
+
+Remaining cross-cutting audit items include automatic encoding/format detection,
+malformed byte handling, every built-in `++opt` alias, custom indicator/API
+contracts, and the complete scratch-buffer write lifecycle. This functional
+checkmark does not claim those broader contracts are complete. The pinned help
+also says GinBuffer accepts bang and displays errors in its buffer, while its
+actual command declaration lacks bang and its executor throws on failure; the
+implementation and regression evidence above follow the executable routes.
+
+Validation: all 1,304 mini.test cases across 48 groups pass. The 26-case
+GinBuffer suite and subsequently added preview case pass on Neovim 0.10.0.
+`make check` and `git diff --check` pass.

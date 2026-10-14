@@ -110,11 +110,55 @@ T["GinBuffer empty diffjump selects HEAD and its parent"] = function()
     end
   end
 end
+T["GinBuffer difffold rebuilds file folds after reloading Git output"] = function()
+  vim.fn.writefile({ "before" }, root .. "/file")
+  H.git(root, "add", "file")
+  H.git(root, "commit", "-m", "initial")
+  vim.fn.writefile({ "after" }, root .. "/file")
+  local index = H.git(root, "show", ":file")
+  vim.cmd("GinBuffer ++difffold diff -- file")
+  MiniTest.expect.equality(vim.wo.foldmethod, "manual")
+  MiniTest.expect.equality(vim.fn.foldlevel(3), 1)
+  vim.cmd("normal! zM")
+  MiniTest.expect.equality(vim.fn.foldtextresult(3), "[.] file (+1 -1)")
+  MiniTest.expect.equality(H.git(root, "show", ":file"), index)
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "after" })
+  H.git(root, "checkout", "--", "file")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "" })
+  MiniTest.expect.equality(vim.fn.foldlevel(1), 0)
+end
 T["GinBuffer respects a split modifier"] = function()
   local windows = #vim.api.nvim_tabpage_list_wins(0)
   vim.cmd("botright GinBuffer ++opener=vsplit status --short")
   MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), windows + 1)
   vim.cmd.close()
+end
+T["GinBuffer preview keeps focus and applies decoding options"] = function()
+  vim.fn.writefile({ "caf" .. string.char(233) .. "\r" }, root .. "/file")
+  H.git(root, "add", "file")
+  local win, buf = vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf()
+  local ok, err = pcall(function()
+    vim.cmd("GinBuffer ++opener=pedit ++enc=latin1 ++ff=dos show :file")
+    MiniTest.expect.equality(
+      { vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf() },
+      { win, buf }
+    )
+    local preview
+    for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.wo[candidate].previewwindow then
+        preview = vim.api.nvim_win_get_buf(candidate)
+      end
+    end
+    MiniTest.expect.equality(type(preview), "number")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(preview, 0, -1, false), { "café" })
+    MiniTest.expect.equality(
+      { vim.bo[preview].fileencoding, vim.bo[preview].fileformat, vim.bo[preview].modifiable },
+      { "latin1", "dos", false }
+    )
+  end)
+  vim.cmd.pclose({ bang = true })
+  assert(ok, err)
 end
 T["reading a GinBuffer URI inserts at the address and preserves buffer options"] = function()
   vim.fn.writefile({ "hello" }, root .. "/file")
@@ -330,6 +374,28 @@ T["failed output decoding preserves the display and allows a later reload"] = fu
     vim.cmd.edit()
     MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "new" })
   end
+end
+T["unloaded output survives a failed reopen but is discarded on wipeout"] = function()
+  H.git(root, "config", "alias.lifecycle", "!printf 'saved\\n'")
+  vim.cmd("GinBuffer lifecycle")
+  local buf = vim.api.nvim_get_current_buf()
+  local name = vim.api.nvim_buf_get_name(buf)
+  vim.cmd.enew()
+  MiniTest.expect.equality(vim.api.nvim_buf_is_valid(buf), true)
+  MiniTest.expect.equality(vim.api.nvim_buf_is_loaded(buf), false)
+  H.git(root, "config", "alias.lifecycle", "!exit 7")
+  MiniTest.expect.equality(pcall(vim.cmd.buffer, buf), false)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), { "saved" })
+  MiniTest.expect.equality(vim.bo[buf].modifiable, false)
+  H.git(root, "config", "alias.lifecycle", "!printf 'fresh\\n'")
+  vim.cmd.edit()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), { "fresh" })
+  vim.cmd.bwipeout({ bang = true })
+  MiniTest.expect.equality(vim.api.nvim_buf_is_valid(buf), false)
+  H.git(root, "config", "alias.lifecycle", "!exit 7")
+  MiniTest.expect.equality(pcall(vim.cmd, "edit " .. vim.fn.fnameescape(name)), false)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "" })
+  MiniTest.expect.equality(vim.b.gin_buffer_snapshot, nil)
 end
 T["GinBuffer renders Git colors as highlights and monochrome omits them"] = function()
   vim.fn.writefile({ "hello" }, root .. "/file")
