@@ -34,6 +34,27 @@ function M.highlights()
   vim.fn.sign_define("GinBlameDividerSign", { linehl = "GinBlameDivider" })
 end
 
+local function commit_metadata(metadata)
+  local function person(prefix)
+    return {
+      name = metadata[prefix] or "",
+      email = (metadata[prefix .. "-mail"] or ""):gsub("^<(.*)>$", "%1"),
+      -- Denops sends Date as a MessagePack extension; Neovim stores it as null.
+      time = vim.NIL,
+      timezone = metadata[prefix .. "-tz"] or "",
+    }
+  end
+  local previous_sha, previous_filename = (metadata.previous or ""):match("^(%x+) (.+)$")
+  return {
+    author = person("author"),
+    committer = person("committer"),
+    summary = metadata.summary or "",
+    boundary = metadata.boundary ~= nil,
+    filename = metadata.filename or "",
+    previous = previous_sha and { sha = previous_sha, filename = previous_filename } or nil,
+  }
+end
+
 -- Use line porcelain so filename/previous metadata belongs to each line,
 -- including when the same commit contributed lines from different paths.
 function M.parse(output)
@@ -44,7 +65,9 @@ function M.parse(output)
     if line:sub(1, 1) == "\t" and entry then
       entry.content = line:sub(2)
       entry.metadata = metadata
-      result.commits[entry.commitSha] = metadata
+      if not result.commits[entry.commitSha] then
+        result.commits[entry.commitSha] = commit_metadata(metadata)
+      end
       result.lines[#result.lines + 1] = entry
       entry = nil
     elseif entry then

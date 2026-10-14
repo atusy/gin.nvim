@@ -29,6 +29,32 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["blame exposes structured commit metadata in both panes"] = function()
+  vim.cmd("GinBlame file.lua")
+  local person = { name = "Gin Test", email = "gin@example.invalid", time = vim.NIL }
+  local function expected(sha, summary, boundary, previous)
+    local fields = vim.split(vim.trim(H.git(root, "show", "-s", "--format=%ai%n%ci", sha)), "\n")
+    local author, committer = vim.deepcopy(person), vim.deepcopy(person)
+    author.timezone = fields[1]:match("(%S+)$")
+    committer.timezone = fields[2]:match("(%S+)$")
+    return {
+      author = author,
+      committer = committer,
+      summary = summary,
+      boundary = boundary,
+      filename = "sub/file.lua",
+      previous = previous,
+    }
+  end
+  local commits = {
+    [first] = expected(first, "initial", true),
+    [second] = expected(second, "second", false, { sha = first, filename = "sub/file.lua" }),
+  }
+  for _, buf in ipairs({ vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr }) do
+    MiniTest.expect.equality(vim.b[buf].gin_blame_result.commits, commits)
+    MiniTest.expect.equality(vim.b[buf].gin_blame_line_map[4].metadata.author, "Gin Test")
+  end
+end
 T["blame lines retain group sizes when continuation headers omit them"] = function()
   vim.fn.writefile({ "one", "two", "three", "four", "five", "six" }, root .. "/sub/groups.txt")
   H.git(root, "add", "sub/groups.txt")

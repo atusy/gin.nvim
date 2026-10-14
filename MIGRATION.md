@@ -2289,3 +2289,29 @@ objects, booleans and structured previous-commit metadata. The exact date
 representation crossing Denops into buffer variables also needs verification.
 Per-line metadata remains necessary for the Lua rename-following behavior and
 must not be lost while resolving these representation differences.
+
+## Blame structured commit metadata
+
+`gin_blame_result.commits` now exposes nested author/committer records (name,
+email without angle brackets, time and timezone), a boolean boundary flag,
+summary, filename and optional `{sha, filename}` previous-commit information.
+The first metadata occurrence for each commit is retained, matching the pinned
+parser. Each line still retains its own raw `metadata` for rename-following and
+relative-time rendering; normalizing the shared record does not replace it.
+
+Date serialization was checked through the installed Denops transport dependency
+`@lambdalisue/messagepack@1.0.2` (cached msgpackr 1.12.1), sending a real
+`nvim_call_function('setbufvar', [1, ..., {time: new Date(...)}])` request to an
+embedded Neovim and reading it with getbufvar. MessagePack Date extensions become
+`v:null` at this boundary, not ISO strings or epoch numbers. Lua consequently
+uses `vim.NIL` for the shared person's time field and keeps the raw epoch on each
+line. The probe also confirmed past/future timestamp variants on Neovim 0.10.
+This verifies that transport version; arbitrary Denops transport versions remain
+outside the evidence.
+
+A real Git fixture compares the complete shared records for boundary and normal
+commits in both panes, including timezone and previous revision/path. It failed
+on the old flat author string before the fix. Existing encoded-author and rename
+fixtures continue exercising per-line metadata. This resolves the shared record
+shape difference noted above; Lua's additional per-line metadata remains an
+extension, and complete result parity is not claimed for malformed porcelain.
