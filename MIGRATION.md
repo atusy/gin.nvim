@@ -2622,3 +2622,20 @@ separator, exercise attached short-flag values and explicit/repeated boolean
 values, and prove duplicate remote validation leaves the target register and
 browser untouched. This closes the command-parser gap, not the wider hosting
 provider URL audit inherited from upstream's git-browse dependency.
+
+## Browse SSH transport ports
+
+Remote URLs such as `ssh://git@github.com:2222/owner/repo.git` were rejected
+because the transport port was included in the provider/alias lookup key. The
+port is now removed from the hostname before looking up the provider and building
+the HTTPS base, matching upstream's use of URL.hostname. Four real-repository
+cases cover GitHub, GitLab, Bitbucket and an aliased GitLab host, checking home
+and file permalink URLs while leaving the configured fetch URL unchanged.
+
+Evidence was checked against deno-git-browse v1.0.1's
+[hostname lookup](https://github.com/lambdalisue/deno-git-browse/blob/v1.0.1/hosting_service/mod.ts)
+and [GitLab URL base](https://github.com/lambdalisue/deno-git-browse/blob/v1.0.1/hosting_service/services/gitlab_com.ts),
+as well as cached 1.1.6 providers. Pinned vim-gin declares a ^1.0.1 dependency,
+not an exact transitive version; the current registry did not resolve exact
+1.0.1, so its GitHub tag source was inspected directly. Newer-only provider
+features and other URL parsing edge cases remain outside this verification.

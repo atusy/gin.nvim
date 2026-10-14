@@ -54,6 +54,8 @@ function M.url(root, revision, options)
     host, repository = fetch:match("^[^@]+@([^:]+):(.+)$")
   end
   assert(host and repository, "Unsupported remote URL: " .. fetch)
+  -- A Git transport port is not part of the hosting-service or web hostname.
+  host = host:gsub(":%d+$", "")
   repository = repository:gsub("%.git$", ""):gsub("/$", "")
   local provider = aliases[host] or host
   assert(

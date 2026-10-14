@@ -113,6 +113,27 @@ T["browse supports home and commit routes across hosting services"] = function()
     )
   end
 end
+for _, case in ipairs({
+  { "github.com", "github.com", "/blob/" },
+  { "gitlab.com", "gitlab.com", "/-/blob/" },
+  { "bitbucket.org", "bitbucket.org", "/src/" },
+  { "git.example.invalid", "gitlab.com", "/-/blob/" },
+}) do
+  T["browse resolves SSH ports independently of the web host " .. case[1]] = function()
+    local remote = "ssh://git@" .. case[1] .. ":2222/owner/repo.git"
+    H.git(root, "remote", "set-url", "origin", remote)
+    if case[1] ~= case[2] then
+      vim.g.gin_browse_aliases = { [case[1]] = case[2] }
+    end
+    local base = "https://" .. case[1] .. "/owner/repo"
+    MiniTest.expect.equality(require("gin.browse").url(root, "HEAD", { home = true }), base)
+    MiniTest.expect.equality(
+      require("gin.browse").url(root, "HEAD", { path = "sub/space # file.md", permalink = true }),
+      base .. case[3] .. hash .. "/sub/space%20%23%20file.md"
+    )
+    MiniTest.expect.equality(H.git(root, "remote", "get-url", "origin"), remote .. "\n")
+  end
+end
 T["GinBrowse no-browser yanks a current-file URL with a range"] = function()
   vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/space # file.md"))
   vim.cmd("1,2GinBrowse --no-browser ++yank=a")
