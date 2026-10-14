@@ -67,9 +67,9 @@ is an identity escape or requires a valid named reference, including inside
 classes and before the named group.
 Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 
-This is not an adopted runtime backend and no Gin action calls it. Its output is
-a list of UTF-16 capture arrays (full match first, unmatched groups null), not
-the strings needed by action parsers. Scoped `i`, `m` and `s` modifier groups
+This is not an adopted runtime backend and no Gin action calls it. Its `match` output is
+a list of UTF-16 capture arrays (full match first, unmatched groups null). The
+`match_strings` adapter returns UTF-8 strings for selected captures. Scoped `i`, `m` and `s` modifier groups
 are implemented for the exercised grammar. Grammar completeness, input encoding
 edge cases, large patterns/inputs, recursion limits, resource bounds and a
 broader differential corpus must still be audited before integration. Passing
@@ -150,3 +150,22 @@ This removes call-stack growth proportional to ordinary input repetition.
 Lookaround evaluation still recurses with assertion nesting, and the compiler
 recurses with pattern nesting. Heap usage and pathological backtracking are not
 bounded by this change; production integration remains pending those audits.
+
+## Candidate parser boundary
+
+The pinned log/reflog parsers apply a custom pattern directly to nonempty display
+lines and consume capture 1; tags consume capture 1 (commit) and 2 (tag); stash
+consumes capture 1 (reference) and parses capture 2 as a decimal index. There is
+no default-pattern fallback after a custom match fails. This contract was
+rechecked against `.deps/vim-gin` at the locked revision. Production custom
+matching is still missing.
+
+`compiled:match_strings(text, indices)` now provides the string conversion
+needed at that boundary. Indices use Lua ordering: 1 is the full match, 2 the
+first capture, and so on. Omit indices to convert all captures. No match returns
+nil; absent/unmatched captures are `vim.NIL`, while empty captures remain empty
+strings. NUL and valid surrogate pairs are preserved as UTF-8. Selected lone
+surrogates raise an explicit conversion error, matching the fact that Neovim's
+JSON decoder rejects a JSON string containing an unpaired surrogate. Unselected
+captures are not converted, since upstream parsers do not expose those fields.
+Five adapter tests cover these distinctions and UTF-8 encoding boundaries.

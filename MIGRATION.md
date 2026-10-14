@@ -1530,3 +1530,11 @@ with JIT disabled, covering greedy/lazy repetition, backtracking, capture
 clearing, alternatives and lookbehind, and all 22,470 generated comparisons still
 match Node. Pattern/lookaround nesting, heap usage and exponential backtracking
 remain separate resource concerns before production adoption.
+
+The regex candidate now exposes `match_strings` to convert selected UTF-16
+captures to UTF-8 for parser integration. It preserves empty strings, unmatched
+captures, NUL and non-BMP characters, and rejects selected lone surrogates
+instead of replacing them. Unused captures need not be converted. Five tests
+cover this boundary; the pinned parser field mappings and nonempty-line/custom
+no-fallback behavior were rechecked. Actual custom action parsing is still
+unimplemented and backend adoption remains proposed.

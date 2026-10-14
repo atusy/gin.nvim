@@ -49,4 +49,38 @@ for _, case in ipairs(long_cases) do
     MiniTest.expect.equality(result, expected)
   end
 end
+T["string captures preserve Unicode, NUL and unmatched groups"] = function()
+  local regex = require("tests.audit.lua_regex").compile("^(a)?(.+)(b*)$")
+  MiniTest.expect.equality(regex:match_strings("β😀\0"), { "β😀\0", vim.NIL, "β😀\0", "" })
+end
+T["string conversion rejects selected lone surrogates"] = function()
+  local regex = require("tests.audit.lua_regex").compile("^(.)(.)$")
+  MiniTest.expect.error(function()
+    regex:match_strings("😀")
+  end, "unpaired surrogate")
+  MiniTest.expect.error(function()
+    regex:match_strings("😀", { 3 })
+  end, "unpaired surrogate")
+end
+T["string conversion can select only fields consumed by the parser"] = function()
+  local regex = require("tests.audit.lua_regex").compile("^(.)()")
+  MiniTest.expect.equality(regex:match_strings("😀", { 3, 4 }), { "", vim.NIL })
+end
+T["string conversion preserves UTF-8 encoding boundaries"] = function()
+  local parts = { "\0" }
+  for _, cp in ipairs({ 0x7F, 0x80, 0x7FF, 0x800, 0xFFFF, 0x10000, 0x10FFFF }) do
+    parts[#parts + 1] = vim.fn.nr2char(cp)
+  end
+  local text = table.concat(parts)
+  MiniTest.expect.equality(
+    require("tests.audit.lua_regex").compile("^([\\s\\S]*)$"):match_strings(text),
+    { text, text }
+  )
+end
+T["string conversion preserves no-match and empty matches"] = function()
+  local regex = require("tests.audit.lua_regex").compile("^(a)?$")
+  MiniTest.expect.equality(regex:match_strings("b"), nil)
+  MiniTest.expect.equality(regex:match_strings(""), { "", vim.NIL })
+  MiniTest.expect.equality(regex:match_strings("a"), { "a", "a" })
+end
 return T

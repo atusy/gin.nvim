@@ -53,6 +53,46 @@ local function units(text)
   end
   return result
 end
+local function capture_string(capture)
+  local parts, index = {}, 1
+  while index <= #capture do
+    local cp = capture[index]
+    index = index + 1
+    if cp >= 0xD800 and cp <= 0xDBFF then
+      local trail = capture[index]
+      assert(
+        trail and trail >= 0xDC00 and trail <= 0xDFFF,
+        "Cannot convert regular expression capture: unpaired surrogate"
+      )
+      cp = 0x10000 + (cp - 0xD800) * 0x400 + trail - 0xDC00
+      index = index + 1
+    else
+      assert(
+        cp < 0xDC00 or cp > 0xDFFF,
+        "Cannot convert regular expression capture: unpaired surrogate"
+      )
+    end
+    if cp < 0x80 then
+      parts[#parts + 1] = string.char(cp)
+    elseif cp < 0x800 then
+      parts[#parts + 1] = string.char(0xC0 + math.floor(cp / 0x40), 0x80 + cp % 0x40)
+    elseif cp < 0x10000 then
+      parts[#parts + 1] = string.char(
+        0xE0 + math.floor(cp / 0x1000),
+        0x80 + math.floor(cp / 0x40) % 0x40,
+        0x80 + cp % 0x40
+      )
+    else
+      parts[#parts + 1] = string.char(
+        0xF0 + math.floor(cp / 0x40000),
+        0x80 + math.floor(cp / 0x1000) % 0x40,
+        0x80 + math.floor(cp / 0x40) % 0x40,
+        0x80 + cp % 0x40
+      )
+    end
+  end
+  return table.concat(parts)
+end
 local function ascii(cp)
   return cp and cp < 128 and string.char(cp) or ""
 end
@@ -513,7 +553,7 @@ function M.compile(pattern)
   end
   validate(tree)
 
-  return {
+  local compiled = {
     match = function(_, text)
       local input = units(text)
       local function prepend(node, tasks)
@@ -666,5 +706,18 @@ function M.compile(pattern)
       end
     end,
   }
+  function compiled:match_strings(text, indices)
+    local captures = self:match(text)
+    if not captures then
+      return nil
+    end
+    local result = {}
+    for index = 1, indices and #indices or #captures do
+      local capture = captures[indices and indices[index] or index]
+      result[index] = capture and capture ~= vim.NIL and capture_string(capture) or vim.NIL
+    end
+    return result
+  end
+  return compiled
 end
 return M
