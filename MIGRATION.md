@@ -2551,3 +2551,19 @@ all-branches expectations were independently passed through the pinned TypeScrip
 branch parser and matched exactly. Existing structured selection for custom
 formats remains an extension; this fixture does not claim parser equivalence for
 arbitrary format/encoding options or remote-only listings.
+
+## Status echo candidate records
+
+Status echo now exposes the pinned `XY`, absolute `path`, and optional absolute
+`origPath` fields instead of the executor's lowercase status, relative paths and
+buffer line number. As in the pinned parser, the first blank status column is
+shown as a dot. The display projection leaves internal staging/unstaging and
+file-action records intact.
+
+A real repository exercises staged, unstaged, staged-and-unstaged, deleted,
+renamed and untracked paths. The complete selection, rename-only selection and
+header-only empty selection are checked before and after reload, with unchanged
+Git status afterward. The expected six records were independently verified using
+the pinned TypeScript parser and its gatherer's absolute-path conversion. The
+Lua path handling continues to preserve literal filename bytes; this test does
+not establish equivalence with upstream's quoted-path parser for control bytes.

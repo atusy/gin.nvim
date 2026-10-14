@@ -25,6 +25,53 @@ T["GinStatus lists the branch and untracked paths in sorted order"] = function()
     { "## No commits yet on main", "?? a", "?? z" }
   )
 end
+T["echo exposes pinned status fields for tracked renamed and untracked paths"] = function()
+  for _, path in ipairs({ "both", "deleted", "modified", "old name", "staged" }) do
+    vim.fn.writefile({ "base" }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "base")
+  for _, path in ipairs({ "both", "modified", "staged", "untracked" }) do
+    vim.fn.writefile({ "change" }, root .. "/" .. path)
+  end
+  H.git(root, "add", "both", "staged")
+  vim.fn.writefile({ "another change" }, root .. "/both")
+  vim.fn.delete(root .. "/deleted")
+  H.git(root, "mv", "old name", "new name")
+  local expected = {
+    { XY = "MM", path = "both" },
+    { XY = ".D", path = "deleted" },
+    { XY = ".M", path = "modified" },
+    { XY = "R.", path = "new name", origPath = "old name" },
+    { XY = "M.", path = "staged" },
+    { XY = "??", path = "untracked" },
+  }
+  local canonical = H.git(root, "rev-parse", "--show-toplevel"):gsub("\n$", "")
+  for _, entry in ipairs(expected) do
+    entry.path = canonical .. "/" .. entry.path
+    if entry.origPath then
+      entry.origPath = canonical .. "/" .. entry.origPath
+    end
+  end
+  local before = H.git(root, "status", "--porcelain=v1", "-z")
+  vim.cmd.GinStatus()
+  for _ = 1, 2 do
+    for _, range in ipairs({ { 1, 7 }, { 5, 5 }, { 1, 1 } }) do
+      local echo, output = vim.api.nvim_echo
+      vim.api.nvim_echo = function(chunks)
+        output = chunks[1][1]
+      end
+      local ok, err =
+        pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), "echo", range)
+      vim.api.nvim_echo = echo
+      assert(ok, err)
+      local selected = range[2] == 7 and expected or range[1] == 5 and { expected[4] } or {}
+      MiniTest.expect.equality(vim.json.decode(output), selected)
+    end
+    vim.cmd.edit()
+  end
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain=v1", "-z"), before)
+end
 T["legacy status URIs retain path filters during staging and reload"] = function()
   vim.fn.mkdir(root .. "/sub", "p")
   vim.fn.writefile({ "target" }, root .. "/sub/target$")

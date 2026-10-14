@@ -238,7 +238,16 @@ end
 
 function M.mappings(buf)
   local action = require("gin.action")
-  action.setup(buf, M.candidates)
+  action.setup(buf, M.candidates, nil, function(target, range)
+    local root = vim.b[target].gin_worktree
+    return vim.tbl_map(function(entry)
+      return {
+        XY = entry.xy:gsub(" ", ".", 1),
+        path = vim.fs.joinpath(root, entry.path),
+        origPath = entry.orig_path and vim.fs.joinpath(root, entry.orig_path) or nil,
+      }
+    end, M.candidates(target, range))
+  end)
   for _, name in ipairs({ "stage", "unstage", "stage:intent-to-add", "unstage:intent-to-add" }) do
     action.define(buf, name, function(target, range)
       M.action(target, name, range)
