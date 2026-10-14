@@ -1803,3 +1803,13 @@ and installed denops.vim `e82c5a94ca1154b05c9d74d6f6f58c9991b1424f` stalled duri
 reference startup/RPC access before reaching the input observation. Those probe
 processes were terminated. Its source-level use of synchronous RPC alone does
 not prove runtime parity, so the Lua synchronous-input limitation remains open.
+
+`tests/test_askpass_interaction.lua` exercises real Neovim `inputsecret()` prompts
+in a child process, with synthetic credentials and no network. Prompt observation
+wraps the real function without replacing its return value. Typed username and
+password responses reach Git credential fill in both asynchronous and synchronous
+progress execution. Ctrl-C at the username prompt returns an empty string and
+Git proceeds to the password prompt; a separate Vimscript/RPC inputsecret probe
+confirmed the same native result. The pinned askpass handler forwards that result
+unchanged. These four keyboard cases distinguish native empty responses from
+the older tests' injected input exceptions; they do not claim Ctrl-C cancels Git.
