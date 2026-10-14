@@ -1949,3 +1949,11 @@ action mappings appear in Insert, Command-line, Terminal or Lang-Arg modes.
 Making aliases silent temporarily caused all six view checks to fail, proving
 the attribute comparison detects that regression. The implementation was
 restored before full validation; this step changes only audit tooling/tests.
+
+Status stage:intent-to-add now registers unknown paths before processing
+deletions and other paths, matching the pinned stage action's command order.
+A required clean filter deliberately fails for a modified tracked file; the
+regression checks that the new file already has an empty index entry, the
+tracked index content is unchanged, and both working files survive. Unstage's
+intent-to-add conversion still follows reset. This verifies partial Git state;
+completion-event handling after a later command failure remains a separate audit.
