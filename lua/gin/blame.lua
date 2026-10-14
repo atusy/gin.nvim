@@ -271,7 +271,9 @@ function M.read(buf, name, output)
       else
         vim.b[target].gin_blame_file_bufname = name
       end
-      vim.wo[win].winfixbuf = true
+      if vim.g.did_load_ftplugin ~= nil then
+        vim.wo[win].winfixbuf = true
+      end
       vim.bo[target].modifiable = true
       vim.bo[target].fileencoding, vim.bo[target].fileformat = encoding, ff
       vim.bo[target].modified = false
@@ -295,7 +297,9 @@ function M.read(buf, name, output)
           M.update_detail(target, vim.api.nvim_win_get_cursor(0)[1])
         end,
       })
-      require("gin.ftplugin").blame_mappings(target)
+      if vim.g.did_load_ftplugin ~= nil then
+        require("gin.ftplugin").blame_mappings(target)
+      end
       vim.b[target].gin_blame_result = result
       vim.b[target].gin_blame_line_map = map
       vim.b[target].gin_blame_file_line_to_physical = reverse

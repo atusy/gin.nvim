@@ -1653,3 +1653,11 @@ content, custom Enter/Plug mappings, removed older-history keys and FileType
 exit/re-entry. This is distinct from `:edit`, where Neovim itself reruns the
 ftplugin lifecycle and may restore defaults. The test fails against the previous
 commit and passes with the change; plugin-disabled setup remains under audit.
+
+Opening GinBlame with `filetype plugin off` now leaves navigation mappings and
+winfixbuf unset, matching the upstream separation between view construction and
+ftplugin setup. The reader's compound-filetype fallback runs only while Neovim's
+ftplugin loader is enabled. A real-repository test checks both panes, all six
+navigation mappings, window pinning, synchronized scrolling and rendered content.
+Existing buffers configured before disabling ftplugins retain their prior
+settings, as disabling the loader does not itself undo loaded ftplugins.

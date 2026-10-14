@@ -17,6 +17,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.cmd("filetype plugin on")
       vim.g.gin_edit_default_args = nil
       vim.g.gin_edit_persistent_args = nil
       vim.cmd.tabonly({ bang = true })
@@ -148,6 +149,31 @@ T["blame content refresh preserves remapped and removed navigation keys"] = func
     MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), "<Plug>(gin-blame-switch-commit)")
     MiniTest.expect.equality(vim.fn.maparg("<C-O>", "n"), "<Plug>(gin-blame-navigate-older)")
   end
+end
+T["blame respects disabled filetype plugins when opening its panes"] = function()
+  vim.cmd("filetype plugin off")
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  for _, buf in ipairs({ nav, file }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    MiniTest.expect.equality(vim.wo.winfixbuf, false)
+    MiniTest.expect.equality(vim.wo.scrollbind, true)
+    for _, key in ipairs({
+      "<CR>",
+      "<C-O>",
+      "<C-I>",
+      "<Plug>(gin-blame-switch-commit)",
+      "<Plug>(gin-blame-navigate-older)",
+      "<Plug>(gin-blame-navigate-newer)",
+    }) do
+      MiniTest.expect.equality(vim.fn.maparg(key, "n"), "")
+    end
+  end
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, 0, -1, false),
+    { "", "one", "", "changed", "", "three" }
+  )
 end
 T["legacy blame paths survive reload and history navigation"] = function()
   local path = "sub/space + 日本語$.lua"
