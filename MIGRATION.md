@@ -1661,3 +1661,9 @@ ftplugin loader is enabled. A real-repository test checks both panes, all six
 navigation mappings, window pinning, synchronized scrolling and rendered content.
 Existing buffers configured before disabling ftplugins retain their prior
 settings, as disabling the loader does not itself undo loaded ftplugins.
+
+The gin-diff ftplugin now schedules foldlevel=1 in the window where it was
+initialized, matching the locked ftplugin's deferred window-local default.
+Previously only explicit difffold setup applied that level. A two-window test
+changes focus before scheduled execution and checks that only the original
+window's folds are opened to level one. Closed windows are ignored safely.

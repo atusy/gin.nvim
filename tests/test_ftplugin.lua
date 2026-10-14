@@ -1,6 +1,8 @@
+local foldlevel
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
+      foldlevel = vim.wo.foldlevel
       vim.cmd("filetype plugin on")
       vim.cmd.enew()
       vim.wo.list, vim.wo.spell, vim.wo.wrap, vim.wo.foldenable = true, true, true, true
@@ -14,6 +16,7 @@ local T = MiniTest.new_set({
       end
       vim.cmd.bwipeout({ bang = true })
       vim.wo.winfixbuf = false
+      vim.wo.foldlevel = foldlevel
     end,
   },
 })
@@ -47,6 +50,18 @@ T["diff filetype inherits and undoes the runtime diff settings"] = function()
   vim.b.undo_ftplugin = nil
   MiniTest.expect.equality(vim.bo.modeline, vim.go.modeline)
   MiniTest.expect.equality(vim.bo.commentstring, vim.go.commentstring)
+end
+T["diff filetype opens top-level folds in its own window after initialization"] = function()
+  local original = vim.api.nvim_get_current_win()
+  vim.wo.foldlevel = 7
+  vim.bo.filetype = "gin-diff"
+  vim.cmd.vnew()
+  local other = vim.api.nvim_get_current_win()
+  vim.wo.foldlevel = 4
+  require("tests.helpers").drain()
+  local levels = { vim.wo[original].foldlevel, vim.wo[other].foldlevel }
+  vim.api.nvim_win_close(other, true)
+  MiniTest.expect.equality(levels, { 1, 4 })
 end
 T["blame filetypes install and undo navigation without a blame read"] = function()
   for _, kind in ipairs({ "gin-blame", "gin-blame-nav" }) do
