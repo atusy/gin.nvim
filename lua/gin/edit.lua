@@ -79,7 +79,8 @@ function M.read(buf, name)
 end
 
 function M.encode(buf)
-  local ff = vim.bo[buf].fileformat
+  local binary = vim.bo[buf].binary
+  local ff = binary and "unix" or vim.bo[buf].fileformat
   local separator = ff == "dos" and "\r\n" or ff == "mac" and "\r" or "\n"
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   if ff == "mac" then
@@ -88,14 +89,13 @@ function M.encode(buf)
     end
   end
   local data = table.concat(lines, separator)
-  if
-    vim.bo[buf].endofline or (data ~= "" and vim.bo[buf].fixendofline and not vim.bo[buf].binary)
-  then
+  if vim.bo[buf].endofline or (data ~= "" and vim.bo[buf].fixendofline and not binary) then
     data = data .. separator
   end
   local encoding = vim.bo[buf].fileencoding
   if
     vim.bo[buf].bomb
+    and not binary
     and (unicode.supports(encoding) or encoding == "" or encoding == "utf-8" or encoding == "utf8")
   then
     data = "\239\187\191" .. data

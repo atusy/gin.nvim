@@ -460,4 +460,31 @@ T["unrepresentable UCS-2 writes preserve the index and unsaved edits"] = functio
   MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "index\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
 end
+for _, format in ipairs({ "dos", "mac" }) do
+  T["binary index writes ignore " .. format .. " format and BOM but retain encoding"] = function()
+    vim.fn.writefile({ "café\rinside", "tail" }, root .. "/binary-input", "b")
+    H.git(root, "add", "binary-input")
+    local function binary_options()
+      vim.bo.fileencoding, vim.bo.fileformat = "utf-16le", format
+      vim.bo.bomb, vim.bo.binary, vim.bo.endofline = true, true, false
+    end
+    vim.cmd.edit(root .. "/binary-input")
+    binary_options()
+    vim.cmd("write " .. vim.fn.fnameescape(root .. "/native-binary"))
+    local file = assert(io.open(root .. "/native-binary", "rb"))
+    local expected = file:read("*a")
+    file:close()
+    vim.cmd("GinEdit binary-input")
+    binary_options()
+    vim.cmd.write()
+    MiniTest.expect.equality(
+      { require("gin.git").run({ "show", ":binary-input" }, { cwd = root }).stdout:byte(1, -1) },
+      { expected:byte(1, -1) }
+    )
+    MiniTest.expect.equality(
+      vim.fn.readfile(root .. "/binary-input", "b"),
+      { "café\rinside", "tail" }
+    )
+  end
+end
 return T

@@ -3070,3 +3070,16 @@ unrepresentable UCS-2 write leaves the index, working file and unsaved buffer
 intact. The codec rejects incomplete code units and invalid scalar/surrogate
 sequences; this is explicit failure rather than a claim of native malformed-byte
 replacement parity. No external converter or new runtime dependency is required.
+
+## Binary index write options
+
+GinEdit previously applied fileformat conversions and inserted a BOM even with
+binary set. Native Neovim writes binary buffers with LF separators and no BOM,
+while still honoring an explicitly set fileencoding on write. The encoder now
+follows that observed behavior and retains its existing endofline handling.
+
+Native-write comparisons cover both DOS and Mac fileformat settings with binary,
+bomb and UTF-16LE fileencoding enabled. Literal CR inside a line is preserved,
+separators are LF, and no final newline is added when endofline is off. The tests
+compare raw bytes and verify the working file is unchanged. The old encoder
+failed by adding a UTF-16LE BOM and converting the separator to CRLF.
