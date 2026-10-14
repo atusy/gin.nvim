@@ -140,23 +140,24 @@ end
 function M.command(opts)
   local args = require("gin.command").arguments("browse", opts.fargs)
   local options, residue = require("gin.command").parse(args, { "worktree", "repository", "yank" })
-  local positional = {}
+  local positional, separated = {}, false
   for _, arg in ipairs(residue) do
-    local remote = arg:match("^%-%-remote=(.+)$")
-    if remote then
-      options.remote = remote
-    elseif arg == "--home" then
-      options.home = true
-    elseif arg == "--pr" then
-      options.pr = true
-    elseif arg == "--commit" then
-      options.commit = true
-    elseif arg == "--permalink" then
-      options.permalink = true
-    elseif arg == "--no-browser" or arg == "-n" then
-      options.no_browser = true
+    local name, value
+    if not separated then
+      name, value = require("gin.flags").parse(arg)
+    end
+    if not separated and arg == "--" then
+      separated = true
+    elseif name then
+      if name == "remote" then
+        assert(options.remote == nil, "REMOTE in --remote={REMOTE} must be string")
+        options.remote = value
+      elseif name == "home" or name == "pr" or name == "commit" or name == "permalink" then
+        options[name] = true
+      elseif name == "no-browser" or name == "n" then
+        options.no_browser = true
+      end
     else
-      assert(arg:sub(1, 1) ~= "-", "Unsupported GinBrowse flag: " .. arg)
       positional[#positional + 1] = arg
     end
   end

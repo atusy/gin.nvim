@@ -121,6 +121,43 @@ T["GinBrowse no-browser yanks a current-file URL with a range"] = function()
     "https://github.com/owner/repo/blob/main/sub/space%20%23%20file.md?plain=1#L1-L2"
   )
 end
+T["GinBrowse separates literal dash and plus-prefixed paths from flags"] = function()
+  for _, path in ipairs({ "-note.md", "++repository" }) do
+    vim.fn.writefile({ "content" }, root .. "/" .. path)
+    H.git(root, "add", "--", path)
+    H.git(root, "commit", "-m", "add literal path")
+    vim.cmd("GinBrowse --no-browser ++yank=a HEAD -- " .. path)
+    MiniTest.expect.equality(
+      vim.fn.getreg("a"),
+      "https://github.com/owner/repo/blob/main/" .. vim.uri_encode(path, "rfc3986")
+    )
+  end
+end
+T["GinBrowse uses flag presence and ignores unused parsed flags"] = function()
+  for _, flags in ipairs({
+    "--home=false --unused=value -nattached",
+    "--home --home --no-browser=false",
+  }) do
+    vim.cmd("GinBrowse ++yank=a " .. flags)
+    MiniTest.expect.equality(vim.fn.getreg("a"), "https://github.com/owner/repo")
+  end
+end
+T["GinBrowse rejects repeated remote flags before opening or yanking"] = function()
+  local open, opened = vim.ui.open, false
+  vim.ui.open = function()
+    opened = true
+  end
+  vim.fn.setreg("a", "unchanged")
+  local ok, err = pcall(function()
+    MiniTest.expect.error(function()
+      vim.cmd("GinBrowse ++yank=a --remote=origin --remote=origin --home")
+    end, "REMOTE in %-%-remote={REMOTE} must be string")
+    MiniTest.expect.equality(vim.fn.getreg("a"), "unchanged")
+    MiniTest.expect.equality(opened, false)
+  end)
+  vim.ui.open = open
+  assert(ok, err)
+end
 T["GinBrowse zero address omits the line fragment"] = function()
   vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/space # file.md"))
   vim.cmd("0GinBrowse --no-browser ++yank=a")

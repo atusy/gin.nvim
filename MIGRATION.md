@@ -2607,3 +2607,18 @@ Git results, updates on first use and DirChanged, and suppresses stale replies.
 It does not reproduce Denops startup events or the upstream 100 ms per-module
 TTL caches; the shared 100 ms component-event debounce remains. These runtime
 choices do not establish completion of the other command/API migration items.
+
+## Browse flag parsing and literal paths
+
+GinBrowse previously rejected `--`, preventing literal dash-prefixed paths, and
+parsed only exact spellings of a small flag list. It now uses the shared pinned
+flag grammar and treats tokens after the separator as positional arguments.
+The command follows the pinned browse dispatcher: boolean options depend on flag
+presence, unused parsed flags are ignored, and repeated remote flags are rejected
+because the upstream grouped value is not a string.
+
+Real-Git tests browse committed `-note.md` and `++repository` paths after the
+separator, exercise attached short-flag values and explicit/repeated boolean
+values, and prove duplicate remote validation leaves the target register and
+browser untouched. This closes the command-parser gap, not the wider hosting
+provider URL audit inherited from upstream's git-browse dependency.
