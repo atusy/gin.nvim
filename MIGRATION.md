@@ -3180,3 +3180,30 @@ compatibility remains on the broader migration checklist.
 
 Validation: all 63 GinDiff cases pass on minimum Neovim 0.10.0. `make check`
 and the integrated full suite pass (1,264 cases in 48 groups).
+
+
+## Tag deletion ordering and partial failure
+
+The pinned `action/tag_delete.ts` dispatches one deletion per selected tag.
+The normal-mode `bare/main.ts` dispatcher wraps each command in denops std v7
+`helper.friendlyCall`, which reports an Error and returns so the loop can
+continue. The Lua implementation instead passed every selected tag to one
+`git tag -d` invocation. With the tested Git, a locked later ref made that
+whole invocation fail, retaining even an earlier deletable tag.
+
+Deletion now runs once per deduplicated selected tag, in selection order.
+Each successful deletion retains the ordinary completion notification and
+view refresh. Failures are collected while subsequent selected tags are
+attempted, then propagated together to the Lua caller. This preserves the
+port's explicit error reporting while matching upstream normal-mode progress
+through the selection; upstream debug mode's immediate propagation is not
+introduced as a separate Lua mode.
+
+Two real Git fixtures lock either the first or second selected tag. They
+verify that the other tag is deleted, the locked tag's object is unchanged,
+the working file/index remain clean, the action reports failure, and the view
+refresh contains only the retained tag. The batched implementation fails the
+Git-state assertion; an intermediate fail-fast loop fails when the first tag
+is locked. Minimum Neovim 0.10.0 passes all 20 tag cases after the final change.
+
+Validation: `make check` and all 1,266 full-suite cases in 48 groups pass.

@@ -92,6 +92,27 @@ T["tag delete removes only selected refs"] = function()
   H.drain()
   MiniTest.expect.equality(#vim.b.gin_tags, 1)
 end
+for _, locked in ipairs({ "light", "release" }) do
+  T["partial tag deletion refreshes successfully removed refs when locked=" .. locked] = function()
+    vim.cmd.GinTag()
+    local retained = H.git(root, "rev-parse", "refs/tags/" .. locked)
+    vim.fn.writefile({ "locked" }, root .. "/.git/refs/tags/" .. locked .. ".lock")
+    MiniTest.expect.error(function()
+      require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 2 })
+    end, "git exited")
+    MiniTest.expect.equality(H.git(root, "tag", "--list"), locked .. "\n")
+    MiniTest.expect.equality(H.git(root, "rev-parse", "refs/tags/" .. locked), retained)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "base" })
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+    H.drain()
+    MiniTest.expect.equality(
+      vim.tbl_map(function(row)
+        return row.tag
+      end, vim.b.gin_tags),
+      { locked }
+    )
+  end
+end
 T["tag show opens annotated tag content"] = function()
   vim.cmd("GinTag rel*")
   vim.cmd.edit()

@@ -112,11 +112,16 @@ function M.read(buf, name)
     if #selected == 0 then
       return
     end
-    local args = { "tag", "-d", "--" }
+    local errors = {}
     for _, row in ipairs(selected) do
-      args[#args + 1] = candidate_field(row, "tag")
+      local ok, err = pcall(run, { "tag", "-d", "--", candidate_field(row, "tag") })
+      if not ok then
+        errors[#errors + 1] = tostring(err)
+      end
     end
-    run(args)
+    if #errors > 0 then
+      error(table.concat(errors, "\n"), 0)
+    end
   end)
   for _, detach in ipairs({ false, true }) do
     action.define(buf, detach and "switch:detach" or "switch", function(target, range)
