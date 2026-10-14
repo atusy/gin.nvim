@@ -274,8 +274,10 @@ ginblame://, ginblamenav://, ginblamedetail://     |:GinBlame|
     selected file and revision.
 
                                                         *gin-commands-options*
-Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
-pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
+Openers accept Ex commands such as edit, split, vsplit, new, tabedit, tabnew
+and pedit, including modifiers: ++opener=botright\ vsplit. Escape spaces so
+the opener is one Gin argument. Availability and pane layout depend on the
+command. ++enc/++encoding and ++ff/++fileformat select
 decoding on commands that support them. ++processor accepts a command with its
 arguments escaped as one Gin argument.
 For output views, GinEdit and either Blame pane, :edit ++enc={encoding}

@@ -4449,3 +4449,60 @@ Current Neovim passes 210 command, boundary and Browse cases; Neovim 0.10 passes
 145 command and boundary cases. Logs: `/tmp/gin-integrated-prefix-browse.log`
 and `/tmp/gin-prefix-nvim010.log`. Full integration validation follows the
 parallel batch.
+
+
+### First parallel worktree integration batch
+
+Main remains the sole integration owner. Worker commits were inspected and
+cherry-picked in these pairs (worker -> main):
+
+- Browse revision ordering: 0d717ce -> 34e978a.
+- Help/configuration examples: 7900146 -> 9a2f54b.
+- Action mapping error boundaries: 368b18d -> 5adac69.
+- Action transient output: d04964a -> 80237c2.
+- Deferred repeated-choice boundaries: 00d088e -> c32a0e9.
+- Missing Browse remotes: f7a5368 -> 15c7755.
+
+Browse passes 72 scoped cases on current Neovim and 0.10. Five revision-error
+and six missing-remote live comparisons match pinned upstream. The worker also
+confirmed an upstream dependency bug: getCommitURL omits cwd when resolving a
+commit, potentially selecting the Denops process repository. Lua keeps the
+requested worktree's SHA instead of reproducing this bug. Evidence:
+`/tmp/gin-browse-commit-probe.lua`, `/tmp/gin-browse-commit-upstream.json`,
+`/tmp/gin-browse-remote-{upstream,lua}.json`.
+
+The action changes preserve strict direct APIs while reporting mapped failures
+through the command display boundary, including deferred choice/repeat/alias
+paths. The initial action/default-mapping suite passes 78 cases on both Neovim
+versions; the final action suite passes 28 on both. Live repeat/help/echo checks
+agree with upstream on exception, errmsg and message-history behavior. Logs:
+`/tmp/gin-actions-repeat-choice-{green,nvim010}.log` and
+`/tmp/gin-action-ui-{upstream,lua}.json`.
+
+Help checks resolve all 115 upstream tags on both versions. The documented
+mapping example stages a real fixture, survives refresh and leaves direct
+calls outside the choice-repeat history. Shared dependencies and goldens were
+not modified by workers; none ran full-suite or fixed-port daemon tests.
+The foreground full suite passed all 4,681 cases across 60 groups against
+15c7755db31196dab41064fcb43ab2b034df511c, with no failures or notes.
+Log: `/tmp/gin-parallel-batch-full.log`.
+
+
+### Ex-compatible openers
+
+Worker commits efc6c0a and 38cdfbf were integrated as d9d4a72 and de5bddc.
+The exact-name whitelist rejected the documented `botright vsplit` opener
+and valid `new`/`tabnew` commands. Openers now use Ex parsing and execution,
+with escaped filenames and decoding options. Parsed canonical `pedit` detects
+compound and abbreviated preview commands while preserving the established
+actual-preview-window return contract used by Patch and Chaperon.
+
+Both regressions failed before the changes. On current Neovim and 0.10.0,
+124 cases across opener, buffer, editor, Patch and Chaperon pass, including
+spaces and literal pipe/percent/hash filename characters, already-visible
+buffers, preview focus and encoding/fileformat. Four live opener comparisons
+match pinned upstream content, window count and display. Logs:
+`/tmp/gin-help-openers-current.log`, `/tmp/gin-help-openers-nvim010.log`,
+`/tmp/gin-help-opener-{upstream,lua}.json`. README and help now describe Ex
+openers and escaped embedded modifiers. The full-suite result above predates
+these opener changes; integration testing will cover the next combined batch.

@@ -20,8 +20,10 @@ Currently implemented:
   the result. Successful commands emit
   `User GinCommandPost`. `++processor=command\ args` transforms stdout; with a
   processor configured, the event fires only after the processor succeeds.
-- `:GinBuffer [++opener=edit|split|vsplit|tabedit|pedit] {git arguments}` displays
-  command output. Use `:edit` to reload, or `:read {gin-URI}` to insert output
+- `:GinBuffer [++opener={opener}] {git arguments}` displays
+  command output. Openers accept Ex commands and modifiers, such as
+  `++opener=botright\ vsplit`, `new`, `tabnew`, or `pedit`.
+  Use `:edit` to reload, or `:read {gin-URI}` to insert output
   into another buffer. `++worktree`, `++filetype`, and
   `++monochrome` are accepted; ANSI Git colors are rendered as highlights.
   `++enc`/`++encoding` and `++ff`/`++fileformat` select decoding and survive reloads.
