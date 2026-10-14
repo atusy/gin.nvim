@@ -324,6 +324,22 @@ function M.read(buf, name, output)
           vim.keymap.set("n", key, plug, { buffer = target, remap = true, silent = true })
         end
       end
+      local undo = "setlocal winfixbuf<"
+      for _, key in ipairs({
+        "<CR>",
+        "<C-O>",
+        "<C-I>",
+        "<Plug>(gin-blame-switch-commit)",
+        "<Plug>(gin-blame-navigate-older)",
+        "<Plug>(gin-blame-navigate-newer)",
+      }) do
+        -- Spaces before a command separator become part of an unmap key.
+        undo = undo .. "| silent! nunmap <buffer> " .. key
+      end
+      local existing = vim.b[target].undo_ftplugin or ""
+      if not existing:find(undo, 1, true) then
+        vim.b[target].undo_ftplugin = existing ~= "" and (existing .. "| " .. undo) or undo
+      end
       vim.b[target].gin_blame_result = result
       vim.b[target].gin_blame_line_map = map
       vim.b[target].gin_blame_file_line_to_physical = reverse

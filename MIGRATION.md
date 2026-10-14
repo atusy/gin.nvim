@@ -1382,3 +1382,13 @@ file while the stored path remains valid, plus rejection without changing the
 file content or layout when required context is absent. Differing fragments
 rebuild paired names in the native URI format; unchanged legacy names retain
 the existing reload path. Hidden paired-buffer recovery remains unaudited.
+
+Blame panes now append mapping/window cleanup to `undo_ftplugin`, preserving
+any language-specific cleanup. A real buffer test changes each pane to `text`
+and verifies removal of the three default keys and three Plug mappings, plus
+restoration of `winfixbuf`; repeated reloads do not grow the undo string.
+This implements the pinned ftplugins' cleanup intent with one deliberate fix:
+their spaces immediately before command separators become part of `:nunmap`
+keys in Neovim and prevent removal. The Lua-generated cleanup omits those
+spaces. This is a corrected lifecycle behavior, not exact reproduction of that
+upstream defect.

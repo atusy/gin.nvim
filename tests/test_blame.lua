@@ -89,6 +89,34 @@ T["blame maintains upstream buffer links through history and reload"] = function
   MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufnr, file)
   MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
 end
+T["changing blame filetypes removes their mappings and window pinning"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  for _, buf in ipairs({ nav, file }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), "<Plug>(gin-blame-switch-commit)")
+    vim.cmd.edit()
+    H.drain()
+    local undo = vim.b[buf].undo_ftplugin
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.b[buf].undo_ftplugin, undo)
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    vim.bo[buf].filetype = "text"
+    for _, key in ipairs({
+      "<CR>",
+      "<C-O>",
+      "<C-I>",
+      "<Plug>(gin-blame-switch-commit)",
+      "<Plug>(gin-blame-navigate-older)",
+      "<Plug>(gin-blame-navigate-newer)",
+    }) do
+      MiniTest.expect.equality(vim.fn.maparg(key, "n"), "")
+    end
+    MiniTest.expect.equality(vim.wo.winfixbuf, vim.go.winfixbuf)
+  end
+end
 T["legacy blame paths survive reload and history navigation"] = function()
   local path = "sub/space + 日本語$.lua"
   H.git(root, "mv", "sub/file.lua", path)
