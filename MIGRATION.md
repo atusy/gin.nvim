@@ -2257,3 +2257,18 @@ indices and history entries. Existing history tests still verify renamed paths,
 cursor restoration, forward-history truncation and failed-parent preservation;
 the latter now expects the upstream zero-based index. This addresses the history
 index contract without claiming all Blame buffer-variable shapes are identical.
+
+## Blame history after hidden-pane restoration
+
+Two real Git fixtures now retain either the source or navigation buffer with
+`bufhidden=hide`, close its window, then reload the surviving pane. A history
+containing a rename and a parent selection is positioned before its newest
+entry. The restored panes must retain identical entries and indices; navigating
+forward from the restored pane must recover the earlier filename, parent
+revision and exact physical cursor line in both panes, without changing Git
+state. Resetting an existing navigation pane's history index while reopening it
+makes the new navigation-restoration case fail.
+
+These tests exercise restoration of loaded hidden buffers. The normal unload
+policy still closes the companion buffers, as covered separately; they do not
+claim history persistence after buffers are wiped or across Neovim sessions.

@@ -364,6 +364,47 @@ T["reloading either blame pane updates the existing three windows"] = function()
     )
   end
 end
+for _, hidden in ipairs({ "file", "navigation" }) do
+  T["restoring hidden " .. hidden .. " pane preserves navigable blame history"] = function()
+    H.git(root, "mv", "sub/file.lua", "sub/renamed.lua")
+    H.git(root, "commit", "-m", "rename")
+    vim.cmd("GinBlame renamed.lua")
+    local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+    vim.api.nvim_win_set_cursor(0, { 4, 0 })
+    require("gin.blame").switch_commit()
+    require("gin.blame").switch_commit()
+    require("gin.blame").navigate_history("older")
+    local history = vim.b.gin_blame_history
+    local target, survivor = hidden == "file" and file or nav, hidden == "file" and nav or file
+    vim.bo[target].bufhidden = "hide"
+    vim.api.nvim_win_close(vim.fn.bufwinid(target), true)
+    H.drain()
+    MiniTest.expect.equality(vim.api.nvim_buf_is_loaded(target), true)
+    MiniTest.expect.equality(vim.fn.bufwinid(target), -1)
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(survivor))
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+    for _, buf in ipairs({ file, nav }) do
+      MiniTest.expect.equality(vim.b[buf].gin_blame_history, history)
+      MiniTest.expect.equality(vim.b[buf].gin_blame_history_index, 1)
+      MiniTest.expect.equality(vim.fn.bufwinid(buf) ~= -1, true)
+    end
+    -- The restored pane must use the same forward history as its companion.
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
+    require("gin.blame").navigate_history("newer")
+    for _, buf in ipairs({ file, nav }) do
+      local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(buf))
+      MiniTest.expect.equality(
+        { parsed.params.commitish, parsed.fragment },
+        { second .. "^", "sub/file.lua" }
+      )
+      MiniTest.expect.equality(vim.b[buf].gin_blame_history_index, 2)
+      MiniTest.expect.equality(vim.api.nvim_win_get_cursor(vim.fn.bufwinid(buf))[1], 3)
+    end
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+end
 T["navigation reload restores a hidden paired file"] = function()
   vim.cmd("GinBlame file.lua")
   local nav = vim.api.nvim_get_current_buf()
