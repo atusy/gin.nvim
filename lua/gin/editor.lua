@@ -20,8 +20,12 @@ function M.aliases()
 end
 
 function M.environment()
-  local disable_editor = vim.g.gin_proxy_disable_editor and vim.g.gin_proxy_disable_editor ~= 0
-  local disable_askpass = vim.g.gin_proxy_disable_askpass and vim.g.gin_proxy_disable_askpass ~= 0
+  local function disabled(name)
+    local value = vim.g[name]
+    return value and value ~= vim.NIL and value ~= 0
+  end
+  local disable_editor = disabled("gin_proxy_disable_editor")
+  local disable_askpass = disabled("gin_proxy_disable_askpass")
   if disable_editor and disable_askpass then
     return nil
   end

@@ -1813,3 +1813,9 @@ Git proceeds to the password prompt; a separate Vimscript/RPC inputsecret probe
 confirmed the same native result. The pinned askpass handler forwards that result
 unchanged. These four keyboard cases distinguish native empty responses from
 the older tests' injected input exceptions; they do not claim Ctrl-C cancels Git.
+
+Null editor/askpass opt-out settings now retain the enabled defaults. The pinned
+proxy listener evaluates each value with `?? false`; Lua previously treated
+`vim.NIL` as truthy and disabled the corresponding proxy. A regression case sets
+both globals to `v:null` and checks that the editor command and executable
+askpass launcher are provided. Existing independent opt-out tests remain active.

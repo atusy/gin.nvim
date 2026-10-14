@@ -100,6 +100,14 @@ T["editor and askpass proxy opt-outs are independent"] = function()
   vim.g.gin_proxy_disable_editor = 1
   MiniTest.expect.equality(require("gin.editor").environment(), nil)
 end
+T["null proxy opt-outs retain the enabled defaults"] = function()
+  vim.g.gin_proxy_disable_editor = vim.NIL
+  vim.g.gin_proxy_disable_askpass = vim.NIL
+  local env = require("gin.editor").environment()
+  MiniTest.expect.equality(type(env), "table")
+  MiniTest.expect.equality(type(env.GIT_EDITOR), "string")
+  MiniTest.expect.equality(vim.fn.executable(env.GIT_ASKPASS), 1)
+end
 T["synchronous proxy opt-out keeps credential requests noninteractive"] = function()
   vim.g.gin_proxy_disable_askpass = 1
   local prompts = 0
