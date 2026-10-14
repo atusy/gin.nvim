@@ -25,6 +25,20 @@ local T = MiniTest.new_set({
     end,
   },
 })
+local function expect_command_error(command, pattern)
+  local echo, message = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    if chunks[1][2] == "ErrorMsg" then
+      message = chunks[1][1]
+    end
+  end
+  local ok, err = pcall(vim.cmd, command)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(type(message), "string")
+  MiniTest.expect.equality(message:find(pattern) ~= nil, true)
+end
+
 T["successful command bursts publish one deferred completion event"] = function()
   local command = require("gin.command")
   for _ = 1, 3 do
@@ -121,16 +135,15 @@ T["Gin option values stop at ECMAScript line terminators"] = function()
 end
 T["duplicate Gin options fail before executing Git"] = function()
   vim.fn.writefile({ "literal" }, root .. "/file")
-  MiniTest.expect.error(function()
-    vim.cmd("Gin ++wait ++worktree=. ++worktree=. add -- file")
-  end, "Duplicate Gin option: %+%+worktree")
+  expect_command_error(
+    "Gin ++wait ++worktree=. ++worktree=. add -- file",
+    "Duplicate Gin option: %+%+worktree"
+  )
   MiniTest.expect.equality(H.git(root, "ls-files"), "")
   MiniTest.expect.equality(events, 0)
 end
 T["failed Gin does not publish a success event"] = function()
-  MiniTest.expect.error(function()
-    vim.cmd("Gin ++wait not-a-git-command")
-  end, "git exited")
+  expect_command_error("Gin ++wait not-a-git-command", "not%-a%-git%-command")
   MiniTest.expect.equality(events, 0)
 end
 T["directory commands use buffer repository and honor local scope"] = function()
@@ -173,9 +186,7 @@ T["Gin wait returns processed output and rejects processor failures"] = function
   MiniTest.expect.equality(result.stdout, "?? FILE\n")
   H.drain()
   MiniTest.expect.equality(events, 1)
-  MiniTest.expect.error(function()
-    vim.cmd("Gin ++wait ++processor=false status")
-  end, "processor exited")
+  expect_command_error("Gin ++wait ++processor=false status", "%[gin%]:")
   H.drain()
   MiniTest.expect.equality(events, 1)
 end
@@ -691,6 +702,69 @@ for _, case in ipairs({
     assert(ok, returned)
     assert(displayed == case[4], "Unexpected final display: " .. vim.inspect(displayed))
     assert(returned == result and returned.stdout == case[2], "Raw result was changed")
+  end
+end
+T["Gin wait reports failure without throwing from the user command"] = function()
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks)
+    messages[#messages + 1] = chunks[1][1]
+  end
+  local ok = pcall(vim.cmd, "Gin ++wait not-a-git-command")
+  vim.api.nvim_echo = echo
+  MiniTest.expect.equality(ok, true)
+  MiniTest.expect.equality(events, 0)
+  MiniTest.expect.equality(messages[#messages]:find("[gin]:", 1, true) ~= nil, true)
+end
+for _, modifier in ipairs({ "", "silent ", "silent! " }) do
+  for _, wait in ipairs({ false, true }) do
+    for _, fail in ipairs({ false, true }) do
+      T["Gin modifier " .. modifier .. " wait=" .. tostring(wait) .. " failure=" .. tostring(fail)] = function()
+        H.git(
+          root,
+          "config",
+          "alias.probe",
+          "!printf 'progress\\n' >&2; exit " .. (fail and "7" or "0")
+        )
+        local command = require("gin.command")
+        local execute, echo = command.execute, vim.api.nvim_echo
+        local finished, progress, final, errors = false, 0, 0, 0
+        command.execute = function(opts)
+          opts.on_exit = function()
+            finished = true
+          end
+          return execute(opts)
+        end
+        vim.api.nvim_echo = function(chunks, history)
+          if chunks[1][2] == "ErrorMsg" then
+            errors = errors + 1
+            assert(chunks[1][1]:find("[gin]: progress", 1, true))
+          elseif history then
+            final = final + 1
+          else
+            progress = progress + 1
+          end
+        end
+        local ok, err = pcall(function()
+          vim.cmd(modifier .. "Gin " .. (wait and "++wait " or "") .. "probe")
+          assert(
+            vim.wait(5000, function()
+              return finished
+            end, 10),
+            "Command did not finish"
+          )
+          if not fail then
+            H.drain()
+          end
+          MiniTest.expect.equality(progress > 0, true)
+          MiniTest.expect.equality(final, not fail and modifier == "" and 1 or 0)
+          MiniTest.expect.equality(errors, fail and modifier ~= "silent! " and 1 or 0)
+          MiniTest.expect.equality(events, fail and 0 or 1)
+          MiniTest.expect.equality(command.post_pending(), false)
+        end)
+        command.execute, vim.api.nvim_echo = execute, echo
+        assert(ok, err)
+      end
+    end
   end
 end
 return T

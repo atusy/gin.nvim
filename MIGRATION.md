@@ -4154,3 +4154,43 @@ on failure. Redirection also captures Lua's suppressed exception text under
 silent!, so redirection output is not by itself proof of visible UI output.
 The modifier/error contract remains open; the bare-command checklist is not yet
 closed. Evidence: `/tmp/gin-command-modifiers-{upstream,lua}.json`.
+
+## Bare Gin friendly errors and silent modifiers
+
+The :Gin entrypoint now routes through a user-command wrapper. Git and processor
+failures are displayed as friendly `[gin]:` messages using UTF-8-decoded,
+ANSI-stripped stderr; parser and other errors are caught without a Lua stack
+trace. Normal and silent user commands return after reporting errors. silent!
+suppresses the final error. All modes retain live progress, while silent and
+silent! suppress the final success message, matching the pinned command path.
+
+The internal execute API retains its previous exception/notification behavior
+and silent indicator suppression. A progress option enables the user-command
+path explicitly, and an on_error callback receives execution failures in either
+mode. This preserves existing callers that depend on failure propagation or
+silent internal execution. An initial attempt to infer progress from configured
+indicator names broke the existing silent-backend test; the explicit progress
+option resolves that regression without changing its assertion.
+
+The initial friendly-error regression failed because :Gin ++wait threw. Three
+existing user-command error tests now check notification content, unchanged Git
+state and absent success events; direct API error tests remain intact. Twelve
+real-process cases cover normal/silent/silent!, synchronous/asynchronous and
+success/failure combinations. The live modifier comparison now agrees on
+return behavior, progress/final-error suppression and completion events.
+All 103 command/indicator/declaration tests pass on Neovim 0.10.0; formatting and
+diff checks pass. The full suite passes 4,587 cases across 59 groups
+(`/tmp/gin-friendly-command-full.log`).
+
+### Help-tag compatibility gap
+
+The pinned help file declares 115 tags. The current local file is missing 88,
+including per-command argument settings, mapping-disable settings, component
+functions, Plug mappings and section aliases. Their implementation or explanatory
+text often exists, but the old :help lookup does not reach it. A temporary copy
+adds these aliases at 31 existing explanations; helptags generation succeeds,
+and all 115 upstream lookups land on their exact tag in the local help file.
+The lookup check resolves real paths because macOS canonicalizes /tmp to
+/private/tmp. This documentation fix remains to be applied after the current
+runtime change is committed. Temporary preparation and verification:
+`/tmp/gin-help-tags.py`, `/tmp/gin-help-tag-check.lua`.

@@ -11,7 +11,7 @@ for name, prefixes in pairs(require("gin.difffold").presets) do
   vim.g["gin#difffold#prefixes_" .. name] = prefixes
 end
 vim.api.nvim_create_user_command("Gin", function(opts)
-  require("gin.command").execute(opts)
+  require("gin.command").command(opts)
 end, { nargs = "*", bar = true })
 vim.api.nvim_create_user_command("GinBuffer", function(opts)
   require("gin.buffer").command(opts)

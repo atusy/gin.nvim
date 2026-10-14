@@ -19,9 +19,11 @@ Contents ~
 COMMANDS                                                        *gin-commands*
 
 :Gin [++wait] [++worktree={path}] {git-arguments}                       *:Gin*
-    Execute Git asynchronously and display live output. :silent suppresses
-    progress. ++wait waits for completion while servicing proxy requests and
-    displaying progress. Successful commands
+    Execute Git asynchronously and display live output. :silent suppresses the
+    final success message; progress remains visible as in the pinned upstream.
+    :silent! also suppresses the final error message. ++wait waits for completion
+    while servicing proxy requests and displaying progress. Failures display a
+    friendly message without throwing from the user command. Successful commands
     emit |GinCommandPost|. ++processor={command} transforms stdout; processor
     failure prevents the success event.
 
@@ -327,9 +329,14 @@ receive a distinct ID per channel and decoded line arrays. Captured Git output
 remains unchanged. Backend failures close opened channels and raise an error.
 
 require('gin.command').execute(opts) accepts the same indicator names alongside
-fargs and smods. Both channels default to "echo"; smods.silent suppresses them.
+fargs and smods. Both channels default to "echo"; smods.silent suppresses them
+unless progress = true. The :Gin entrypoint enables progress explicitly.
 Backend failures skip processors and GinCommandPost. With ++wait they raise an
 error; asynchronous calls report through vim.notify unless emsg_silent is set.
+An optional on_error(message, result) callback handles execution failures in
+either mode instead; result is supplied for a failed Git or processor exit.
+The user-command wrapper uses this callback for friendly reporting. Direct Lua
+calls without the callback retain exception/notification behavior.
 
 ==============================================================================
 STATUSLINE                                                     *gin-components*

@@ -73,6 +73,35 @@ function M.post_pending()
   return post_timer ~= nil
 end
 
+---User-command errors are friendly messages; execute retains strict API errors.
+function M.command(opts)
+  local function report(message, result)
+    if opts.smods.emsg_silent then
+      return
+    end
+    if result then
+      message = require("gin.csi").strip(require("gin.stream_text").utf8(result.stderr or ""))
+    else
+      message = tostring(message):gsub("^.-:%d+: ", "")
+    end
+    message = "[gin]: " .. message
+    if message:find("\0", 1, true) then
+      message = vim.fn.string(message)
+    end
+    vim.api.nvim_echo({ { message, "ErrorMsg" } }, false, {})
+  end
+  local ok, err = pcall(
+    M.execute,
+    vim.tbl_extend("force", opts, {
+      progress = true,
+      on_error = report,
+    })
+  )
+  if not ok then
+    report(err)
+  end
+end
+
 function M.execute(opts)
   local wait, raw_args = false, {}
   for _, arg in ipairs(opts.fargs) do
@@ -88,8 +117,10 @@ function M.execute(opts)
   options.eventignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
   local root = require("gin.worktree").current(options.worktree)
   local completed, failure, cancelled, running
-  local function report(message)
-    if options.wait then
+  local function report(message, result)
+    if opts.on_error then
+      opts.on_error(message, result)
+    elseif options.wait then
       failure = message
     elseif not opts.smods.emsg_silent then
       vim.notify(message, vim.log.levels.ERROR)
@@ -108,7 +139,7 @@ function M.execute(opts)
       return
     end
     if result.code ~= 0 then
-      report(require("gin.git").error_message(result, source))
+      report(require("gin.git").error_message(result, source), result)
       return
     end
     local ok, err = pcall(M.finish, result, options, opts.smods)
@@ -117,7 +148,7 @@ function M.execute(opts)
     end
   end
   local env = require("gin.editor").environment()
-  local indicator = not opts.smods.silent
+  local indicator = (opts.progress or not opts.smods.silent)
       and require("gin.indicator").channels(
         opts.stdout_indicator or "echo",
         opts.stderr_indicator or "echo"
