@@ -1777,3 +1777,17 @@ preserves an accepted empty string while returning null for cancellation. A
 regression test proves that repeat no longer re-executes the previous callback
 after an empty choice. An unmapped empty action is a no-op, while a user-defined
 empty-name mapping can still be dispatched.
+
+`tests/test_editor_interaction.lua` now exercises asynchronous `:Gin commit` in
+an isolated child Neovim using `MiniTest.new_child_neovim()` and keyboard input.
+It types the command, edits COMMIT_EDITMSG in Insert mode, then either types
+`:Apply` or `:wq` followed by `yes` at the confirmation prompt. Both cases wait
+for GinCommandPost and independently inspect the real commit message and file
+contents. No RPC buffer edit or RPC Apply call substitutes for those interactions.
+This closes that specific asynchronous keyboard workflow gap. A separate bounded
+probe of `:Gin ++wait commit` reached the proxy buffer but left the typed message
+and Apply command queued: after 300 ms the buffer's first line was still empty
+and no completion event had fired. Draining those keys and editing/applying via
+RPC allowed the real commit to finish. Thus scheduled API edits are insufficient
+evidence of usable keyboard interaction during synchronous waits; that remaining
+limitation is reproduced, not resolved by these asynchronous tests.

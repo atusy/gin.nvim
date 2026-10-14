@@ -268,7 +268,7 @@ With filetype plugins enabled, gitcommit/gitrebase buffers get :Accept (:wq)
 and :Cancel (:cq) aliases unless already defined. Disable them with
 g:gin_proxy_disable_accept_and_cancel_aliases = 1. Proxy buffers retain their
 request-specific :Apply and :Cancel. ++wait services proxy requests while waiting;
-see |gin-limitations| for the remaining interactive-editing validation limit.
+see |gin-limitations| for the synchronous keyboard-input restriction.
 
 ==============================================================================
 PROGRESS INDICATOR                                             *gin-indicator*
@@ -335,7 +335,10 @@ LIMITATIONS                                                   *gin-limitations*
 The migration is incomplete. See MIGRATION.md for the detailed audit status.
 Git processes and output processors have no implicit time limit. Gin ++wait
 and synchronous buffer operations service proxy requests and progress while
-waiting; manual interactive editing during the wait remains unverified.
+waiting. Gin ++wait does not process normal editing keys during a pending
+editor request. Use asynchronous :Gin commit for keyboard-driven editing;
+:Apply and :wq with confirmation are tested in that workflow. Keyboard editing
+inside other synchronous buffer operations remains unverified.
 
 The g:gin_log_parse_pattern, g:gin_reflog_parse_pattern,
 g:gin_tag_parse_pattern and g:gin_stash_parse_pattern settings accept JavaScript
