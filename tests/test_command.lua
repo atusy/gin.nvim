@@ -95,6 +95,11 @@ T["Gin consumes every bare wait token before parsing options"] = function()
     MiniTest.expect.equality(H.git(root, "ls-files"), "file\n")
   end
 end
+T["bare worktree options use the current repository"] = function()
+  vim.fn.writefile({ "content" }, root .. "/file")
+  vim.cmd("Gin ++wait ++worktree add -- file")
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+end
 T["duplicate Gin options fail before executing Git"] = function()
   vim.fn.writefile({ "literal" }, root .. "/file")
   MiniTest.expect.error(function()

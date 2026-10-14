@@ -1843,3 +1843,10 @@ the scheduled editor request opens: the file-read notice appeared before the
 fix and is suppressed afterward. The
 request still initializes and can be cancelled. This concerns emitted messages;
 Neovim may still update `v:statusmsg` during a silent read.
+
+Bare `++option` values now use an empty string, matching denops std v7's
+`parsePattern` result consumed by the pinned handlers. Previously Lua stored
+`true`; a bare `++worktree` was consequently expanded as `v:true` and failed
+repository discovery. A real Git regression test stages a file through
+`Gin ++wait ++worktree add -- file` and checks its index contents. The separate
+Gin wait-token handling remains boolean and runs before the shared parser.

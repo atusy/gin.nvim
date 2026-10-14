@@ -35,7 +35,7 @@ function M.parse(args, allowed)
       name, value = arg:match("^%+%+([^=]+)=(.*)$")
       if not name then
         name = arg:match("^%+%+(.+)$")
-        value = true
+        value = ""
       end
     end
     separated = separated or arg == "--"
