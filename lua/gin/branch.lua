@@ -23,7 +23,7 @@ local function arguments(parsed)
       parsed.fragment and uri.split(parsed.fragment) or {}
   end
   local flags = {}
-  for _, key in ipairs(parsed.param_order) do
+  for _, key in ipairs(require("gin.flags").order(parsed.param_order)) do
     vim.list_extend(flags, format_flag(key, parsed.params[key]))
   end
   return flags,

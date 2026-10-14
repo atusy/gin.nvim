@@ -27,6 +27,25 @@ function M.parse(arg)
   return key, value
 end
 
+---Return JavaScript object-key order without changing the supplied key list.
+---@param keys string[]
+---@return string[]
+function M.order(keys)
+  local indices, names = {}, {}
+  for _, key in ipairs(keys) do
+    local index = (key == "0" or key:match("^[1-9]%d*$")) and tonumber(key)
+    if index and index < 4294967295 then
+      indices[#indices + 1] = key
+    else
+      names[#names + 1] = key
+    end
+  end
+  table.sort(indices, function(a, b)
+    return tonumber(a) < tonumber(b)
+  end)
+  return vim.list_extend(indices, names)
+end
+
 ---Serialize one flag name and its ordered values into Git arguments.
 ---@param key string
 ---@param values string|string[]|nil
@@ -56,7 +75,7 @@ function M.group(args)
     table.insert(groups[key], value)
   end
   local result = {}
-  for _, key in ipairs(order) do
+  for _, key in ipairs(M.order(order)) do
     vim.list_extend(result, M.format(key, groups[key]))
   end
   return result

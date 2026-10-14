@@ -59,7 +59,7 @@ local function arguments(parsed, display)
   if display then
     flag("decorate")
   end
-  for _, key in ipairs(parsed.param_order) do
+  for _, key in ipairs(require("gin.flags").order(parsed.param_order)) do
     if key ~= selector and key ~= "emojify" and not (display and key == "decorate") then
       flag(key)
     end

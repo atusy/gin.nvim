@@ -133,6 +133,32 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
     )
   end
 end
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " orders numeric flags like upstream object keys"] = function()
+    vim.cmd(command .. " --format=%H -2 -1")
+    local native = vim.api.nvim_buf_get_name(0)
+    local scheme = command == "GinLog" and "ginlog" or "ginreflog"
+    local legacy = scheme .. "://" .. root .. ";2=&1=&format=%25H"
+    for _, name in ipairs({ native, legacy }) do
+      require("gin.buffer").open(name, {})
+      for _ = 1, 2 do
+        MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { second, first })
+        vim.cmd.edit()
+      end
+      vim.cmd.enew()
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+      vim.api.nvim_cmd(
+        { cmd = "read", args = { name }, range = { 1 }, magic = { file = false } },
+        {}
+      )
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_lines(0, 0, -1, false),
+        { "before", second, first, "after" }
+      )
+      vim.bo.modified = false
+    end
+  end
+end
 for _, kind in ipairs({ "log", "reflog" }) do
   T["legacy " .. kind .. " URI restores selection for reads reloads and actions"] = function()
     H.git(root, "switch", "--detach", first)

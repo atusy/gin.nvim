@@ -62,7 +62,7 @@ function M.read(buf, name)
     "--ahead-behind",
     "-z",
   }
-  for _, key in ipairs(parsed.param_order) do
+  for _, key in ipairs(require("gin.flags").order(parsed.param_order)) do
     if key ~= "enc" and key ~= "ff" then
       vim.list_extend(args, format_flag(key, parsed.params[key]))
     end

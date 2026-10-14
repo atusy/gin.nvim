@@ -26,7 +26,7 @@ local function arguments(parsed)
     return parsed.fragment and vim.json.decode(parsed.fragment) or {}
   end
   local args = {}
-  for _, key in ipairs(parsed.param_order) do
+  for _, key in ipairs(require("gin.flags").order(parsed.param_order)) do
     if key ~= "emojify" then
       vim.list_extend(args, format_flag(key, parsed.params[key]))
     end

@@ -1327,3 +1327,11 @@ terminators for captured values. A real status fixture distinguishes literal
 prefix and a newline-terminated value, and verifies identical URI reloads with
 no index changes. This replaces broader leading-dash checks; it does not prove
 exhaustive malformed-input or numeric-key object-order parity.
+
+Numeric flag keys now follow JavaScript object enumeration in grouped native
+arguments and flag-bearing URI readers: canonical array-index names sort
+numerically before other names, whose insertion order is retained. This covers
+the pinned parser/formatter's otherwise surprising -2 -1 limit precedence.
+Real log and reflog fixtures verify two selected commits through native command
+URIs, legacy numeric-parameter URIs, reloads and :read insertion. The shared
+ordering excludes leading-zero names and the non-index value 4294967295.

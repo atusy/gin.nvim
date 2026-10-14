@@ -6,7 +6,7 @@ local M = {}
 function M.output(name, progress)
   local parsed = uri.parse(name)
   local args = { "diff", "--color=always" }
-  for _, key in ipairs(parsed.param_order) do
+  for _, key in ipairs(require("gin.flags").order(parsed.param_order)) do
     if key ~= "commitish" and key ~= "enc" and key ~= "ff" and key ~= "processor" then
       local short = #key == 1
       local prefix = key:sub(1, 1) == "-" and "" or short and "-" or "--"
