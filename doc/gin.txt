@@ -190,29 +190,87 @@ gin#util#worktree([path])                                 *gin#util#worktree()*
 
 The Vimscript utility functions delegate to the Lua implementations above.
 
-                                                         *gin-buffer-name-gin*
-                                                    *gin-buffer-name-ginblame*
-                                                   *gin-buffer-name-ginbranch*
-                                                     *gin-buffer-name-gindiff*
-                                                     *gin-buffer-name-ginedit*
-                                                      *gin-buffer-name-ginlog*
-                                                   *gin-buffer-name-ginreflog*
-                                                    *gin-buffer-name-ginstash*
-                                                   *gin-buffer-name-ginstatus*
-                                                      *gin-buffer-name-gintag*
                                                             *gin-buffer-names*
-GinEdit also reads upstream buffer names using semicolon parameters, such as
-ginedit:///path/to/repo;commitish=HEAD#file.lua. Index URIs use an empty commitish
-and support normal write-back. New buffers continue using Lua's URI format.
-Legacy GinDiff parameter/path data and GinBuffer command fragments are also
-accepted for opening, reloading and reading output into another buffer.
-GinLog and GinReflog accept upstream URI flags, revision/ref selectors and
-GinLog path arrays as well.
-GinStatus accepts upstream flags and its dollar-terminated JSON pathspec array;
-selection and automatic reload retain those filters.
-GinTag accepts upstream display flags and its dollar-terminated pattern list.
-GinStash accepts upstream display and filtering flags from URI parameters.
-GinBranch accepts upstream flags and its dollar-terminated branch pattern list.
+Gin buffer names identify a repository, view options and command-specific data.
+Match their scheme in autocmds; use |gin#util#expand()| to obtain a represented
+file path. Prefer names obtained from existing buffers over hand-built names.
+
+New Lua buffers use this layout (query and fragment are optional): >
+    {scheme}://{worktree}?{parameters}#{fragment}$
+<
+The worktree is absolute. Parameter keys/values and fragments are percent-encoded;
+parameters are key=value pairs joined by &. The final $ terminates the encoded
+fragment and is not part of its decoded content.
+
+The readers also accept pinned upstream names with a semicolon before their
+parameter portion. Their fragments differ by view, as described below. These
+are descriptions of upstream compatibility data, not templates for new Lua
+names. In particular, Lua log/reflog/stash fragments contain JSON argument
+arrays, whereas upstream stores flags and revision selectors in parameters.
+
+                                                         *gin-buffer-name-gin*
+gin://     |:GinBuffer|
+    The upstream fragment contains space-joined Git arguments followed by $.
+    Parameters include processor, monochrome, emojify, diffjump, difffold and
+    filetype. Lua-generated fragments escape whitespace and backslashes within
+    arguments before URI encoding.
+
+                                                   *gin-buffer-name-ginbranch*
+ginbranch://     |:GinBranch|
+    Upstream parameters contain branch flags; its fragment contains space-joined
+    branch patterns followed by $. The filters are retained on reload and used
+    when selecting action targets.
+
+                                                     *gin-buffer-name-gindiff*
+gindiff://     |:GinDiff|
+    Upstream parameters contain diff flags, commitish and processor. Its
+    fragment is a JSON array of paths relative to the worktree. Cached diffs
+    retain their index-side jump targets when opened from these names.
+
+                                                     *gin-buffer-name-ginedit*
+ginedit://     |:GinEdit|
+    The fragment identifies a repository-relative file. A commitish parameter
+    selects a revision; absent or empty commitish selects the index. For example:
+>
+    ginedit:///path/to/repo;commitish=HEAD#file.lua
+<
+    Index buffers support write-back while preserving the working file. GinPatch
+    uses an index buffer for its INDEX pane; WORKTREE is an ordinary file buffer.
+
+                                                      *gin-buffer-name-ginlog*
+ginlog://     |:GinLog|
+    Upstream parameters contain log flags, commitish and emojify. Its fragment
+    is a JSON array of repository-relative paths. Reloads retain this selection.
+
+                                                   *gin-buffer-name-ginreflog*
+ginreflog://     |:GinReflog|
+    Upstream parameters contain reflog flags, ref and emojify. A fragment is not
+    needed for upstream names. The ref selects the reflog being displayed.
+
+                                                    *gin-buffer-name-ginstash*
+ginstash://     |:GinStash|
+    Upstream parameters contain stash-list flags and emojify, with no fragment
+    needed. Filters are restored when opening and reloading the view.
+
+                                                   *gin-buffer-name-ginstatus*
+ginstatus://     |:GinStatus|
+    Upstream parameters contain status flags, including the default
+    untracked-files flag. Its fragment contains a JSON pathspec array followed
+    by $; the terminator is outside the JSON. Staging and automatic reload
+    preserve these filters.
+
+                                                      *gin-buffer-name-gintag*
+gintag://     |:GinTag|
+    Upstream parameters contain tag flags and emojify. Its fragment contains
+    space-joined tag patterns followed by $. Display flags and patterns survive
+    reads and action selection.
+
+                                                    *gin-buffer-name-ginblame*
+ginblame://, ginblamenav://, ginblamedetail://     |:GinBlame|
+    These identify the file-content, navigation and internal commit-detail
+    buffers respectively. Upstream parameters include commitish and emojify;
+    the fragment identifies the repository-relative file. The panes share the
+    selected file and revision.
 
                                                         *gin-commands-options*
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and

@@ -4211,3 +4211,23 @@ suite at 537faa6; the runtime suite was not repeated for tag additions.
 These aliases restore navigation, not proof of complete prose coverage. In
 particular, per-scheme buffer-name aliases currently lead to the shared URI
 compatibility explanation; a complete URI grammar/content audit remains open.
+
+
+### Per-scheme URI help coverage
+
+Expanded the ten buffer-name help entries into separate explanations rather
+than pointing every tag at one shared paragraph. The text distinguishes the
+Lua formatter's query/encoded-fragment layout from the accepted upstream
+semicolon layout, and identifies each upstream fragment's data and terminator.
+Log/reflog/stash explicitly distinguish Lua JSON argument arrays from upstream
+parameter-based flags/selectors. Blame documents all three associated schemes.
+
+Compared the pinned help section (lines 654-734) with lua/gin/uri.lua and the
+view readers, including log/stash argument reconstruction and blame pane names.
+Existing legacy URI tests in test_edit, test_diff, test_buffer, test_branch,
+test_log, test_stash, test_status and test_tag cover the behaviors described;
+these were inspected, not rerun for this prose-only change. Generated helptags
+and all 115 upstream lookups pass on current Neovim and 0.10.0 (the latter with
+filetype plugins disabled to avoid the system vimdoc parser ABI mismatch).
+This improves documentation coverage without closing the full runtime or
+configuration compatibility audit.
