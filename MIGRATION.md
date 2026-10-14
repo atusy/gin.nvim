@@ -2211,3 +2211,19 @@ full filetype lifecycle or mapping behavior. Existing tests separately exercise
 mapping installation and cleanup. Lua additionally restores list display options
 through `b:undo_ftplugin`; the pinned list ftplugins do not supply that cleanup.
 The gitcommit/gitrebase ftplugin subdirectories are outside this inventory.
+
+## Commit and rebase alias lifecycle
+
+The gitcommit/gitrebase extensions now initialize the Neovim runtime ftplugin
+before appending Gin's alias cleanup. Previously, normal filetype loading could
+replace `b:undo_ftplugin` after Gin appended it, leaving `:Accept` and `:Cancel`
+installed when the buffer changed filetype. This repairs the Lua cleanup
+extension; the pinned Vimscript aliases have no cleanup of their own.
+
+`test_editor_aliases.lua` covers both filetypes, enabled/disabled aliases, an
+existing global Accept and an existing buffer-local Cancel. It checks command
+definitions and scope, repeat sourcing, removal of Gin-owned aliases on a
+filetype change, and preservation of the existing user commands. Six enabled
+cases failed before the initialization-order fix; all twelve pass afterward.
+Existing real Git editor tests separately cover accepting and cancelling proxy
+requests. This does not close the remaining proxy interaction audit.
