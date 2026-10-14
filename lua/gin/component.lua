@@ -2,13 +2,21 @@ local M = {}
 local git = require("gin.git")
 local values = { branch = "", upstream = "", ahead = 0, behind = 0, root = "" }
 local initialized, pending = false, false
+local requested = {}
 local generation, notification = 0, 0
 
 local function publish(result, version)
-  if version ~= generation or vim.deep_equal(result, values) then
+  if version ~= generation then
     return
   end
+  local changed = requested.branch
+      and (result.branch ~= values.branch or result.upstream ~= values.upstream)
+    or requested.traffic and (result.ahead ~= values.ahead or result.behind ~= values.behind)
+    or requested.worktree and result.root ~= values.root
   values = result
+  if not changed then
+    return
+  end
   notification = notification + 1
   local ticket = notification
   vim.defer_fn(function()
@@ -18,8 +26,8 @@ local function publish(result, version)
   end, 100)
 end
 
-local function report_error(message)
-  if vim.o.verbose > 0 then
+local function report_error(message, kind)
+  if vim.o.verbose > 0 and (not kind or requested[kind]) then
     vim.notify(message, vim.log.levels.ERROR)
   end
 end
@@ -74,7 +82,10 @@ function M.refresh()
               local ahead, behind = counts.stdout:match("(%d+)%s+(%d+)")
               result.ahead, result.behind = tonumber(ahead) or 0, tonumber(behind) or 0
             else
-              report_error(counts.spawn_error or git.error_message(counts, "git component traffic"))
+              report_error(
+                counts.spawn_error or git.error_message(counts, "git component traffic"),
+                "traffic"
+              )
             end
             publish(result, version)
           end
@@ -97,7 +108,8 @@ function M.refresh()
                 traffic()
               else
                 report_error(
-                  current.spawn_error or git.error_message(current, "git component branch")
+                  current.spawn_error or git.error_message(current, "git component branch"),
+                  "branch"
                 )
                 traffic()
               end
@@ -124,6 +136,12 @@ local function schedule()
 end
 
 function M.get(kind, style)
+  if not requested[kind] then
+    requested[kind] = true
+    if initialized then
+      schedule()
+    end
+  end
   if not initialized then
     initialized = true
     local group = vim.api.nvim_create_augroup("gin_components", { clear = true })

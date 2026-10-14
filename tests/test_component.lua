@@ -32,6 +32,69 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["branch-only consumers ignore unused traffic errors and worktree changes"] = function()
+  local child = MiniTest.new_child_neovim()
+  other = H.repo()
+  H.git(other, "commit", "--allow-empty", "-m", "other base")
+  H.git(root, "branch", "--unset-upstream", "main")
+  local ok, err = pcall(function()
+    child.start({ "-u", "NONE" })
+    child.lua("vim.opt.rtp:prepend(...)", { cwd })
+    child.api.nvim_set_current_dir(root)
+    child.lua([[
+      _G.component_errors, _G.component_events = {}, 0
+      vim.notify = function(message) table.insert(_G.component_errors, message) end
+      vim.o.verbose = 1
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "GinComponentPost",
+        callback = function() _G.component_events = _G.component_events + 1 end,
+      })
+      require("gin.component.branch").ascii()
+    ]])
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return child.lua_get("_G.component_events") == 1
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("require('gin.component.branch').ascii()"), "main")
+    MiniTest.expect.equality(child.lua_get("_G.component_errors"), {})
+    child.lua([[
+      local git, component = require("gin.git"), require("gin.component")
+      local start = git.start
+      git.start = function(args, opts, callback)
+        return start(args, opts, function(result)
+          callback(result)
+          if args[1] == "rev-list" then
+            vim.defer_fn(function() _G.component_drained = true end, 250)
+          end
+        end)
+      end
+    ]])
+    child.api.nvim_set_current_dir(other)
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return child.lua_get("_G.component_drained == true")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("_G.component_events"), 1)
+    MiniTest.expect.equality(child.lua_get("_G.component_errors"), {})
+    child.lua("require('gin.component.traffic').ascii()")
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return child.lua_get("#_G.component_errors") > 0
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(
+      child.lua_get("_G.component_errors[1]:find('upstream', 1, true) ~= nil"),
+      true
+    )
+  end)
+  child.stop()
+  assert(ok, err)
+end
 T["components asynchronously publish branch traffic and worktree values"] = function()
   local branch = require("gin.component.branch")
   local traffic = require("gin.component.traffic")

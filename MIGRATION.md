@@ -23,7 +23,7 @@ scope, not proof of complete upstream parity.
 - [x] GinCd, GinLcd, GinTcd and worktree context.
 - [ ] Shared actions: choice, repeat, help, range handling and Plug mappings.
 - [ ] Editor/askpass proxies, commit/rebase integration.
-- [ ] Branch/traffic/worktree components and component events.
+- [x] Branch/traffic/worktree components and component events (functional scope audited below).
 - [ ] Help, syntax, highlights, options and default mappings in Lua.
 - [ ] Full command/action audit against the pinned source and real Git-state integration tests.
 
@@ -2580,3 +2580,30 @@ buffer before invoking Vim functions, including the custom-parser path.
 Real log/reflog views check six boundary ranges with both standard and custom
 patterns, using both explicit buffer numbers and zero. The original implementation
 failed the zero-endpoint case.
+
+
+## Component functional-scope completion audit
+
+The pinned three component modules expose six getters: branch/traffic ascii and
+unicode, plus worktree name/full. The Lua modules and legacy Vimscript wrappers
+implement all six. `test_component.lua` verifies the rendered strings against
+real diverging Git history, legacy statusline evaluation, no-upstream/detached/
+unborn branches, file-buffer repository selection, directory changes, trailing
+spaces, leaving a repository, failed-query retention/recovery, and rejection of
+late results from a previous repository. Event cases observe updated values in
+the callback and verify that unchanged refreshes do not emit events.
+
+The audit found one shared-cache difference affecting users: querying only a
+branch component could report errors from unused traffic queries and emit an
+event for an unused worktree value. The cache now tracks requested component
+kinds, filters diagnostics and change notifications accordingly, and schedules a
+refresh when a new kind is first requested. An isolated child-Neovim case uses
+branch alone with verbose enabled, switches between repositories with the same
+branch name, then activates traffic and checks that its diagnostic becomes
+visible without an explicit refresh.
+
+This closes the component functional checklist. The runtime deliberately shares
+Git results, updates on first use and DirChanged, and suppresses stale replies.
+It does not reproduce Denops startup events or the upstream 100 ms per-module
+TTL caches; the shared 100 ms component-event debounce remains. These runtime
+choices do not establish completion of the other command/API migration items.
