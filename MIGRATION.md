@@ -4038,3 +4038,44 @@ The user has been asked whether to retain correct encoding-specific BOMs and
 missing-final-newline preservation with documented deviations, or reproduce
 these pinned behaviors. No decision has yet been applied.
 Evidence: `/tmp/gin-write-metadata-{upstream,lua}.json`.
+
+## Gin final-output decoding
+
+The bare command's final display now uses the shared replacement decoder on
+concatenated stdout and stderr, matching pinned `command/bare/command.ts`.
+Default decoding is UTF-8 regardless of fileencodings; explicit labels use the
+same TextDecoder aliases and rejection rules as buffer reads. The initial
+Shift_JIS regression displayed `??"` instead of `�"`. Raw process results remain
+unchanged. Decoder failures are reported in synchronous and asynchronous runs
+without scheduling a successful GinCommandPost event.
+
+Tests cover malformed Unicode and multibyte output, aliases, stdout/stderr
+sequence boundaries, unsupported and empty explicit labels, and error delivery.
+The existing UTF-16 BOM test used iconv to generate its bytes, which could silently
+leave the input unconverted on this host. It now constructs actual UTF-16LE/BE
+code units and still checks that only the leading BOM is removed.
+
+All 179 command/encoding tests pass on Neovim 0.10.0; formatting and diff checks
+pass. The corrected live probe uses `Gin ++wait` for both implementations and
+confirms matching final text on its eleven cases. Earlier async observations
+mixed successive commands and are not valid per-case evidence. UTF-16 progress
+output still differs in how NUL-containing text is displayed (upstream binary
+representation versus Lua control-character rendering); this remains a separate
+indicator audit item. The full suite passes 4,565 cases across 59 groups
+(`/tmp/gin-command-decoding-full.log`).
+Evidence: `/tmp/gin-command-encoding-matrix-{upstream,lua}.json`.
+
+### Indicator NUL representation diagnosis
+
+Instrumenting the pinned `gin#indicator#echo#write` callback in an isolated
+runtime confirms that a decoded `A` followed by NUL arrives as Vim Blob type 10
+and displays as `0z4100`; ordinary decoded strings arrive as type 1. The UTF-16
+surrogate probe arrives as `0z00EFBFBD.4100` after UTF-8 progress decoding.
+The pinned echo backend uses Vim's `join`, which stringifies these Blob values.
+Lua's echo backend instead calls `table.concat` and nvim_echo directly, retaining
+NUL as a control character. Lua-to-Vim function calls already convert NUL strings
+to Blobs, so using Vim join in the built-in echo path reproduces the pinned
+representation without changing stream bytes or custom callback payloads.
+This fix remains to be applied after the current command-decoding validation.
+Evidence: `/tmp/gin-indicator-encoding-matrix-upstream.json` and a headless
+`vim.fn.join` probe yielding the same Blob representations.

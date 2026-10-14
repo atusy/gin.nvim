@@ -227,7 +227,16 @@ T["Unicode command display removes only the leading byte order mark"] = function
   local bom = "\239\187\191"
   local text = bom .. "first" .. bom .. "second\n"
   for _, encoding in ipairs({ "", "utf-8", "utf-16le", "utf-16be" }) do
-    local data = vim.fn.iconv(text, "utf-8", encoding == "" and "utf-8" or encoding)
+    local data = text
+    if encoding == "utf-16le" or encoding == "utf-16be" then
+      local units = {}
+      for _, code in ipairs(vim.fn.str2list(text, true)) do
+        local low, high = code % 256, math.floor(code / 256)
+        units[#units + 1] = encoding == "utf-16le" and string.char(low, high)
+          or string.char(high, low)
+      end
+      data = table.concat(units)
+    end
     local fd = assert(vim.uv.fs_open(root .. "/file", "w", 420))
     assert(vim.uv.fs_write(fd, data, 0))
     assert(vim.uv.fs_close(fd))
@@ -543,5 +552,103 @@ T["Gin processors receive no implicit process deadline"] = function()
   MiniTest.expect.equality(deadline, false)
   H.drain()
   MiniTest.expect.equality(events, 1)
+end
+T["command display replaces malformed Shift_JIS and retains ASCII"] = function()
+  local echo, displayed = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    displayed = chunks[1][1]
+  end
+  local ok, err = pcall(
+    require("gin.command").finish,
+    { code = 0, stdout = string.char(130, 34), stderr = "" },
+    { enc = "sjis", eventignore_all = true },
+    {}
+  )
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(displayed, '�"')
+end
+for _, case in ipairs({
+  { "default malformed UTF-8", nil, { 255, 65 }, "�A" },
+  { "UTF-16 alias", "utf-16", { 65, 0 }, "A" },
+  { "UTF-16 partial unit", "utf-16le", { 65 }, "�" },
+  { "Latin-1 alias", "latin1", { 128 }, "€" },
+  { "Big5 ASCII recovery", "big5", { 129, 34 }, '�"' },
+  { "EUC-JP triple recovery", "euc-jp", { 143, 162, 32 }, "� " },
+  { "ISO-2022-JP escape recovery", "iso-2022-jp", { 27, 36, 32 }, "�$ " },
+  { "GB18030 suffix recovery", "gb18030", { 129, 48, 129, 32 }, "�0� " },
+}) do
+  T["command display " .. case[1]] = function()
+    local echo, displayed = vim.api.nvim_echo, nil
+    vim.api.nvim_echo = function(chunks)
+      displayed = chunks[1][1]
+    end
+    local bytes = string.char(unpack(case[3]))
+    local result = { code = 0, stdout = bytes, stderr = "" }
+    local ok, returned = pcall(
+      require("gin.command").finish,
+      result,
+      { encoding = case[2], eventignore_all = true },
+      {}
+    )
+    vim.api.nvim_echo = echo
+    assert(ok, returned)
+    MiniTest.expect.equality(displayed, case[4])
+    MiniTest.expect.equality(returned, result)
+    MiniTest.expect.equality(result.stdout, bytes)
+  end
+end
+T["command decodes concatenated stdout and stderr as one sequence"] = function()
+  local echo, displayed = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    displayed = chunks[1][1]
+  end
+  local ok, err = pcall(
+    require("gin.command").finish,
+    { code = 0, stdout = string.char(226), stderr = string.char(130, 172) },
+    { eventignore_all = true },
+    {}
+  )
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(displayed, "€")
+end
+for _, encoding in ipairs({ "", "ucs-2le", "made-up" }) do
+  T["unsupported command encoding does not publish success: " .. encoding] = function()
+    local command = require("gin.command")
+    MiniTest.expect.error(function()
+      command.finish({ code = 0, stdout = "A", stderr = "" }, { enc = encoding }, { silent = true })
+    end, "Unsupported encoding")
+    MiniTest.expect.equality(command.post_pending(), false)
+    MiniTest.expect.equality(events, 0)
+  end
+end
+for _, wait in ipairs({ false, true }) do
+  T["unsupported command encoding reports failure without events, wait=" .. tostring(wait)] = function()
+    local notify, message = vim.notify, nil
+    vim.notify = function(value)
+      message = value
+    end
+    local args = { "++enc=ucs-2le", "status", "--short" }
+    if wait then
+      table.insert(args, 1, "++wait")
+    end
+    local ok, err = pcall(require("gin.command").execute, { fargs = args, smods = {} })
+    if not wait then
+      local completed = vim.wait(5000, function()
+        return message ~= nil
+      end, 10)
+      vim.notify = notify
+      MiniTest.expect.equality(completed, true)
+      MiniTest.expect.equality(ok, true)
+    else
+      vim.notify = notify
+      MiniTest.expect.equality(ok, false)
+      message = tostring(err)
+    end
+    MiniTest.expect.equality(message:find("Unsupported encoding: ucs-2le", 1, true) ~= nil, true)
+    MiniTest.expect.equality(require("gin.command").post_pending(), false)
+    MiniTest.expect.equality(events, 0)
+  end
 end
 return T
