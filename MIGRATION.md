@@ -13,7 +13,7 @@ scope, not proof of complete upstream parity.
 - [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [x] GinBranch, GinTag: parsed views and ref actions (functional scope audited below).
-- [ ] GinLog, GinReflog: parsed views, navigation and commit actions.
+- [x] GinLog, GinReflog: parsed views, navigation and commit actions (functional scope audited below).
 - [x] GinStash: parsed view and stash actions (functional scope audited below).
 - [x] GinEdit: revision and index buffers with write-back; working files via edit actions (functional scope audited below).
 - [x] GinDiff: revision selection, read and unified-diff navigation/folding (functional scope audited below).
@@ -185,13 +185,13 @@ regressions below. Browse/echo consumers and show variants are included in the
 ref-view functional audit below.
 
 GinLog now displays history with revision/path filters, show/yank actions and
-command-driven refresh. Other commit actions, custom parsing, emoji/color and
-full option compatibility remain pending.
+command-driven refresh. The history functional audit below covers commit
+actions, candidate parsing and display; full option compatibility remains open.
 
 GinLog cherry-pick/revert actions include parent-one/parent-two variants.
 Revert supplies --mainline only when selected, correcting the inverted condition
-in the pinned implementation. Tests use a fixture-local editor configuration;
-interactive editor proxy support is still pending.
+in the pinned implementation. The mainline matrix uses a fixture-local editor
+configuration; other history-action fixtures exercise the editor proxy.
 
 GinLog reset actions now cover default/soft/hard/merge/keep modes. Tests assert
 actual HEAD, index and worktree state rather than only command output.
@@ -202,11 +202,12 @@ Signed tag actions use the same proxy with Git signing configuration.
 
 GinLog fixup and instant-fixup are implemented. Instant autosquash starts at the
 selected parent (or --root), correcting the pinned double-parent traversal.
-Amend/reword variants now use the editor proxy; instant variants remain pending.
+Amend/reword and their instant variants use the editor proxy and have real
+history/content assertions, including cancellation.
 
 GinReflog now uses the shared history display and implemented commit actions,
-with separate default/persistent arguments and mapping settings. Its remaining
-commit-action, format and UI audits follow GinLog.
+with separate default/persistent arguments and mapping settings. Its functional
+coverage and remaining compatibility limits are recorded with GinLog below.
 
 GinStash now lists saved changes with apply/pop/drop, show/yank and automatic
 refresh. Its functional audit covers browse/echo, selected refs, custom formatting
@@ -3354,3 +3355,42 @@ adds evidence for the existing correction; it changes no production code.
 
 Validation: all eight new cases pass on minimum Neovim 0.10.0. `make check`
 and the integrated full suite pass (1,290 cases in 48 groups).
+
+
+## Log and reflog functional completion audit
+
+Pinned `command/log/edit.ts` and `command/reflog/edit.ts` initialize the same
+commit-action families. `lua/gin/log.lua` implements both views, with separate
+command settings and candidate parsing. The following source-to-test mapping
+supports the functional completion mark; it does not certify every Git pretty
+format, command option or custom parser expression.
+
+| Functional scope | Evidence |
+| --- | --- |
+| Display, selection and reload | `test_log.lua` checks history order, revision/path/ref limits, graph/default/color formats, legacy URIs, custom parsers, line boundaries and rejection of hash-like display words. |
+| Show/navigation | Selected show targets, per-view Visual Enter/choice/repeat and `test_show.lua` opener/emojify/reload fixtures cover both history consumers; diff navigation has its own ordinary-unified-diff audit. |
+| Browse/echo/yank | Both views now verify that browse and echo target an older selected commit instead of HEAD. Existing ranges and yanks verify selected candidate order. |
+| Switch | Ordinary switch rejects commit targets. Both views explicitly detach to the first selected older commit while preserving the newer main branch ref and clean file/index state. |
+| Cherry-pick/revert | Ordinary operations and the preceding eight-case mainline matrix check Git trees, parentage, clean state and first-selection behavior in both views. |
+| Reset | Default/soft/hard/merge/keep cases assert HEAD/index/worktree changes, keep-mode rejection and restoration of a reflog-only commit. |
+| Merge/rebase | Selected commit merge, reflog rebase replay, interactive editor Apply and prompt cancellation are exercised. Branch tests separately cover merge variants and the shared rebase action families. |
+| Tags | Lightweight, force replacement, annotated/default alias with message editing, verifiable SSH-signed force tags and cancellation have real-ref/content checks. |
+| Fixup | Fixup/amend/reword, root autosquash and instant amend/reword verify history, messages, descendant preservation and staged-content handling; cancellation retains edits/history. |
+| Addressed reads | `test_history_read.lua` checks custom/emoji output, explicit encoding, insertion marks, FileReadPost, unchanged destination options, empty output and failure preservation for both URI families. |
+
+The added detach cases create a third commit, select rows two through three,
+and require HEAD to become the second commit while main still points to the
+third. This distinguishes first-selection behavior from either leaving HEAD
+unchanged or processing all selected entries.
+
+Existing corrections beyond pinned behavior remain explicit: revert mainline
+flags, instant-fixup parent/root selection and ordinary unified-diff navigation
+fixes are not claims of identical upstream execution. Complete options/API,
+editor lifecycle and presentation compatibility remain on the main checklist.
+
+Validation: 86 history/action/read cases pass on minimum Neovim 0.10.0. After
+strengthening the detach fixtures with a newer HEAD, both changed cases were
+rerun there successfully.
+
+The integrated full suite passes all 1,294 cases in 48 groups; `make check`
+also passes.

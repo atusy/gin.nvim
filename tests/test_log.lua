@@ -54,6 +54,42 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
     assert(ok, err)
   end
 end
+for _, view in ipairs({ "GinLog", "GinReflog" }) do
+  T[view .. " browse and echo use the selected older commit"] = function()
+    H.git(root, "remote", "add", "origin", "git@github.com:owner/repo.git")
+    vim.cmd(view .. " --format=%H")
+    local buf = vim.api.nvim_get_current_buf()
+    local echo, output = vim.api.nvim_echo, nil
+    vim.api.nvim_echo = function(chunks)
+      output = chunks[1][1]
+    end
+    local ok, err = pcall(require("gin.action").call, buf, "echo", { 2, 2 })
+    vim.api.nvim_echo = echo
+    assert(ok, err)
+    MiniTest.expect.equality(vim.json.decode(output), { { commit = first } })
+    local previous = vim.g.gin_browse_persistent_args
+    vim.g.gin_browse_persistent_args = { "--no-browser" }
+    ok, err = pcall(function()
+      require("gin.action").call(buf, "browse:commit:yank", { 2, 2 })
+      MiniTest.expect.equality(vim.fn.getreg('"'), "https://github.com/owner/repo/commit/" .. first)
+    end)
+    vim.g.gin_browse_persistent_args = previous
+    assert(ok, err)
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+  T[view .. " detach checks out only the first selected commit"] = function()
+    H.git(root, "commit", "--allow-empty", "-m", "third change")
+    local main = H.git(root, "rev-parse", "main")
+    vim.cmd(view .. " --format=%H")
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "switch:detach", { 2, 3 })
+    MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "")
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), second .. "\n")
+    MiniTest.expect.equality(H.git(root, "rev-parse", "main"), main)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+end
 T["log preserves history order and yanks selected commits"] = function()
   vim.cmd("GinLog --oneline")
   local entries = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 2 })
