@@ -17,7 +17,7 @@ for name, command in pairs({ GinCd = "cd", GinLcd = "lcd", GinTcd = "tcd" }) do
 end
 vim.api.nvim_create_user_command("GinBuffer", function(opts)
   require("gin.buffer").command(opts)
-end, { nargs = "*", bar = true, bang = true })
+end, { nargs = "*", bar = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_buffer", { clear = true }),
   pattern = "gin://*",
@@ -163,7 +163,7 @@ for scheme, module in pairs({ ginlog = "log", ginreflog = "log", ginstash = "sta
 end
 vim.api.nvim_create_user_command("GinBrowse", function(opts)
   require("gin.browse").command(opts)
-end, { nargs = "*", bar = true, range = true })
+end, { nargs = "*", bar = true, range = 0 })
 vim.api.nvim_create_user_command("GinBlame", function(opts)
   require("gin.blame").command(opts)
 end, { nargs = "*", bar = true, bang = true })

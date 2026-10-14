@@ -1580,3 +1580,12 @@ does not produce an extra notification. A deterministic mini.test exercises
 every byte split of an SGR sequence. Incremental decoding remains intentional:
 the pinned TextDecoder decodes each input chunk independently, so this is not a
 claim of identical notifications for arbitrary upstream chunk boundaries.
+
+All public Ex command declarations are now compared with the locked plugin by
+loading its Vimscript in a separate Neovim and inspecting command metadata.
+The test checks the complete Gin command set, argument counts, bang/bar support,
+range/count defaults, address/register flags and completion metadata. The locked
+plugin defines no completion providers. This found and corrected two declaration
+differences: GinBuffer does not accept bang, and GinBrowse defaults its range to
+zero. This audit covers command declarations, not the command handlers' complete
+behavior or the Denops transport.
