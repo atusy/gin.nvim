@@ -50,8 +50,10 @@ function M.environment()
     -- Git executes GIT_ASKPASS as a path, unlike the GIT_EDITOR shell command.
     askpass_launcher = vim.fn.tempname()
     assert(
-      vim.fn.writefile({ "#!/bin/sh", "exec " .. launcher .. ' --askpass "$@"' }, askpass_launcher)
-        == 0
+      vim.fn.writefile(
+        { "#!/bin/sh", "NVIM_LISTEN_ADDRESS= exec " .. launcher .. ' --askpass "$@"' },
+        askpass_launcher
+      ) == 0
     )
     assert(vim.uv.fs_chmod(askpass_launcher, 448))
     vim.api.nvim_create_autocmd("VimLeavePre", {
@@ -62,7 +64,7 @@ function M.environment()
     })
   end
   return {
-    GIT_EDITOR = not disable_editor and launcher or nil,
+    GIT_EDITOR = not disable_editor and ("NVIM_LISTEN_ADDRESS= " .. launcher) or nil,
     GIT_ASKPASS = not disable_askpass and askpass_launcher or nil,
     GIN_EDITOR_ADDRESS = address,
   }

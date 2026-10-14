@@ -2467,3 +2467,21 @@ The existing implementation passes without modification. Temporarily forcing
 `bang=true` for editor opening makes this new test fail while the other editor
 tests pass. The fixture cancels any unexpectedly opened editor before reporting
 the failed expectation, so a regression does not leave Git waiting indefinitely.
+
+## Proxy child listener environment
+
+The editor command and askpass shell launcher now clear `NVIM_LISTEN_ADDRESS`
+only for the proxy Neovim they execute. The separately named
+`GIN_EDITOR_ADDRESS` still identifies the parent RPC server. If an explicit Git
+process environment retains the parent's legacy listener address, an unmodified
+proxy child attempts to bind that occupied socket and fails before running its
+client script. The ordinary Neovim process launcher sanitizes simple inherited
+values, so the regression fixtures explicitly pass the value in the Git process
+options; ordinary inherited-environment tests alone did not reproduce this issue.
+
+The real commit and credential fixtures now run both with the usual environment
+and with an explicitly retained, live parent listener address. Both explicit
+cases failed before the launcher change. Afterward the commit records the edited
+message and the credential command obtains both prompted values; the parent
+Neovim's environment value remains unchanged. This covers the existing POSIX
+shell launchers and does not establish additional platform support.

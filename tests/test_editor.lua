@@ -1,10 +1,11 @@
 local H = require("tests.helpers")
 local cwd = vim.fn.getcwd()
-local root, hidden
+local root, hidden, listen_address
 local input = vim.fn.input
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
+      listen_address = vim.env.NVIM_LISTEN_ADDRESS
       hidden = vim.o.hidden
       vim.cmd("filetype plugin on")
       root = H.repo()
@@ -17,6 +18,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.env.NVIM_LISTEN_ADDRESS = listen_address
       vim.o.hidden = hidden
       vim.g.gin_proxy_apply_without_confirm = nil
       vim.g.gin_proxy_editor_opener = nil
@@ -115,36 +117,60 @@ T["opening an editor request suppresses file-read messages"] = function()
   MiniTest.expect.equality(result.code, 0)
   MiniTest.expect.equality({ result.stdout, result.stderr }, { "", "" })
 end
-T["Gin commit waits for Apply and records the edited message"] = function()
-  local completed = false
-  local event = vim.api.nvim_create_autocmd("User", {
-    pattern = "GinCommandPost",
-    once = true,
-    callback = function()
-      completed = true
-    end,
-  })
-  local process =
-    require("gin.command").execute({ fargs = { "commit" }, smods = { silent = true } })
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return vim.b.gin_editor_request ~= nil
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"), "COMMIT_EDITMSG")
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "message from Neovim" })
-  vim.cmd.Apply()
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return completed
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(process:wait(5000).code, 0)
-  pcall(vim.api.nvim_del_autocmd, event)
-  MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message from Neovim\n")
-  MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+for _, inherited in ipairs({ false, true }) do
+  T["Git commit waits for Apply and records the edited message (explicit listener=" .. tostring(
+    inherited
+  ) .. ")"] = function()
+    if inherited then
+      vim.env.NVIM_LISTEN_ADDRESS = require("gin.editor").environment().GIN_EDITOR_ADDRESS
+    end
+    local completed = false
+    local event = vim.api.nvim_create_autocmd("User", {
+      pattern = "GinCommandPost",
+      once = true,
+      callback = function()
+        completed = true
+      end,
+    })
+    local process
+    if inherited then
+      local env = require("gin.editor").environment()
+      env.NVIM_LISTEN_ADDRESS = vim.env.NVIM_LISTEN_ADDRESS
+      process = require("gin.git").start({ "commit" }, { cwd = root, env = env }, function()
+        completed = true
+      end)
+    else
+      process = require("gin.command").execute({ fargs = { "commit" }, smods = { silent = true } })
+    end
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return vim.b.gin_editor_request ~= nil
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(
+      vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t"),
+      "COMMIT_EDITMSG"
+    )
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "message from Neovim" })
+    vim.cmd.Apply()
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return completed
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(process:wait(5000).code, 0)
+    pcall(vim.api.nvim_del_autocmd, event)
+    MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "message from Neovim\n")
+    MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
+    if inherited then
+      MiniTest.expect.equality(
+        vim.env.NVIM_LISTEN_ADDRESS,
+        require("gin.editor").environment().GIN_EDITOR_ADDRESS
+      )
+    end
+  end
 end
 T["Gin wait services editor requests before returning the commit result"] = function()
   local timer = vim.uv.new_timer()
