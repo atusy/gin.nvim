@@ -1602,3 +1602,11 @@ repository found` with WarningMsg rather than escaping as Lua callback errors.
 A repository-free integration case invokes all three commands and verifies the
 warning, unchanged directory and unchanged directory scope. Existing success
 coverage verifies buffer-based repository selection and window-local scope.
+
+The plugin now registers the pinned no-op User handlers for GinCommandPost and
+GinComponentPost at startup. This makes `exists('#User#...')` report the public
+events even before a consumer subscribes. An isolated Neovim startup test checks
+both declarations and dispatches both events without loading a repository or
+component. Source comparison also found all pinned plugin-level URI BufReadCmd
+and FileReadCmd event/pattern pairs represented in the Lua plugin; handler
+semantics remain covered separately rather than inferred from registration.

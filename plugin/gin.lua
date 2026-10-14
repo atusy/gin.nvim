@@ -2,6 +2,11 @@ if vim.g.loaded_gin then
   return
 end
 vim.g.loaded_gin = 1
+vim.api.nvim_create_autocmd("User", {
+  group = vim.api.nvim_create_augroup("gin_plugin_internal", { clear = true }),
+  pattern = { "GinCommandPost", "GinComponentPost" },
+  callback = function() end,
+})
 for name, prefixes in pairs(require("gin.difffold").presets) do
   vim.g["gin#difffold#prefixes_" .. name] = prefixes
 end
