@@ -83,6 +83,29 @@ T["legacy file URI expansion shares JSON fragment semantics"] = function()
     end
   end
 end
+T["file URI expansion preserves literal environment variable names"] = function()
+  local variable = "GIN_TEST_LITERAL_PATH"
+  local previous = vim.env[variable]
+  vim.env[variable] = "unexpected-expansion"
+  local ok, err = pcall(function()
+    local root = vim.fn.tempname() .. "/$" .. variable
+    local path = "sub/$" .. variable .. ".lua"
+    for _, scheme in ipairs({ "ginedit", "gindiff", "ginlog" }) do
+      local fragment = scheme == "ginedit" and path
+        or vim.json.encode(scheme == "ginlog" and { "--", path } or { path })
+      for _, name in ipairs({
+        require("gin.uri").format(scheme, root, {}, fragment),
+        scheme .. "://" .. root .. ";commitish=HEAD#" .. vim.json.encode({ path }),
+      }) do
+        with_name(name, function()
+          MiniTest.expect.equality(vim.fn["gin#util#expand"]("%"), root .. "/" .. path)
+        end)
+      end
+    end
+  end)
+  vim.env[variable] = previous
+  assert(ok, err)
+end
 T["expand leaves views without file paths unchanged"] = function()
   for _, case in ipairs({
     { "ginstatus", nil },

@@ -1692,3 +1692,10 @@ the expected selections and joins were also executed in Deno with upstream's
 std/path dependency. Native URI interpretations remain separate. Unpaired
 UTF-16 string selections cannot be represented safely and leave the URI intact;
 full transport/encoding-edge parity is not claimed.
+
+File URI expansion no longer expands environment variables while normalizing a
+resolved path. Repository roots and file names containing literal `$NAME` must
+remain literal, as in upstream's path join. A controlled environment-variable
+regression covers GinEdit/GinDiff/GinLog in both native and legacy forms through
+the public Vimscript API, and restores the environment after the test. Ordinary
+filename-expression expansion still happens before URI interpretation.

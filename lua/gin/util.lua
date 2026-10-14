@@ -125,7 +125,10 @@ function M.expand(expr)
     end
     if type(path) == "string" and path ~= "" then
       local absolute = not parsed.legacy and (path:match("^/") or path:match("^%a:[/\\]"))
-      return vim.fs.normalize(absolute and path or (parsed.root .. "/" .. path))
+      return vim.fs.normalize(
+        absolute and path or (parsed.root .. "/" .. path),
+        { expand_env = false }
+      )
     end
     return name
   end)
