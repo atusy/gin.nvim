@@ -342,3 +342,10 @@ suffix. Common cases cover single bytes in each output state, adjacent valid
 escapes and mixed longer inputs. View and addressed-read cases test escape
 recovery, interrupted JIS characters, truncated prefixes and state changes after
 errors. Strict automatic selection continues to reject malformed input.
+
+GBK/gb18030 replacement output is included in the separate GB18030 oracle for
+all pairs and existing boundary/mutation/truncation/mixed cases. Both aliases
+are independently checked against Deno. Real-view and addressed-read tests
+cover suffix retry after malformed quadruples, EOF consumption of incomplete
+prefixes, unmapped complete quadruples, pair recovery and normal characters
+following errors. Strict candidate selection is checked alongside replacement.

@@ -11,6 +11,14 @@ for _, encoding in ipairs({ "gbk", "gb18030" }) do
           ok == (expected ~= false),
           string.format("acceptance mismatch at %02x %02x", first - 1, second - 1)
         )
+        MiniTest.expect.equality(
+          require("gin.encoding").decode(
+            string.char(first - 1, second - 1),
+            encoding,
+            { fatal = false }
+          ),
+          oracle.replacement_rows[first][second]
+        )
         if ok then
           MiniTest.expect.equality(text, expected)
         end
@@ -25,6 +33,14 @@ for _, encoding in ipairs({ "gbk", "gb18030" }) do
       if ok then
         MiniTest.expect.equality(text, case.text)
       end
+    end
+  end
+  T[encoding .. " replaces malformed single bytes and quadruples"] = function()
+    for _, case in ipairs(oracle.replacement_cases) do
+      MiniTest.expect.equality(
+        require("gin.encoding").decode(string.char(unpack(case.bytes)), encoding, { fatal = false }),
+        case.text
+      )
     end
   end
   T[encoding .. " accepts all labels with ASCII whitespace and case"] = function()

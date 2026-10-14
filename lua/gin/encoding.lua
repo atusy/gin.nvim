@@ -17,6 +17,8 @@ function M.supports_replacement(label)
   return encoding == "utf-8"
     or encoding == "utf-16le"
     or encoding == "utf-16be"
+    or encoding == "gbk"
+    or encoding == "gb18030"
     or encoding == "iso-2022-jp"
     or encoding == "euc-jp"
     or encoding == "shift_jis"
@@ -41,7 +43,7 @@ function M.decode(data, label, options)
     return remove_bom(require("gin.encoding.utf16")(data, encoding == "utf-16le", fatal))
   end
   if encoding == "gbk" or encoding == "gb18030" then
-    return require("gin.encoding.gb18030")(data), false
+    return require("gin.encoding.gb18030")(data, fatal), false
   end
   if encoding == "iso-2022-jp" then
     return require("gin.encoding.iso_2022_jp")(data, fatal), false

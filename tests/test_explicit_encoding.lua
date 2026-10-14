@@ -287,4 +287,51 @@ for _, scheme in ipairs({ "gin", "ginedit" }) do
     MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
   end
 end
+T["GinEdit retries suffix of malformed GB18030 quadruple"] = function()
+  stage(string.char(129, 48, 129, 32))
+  vim.cmd("GinEdit ++enc=gb18030 file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "�0� " })
+end
+for _, encoding in ipairs({ "gbk", "gb18030" }) do
+  for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+    for _, case in ipairs({
+      { "ASCII pair trail", { 129, 34 }, '�"' },
+      { "non-ASCII pair trail", { 129, 255, 65 }, "�A" },
+      { "invalid third byte", { 129, 48, 34 }, '�0"' },
+      { "invalid fourth byte", { 129, 48, 129, 34 }, '�0�"' },
+      { "truncated pair", { 129 }, "�" },
+      { "truncated third byte", { 129, 48 }, "�" },
+      { "truncated fourth byte", { 129, 48, 129 }, "�" },
+      { "unmapped quadruple", { 254, 57, 254, 57, 65 }, "�A" },
+      { "valid quadruple after error", { 255, 129, 48, 129, 48 }, "�" .. vim.fn.nr2char(128) },
+    }) do
+      T[command .. " " .. encoding .. " replacement " .. case[1]] = function()
+        local bytes = string.char(unpack(case[2]))
+        stage(bytes)
+        local suffix = command == "GinBuffer" and " show :file" or " file"
+        vim.cmd(command .. " ++enc=" .. encoding .. suffix)
+        MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] })
+        MiniTest.expect.equality(
+          require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+          bytes
+        )
+      end
+    end
+  end
+  for _, scheme in ipairs({ "gin", "ginedit" }) do
+    T[scheme .. " addressed " .. encoding .. " read retries malformed quadruple suffix"] = function()
+      stage(string.char(129, 48, 129, 34) .. "\n")
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+      vim.bo.fileencoding = "utf-8"
+      local fragment = scheme == "gin" and "show :file" or "file"
+      local name = require("gin.uri").format(scheme, root, {}, fragment)
+      vim.cmd("1read ++enc=" .. encoding .. " " .. vim.fn.fnameescape(name))
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_lines(0, 0, -1, false),
+        { "before", '�0�"', "after" }
+      )
+      MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+    end
+  end
+end
 return T

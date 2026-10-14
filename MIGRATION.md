@@ -3957,3 +3957,43 @@ All 862 related tests pass on Neovim 0.10.0. Oracle regeneration, formatting and
 diff checks pass. The full suite passes 4,474 cases across 59 groups
 (`/tmp/gin-iso-replacement-full.log`). GBK/gb18030 replacement and
 the broader metadata, write-encoding and API compatibility audits remain open.
+
+## Explicit GBK/gb18030 replacement
+
+GBK and gb18030 now use the shared decoder's replacement mode for explicit
+reads. Invalid third or fourth bytes retry the suffix after the first lead;
+truncated prefixes at EOF emit one replacement for the whole pending sequence.
+Structurally complete but unmapped quadruples consume all four bytes. Invalid
+pair trails retry ASCII, and standalone invalid bytes consume only themselves.
+Strict automatic candidate selection retains its previous behavior. The first
+GinEdit regression produced `??0?? ` instead of `�0� ` for `81 30 81 20`.
+
+Deno fixtures now include replacement results for every byte pair, single bytes,
+quadruple boundaries, mutations, truncations and mixed inputs under both labels.
+The integrated decoder also passes a separate 508,945-case corpus including all
+lead/digit/third-byte prefixes and structured malformed longer inputs. Both
+views and addressed reads exercise the recovery and preserve source bytes and
+destination encoding. The pinned-upstream GinEdit probe now agrees on text and
+fileencoding; the existing endofline metadata difference remains.
+
+All 907 related tests pass on Neovim 0.10.0. Oracle regeneration, formatting and
+diff checks pass. The full suite passes 4,517 cases across 59 groups
+(`/tmp/gin-gb-replacement-full.log`). This completes replacement
+codec implementation for the supported TextDecoder families, but unsupported
+explicit labels and broader metadata, write-encoding and API audits remain open.
+
+### Remaining explicit-label rejection difference
+
+A pinned-upstream GinEdit probe confirms that `ucs-2le`, `ucs-2be`, `ucs-4`,
+`utf-32`, `utf-32le`, `cp932`, `cp936` and an unknown name report invalid encoding
+labels; `utf-16be` is accepted. The current Lua reader instead accepts native
+`ucs-2le` through its Unicode fallback. This extension remains to be removed or
+otherwise reconciled with the pinned read contract; native writer semantics
+need their own audit and must not be inferred from the read labels.
+
+The upstream `edit:edit` dispatcher uses denops std 7.6.0 `friendlyCall`, which
+catches the decoder error and schedules a non-history `echo`. Therefore pcall
+success and an empty `:messages` history do not prove successful decoding.
+The probe captures `:redir` across timer processing and checks actual buffer
+content, rather than treating that command return as success evidence.
+Temporary evidence: `/tmp/gin-explicit-label-probe-upstream.json`.
