@@ -3,6 +3,10 @@
 Reference: vim-gin `24cce091cfa32c013bc53cf4ff8f721d6690cf24`.
 The haiku55 trial is not used as implementation input.
 
+Status: completed with the user-approved native writer policy. The sections
+below are a chronological implementation record; the final completion decision
+supersedes earlier pending-status statements.
+
 The following scope comes from the pinned plugin, autoload, ftplugin, and
 Denops source trees. A checked item means implemented and tested for its stated
 scope, not proof of complete upstream parity.
@@ -27,7 +31,7 @@ scope, not proof of complete upstream parity.
 - [x] Branch/traffic/worktree components and component events (functional scope audited below).
 - [x] Help, syntax, highlights, options and default mappings in Lua (including compound FileType after-ftplugin lifecycle).
 - [x] Full command/action audit against the pinned source and real Git-state integration tests (public-surface inventory and per-view functional ledgers below).
-- [ ] Resolve the pinned writer BOM/end-of-line policy difference and apply/document the chosen contract before declaring the migration complete.
+- [x] Writer policy confirmed by the user: retain encoding-specific BOMs and native end-of-line/binary behavior; document the differences from pinned upstream.
 
 ## Configuration audit: custom parser overrides
 
@@ -4574,3 +4578,23 @@ native-write comparisons in test_edit.lua. The help explicitly identifies the
 pinned writer differences and pending final policy, rather than treating an
 unanswered question as acceptance. No runtime or test behavior changed; the
 4,697-case integrated result remains applicable to the runtime tree.
+
+
+### Final completion decision
+
+The user selected option 1: retain the implemented encoding-specific BOM and
+native end-of-line/binary write behavior. The writer is unchanged; the native
+byte comparisons and explicit no-final-newline tests remain applicable. Help
+now states the selected contract and its intentional difference from pinned
+vim-gin. This resolves the last outstanding decision.
+
+The reference and mini.nvim checkouts were rechecked against deps-lock.json:
+vim-gin 24cce091cfa32c013bc53cf4ff8f721d6690cf24 and mini.nvim
+0513ad9ada655a07af321c129b69dafaf9e63d80. Runtime and tests are unchanged from
+8d9bbed5bd38a0e5e84c529a2210b0e24c207134, whose mini.test run passed 4,697 cases
+in 62 groups. Subsequent changes only record the audits and clarify docs.
+The public-surface inventory and per-command real-Git evidence above account
+for the requested rewrite; native Neovim runtime support, pinned reference,
+mini.nvim testing and incremental commits are all present. No haiku55 code was
+used. The documented behavioral differences and bounded test coverage remain
+visible; completion does not claim bug-for-bug identity for arbitrary inputs.

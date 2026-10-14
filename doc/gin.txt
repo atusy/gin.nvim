@@ -5,9 +5,9 @@
                                                             *gin-introduction*
                                                             *gin-requirements*
 Requires Neovim 0.10+ and Git. No Deno or Denops runtime is required.
-This rewrite is in progress. Its reference is vim-gin commit
+This rewrite targets vim-gin commit
 24cce091cfa32c013bc53cf4ff8f721d6690cf24. See MIGRATION.md in the repository
-for implemented behavior, validation evidence, and remaining compatibility work.
+for implemented behavior, validation evidence, and documented differences.
 
                                                                 *gin-contents*
 Contents ~
@@ -298,23 +298,23 @@ The ordinary :Gin command defaults to UTF-8 instead of using 'fileencodings'.
 The raw Git output is preserved; decoding affects its display. These read rules
 do not define which encodings the index writer accepts.
 
-Current index writes honor 'fileencoding', 'fileformat', 'bomb', 'binary',
+Index writes honor 'fileencoding', 'fileformat', 'bomb', 'binary',
 'endofline' and 'fixendofline'. With nobinary, bomb uses the selected Unicode
 encoding's BOM; Latin-1 receives no BOM. Binary writes use LF separators and
 omit the BOM while retaining the selected encoding. To preserve a missing
 final newline, set noendofline and nofixendofline before writing.
 
 This differs from the pinned vim-gin writer, which always appends a line ending
-and uses UTF-8 BOM bytes even for other encodings. The migration's final policy
-for these differences is still pending; see MIGRATION.md. Reading uses the
-TextDecoder labels above, so native write-encoding names are not necessarily
+and uses UTF-8 BOM bytes even for other encodings. gin.nvim intentionally keeps
+the encoding-specific BOM and end-of-line rules described above. Reading uses
+the TextDecoder labels above, so native write-encoding names are not necessarily
 valid read labels.
 
 :read {URI} inserts output for gin://, ginedit://, gindiff://, gintag://,
 ginlog://, ginreflog:// and ginstash:// buffers. Obtain the URI from an existing
 Gin buffer's name. Reads support line addresses and decoding without changing
-the destination buffer's encoding or fileformat. URI compatibility is still
-being audited; avoid constructing URIs by hand.
+the destination buffer's encoding or fileformat. Prefer obtaining a URI from
+an existing buffer; supported legacy forms are documented above.
 
 ==============================================================================
                                                                   *gin-action*
@@ -568,7 +568,7 @@ User GinComponentPost
 ==============================================================================
 LIMITATIONS                                                   *gin-limitations*
 
-The migration is incomplete. See MIGRATION.md for the detailed audit status.
+See MIGRATION.md for the completed functional audits and their test coverage.
 Git processes and output processors have no implicit time limit. Gin ++wait
 and synchronous buffer operations service proxy requests and progress while
 waiting. Keyboard-driven commit, cancellation and repeated reword requests are
@@ -591,9 +591,10 @@ surrogates in selected captures cannot be converted to Neovim strings.
 
 Regex compatibility has curated, generated and long-input test coverage, but is
 not proven complete. Deep nesting, pathological backtracking and invalid input
-encodings remain under audit; matching currently has no implicit time limit.
-Custom indicator APIs, remaining display options, URI compatibility and legacy
-Vimscript APIs also remain under audit.
+encodings are not exhaustively tested; matching has no implicit time limit.
+Custom indicator APIs, display options, URI compatibility and public Vimscript
+APIs have scoped tests recorded in MIGRATION.md. Internal Denops implementation
+symbols are not part of the compatibility API.
 
 STARTUP GUARDS                                                *gin-loaded-guards*
 

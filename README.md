@@ -2,7 +2,8 @@
 
 A Lua rewrite of [vim-gin](https://github.com/lambdalisue/vim-gin) for Neovim.
 The reference is fixed at `24cce091cfa32c013bc53cf4ff8f721d6690cf24`.
-This implementation is in progress; see [MIGRATION.md](MIGRATION.md).
+See [MIGRATION.md](MIGRATION.md) for the completed scope, validation evidence,
+and documented differences from the reference.
 
 Requires Neovim 0.10+ and Git. No Denops or Deno runtime is required.
 See `:help gin.nvim` for commands, configuration, actions, and Lua components.
@@ -185,7 +186,6 @@ Plugin startup exports both proxies to Neovim's environment, so Git commands
 in `:terminal` use them too. Set either disable flag before plugin loading to
 preserve the corresponding inherited environment variable.
 `++wait` and synchronous buffer commands also service proxy requests.
-The wider action/API compatibility audit remains in progress.
 
 With filetype plugins enabled, gitcommit/gitrebase buffers receive `:Accept`
 (`:wq`) and `:Cancel` (`:cq`) aliases unless those commands already exist.
