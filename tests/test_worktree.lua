@@ -28,6 +28,19 @@ T["current buffer repository takes priority over cwd"] = function()
   vim.cmd.edit(vim.fn.fnameescape(root .. "/file"))
   MiniTest.expect.equality(require("gin.worktree").current(), vim.uv.fs_realpath(root))
 end
+T["empty worktree arguments use the current buffer then cwd"] = function()
+  vim.fn.writefile({ "hello" }, root .. "/file")
+  vim.cmd.edit(root .. "/file")
+  local util = require("gin.util")
+  for _, current_buffer in ipairs({ true, false }) do
+    if not current_buffer then
+      vim.cmd.enew()
+      vim.cmd.cd(root)
+    end
+    MiniTest.expect.equality(util.worktree(""), vim.uv.fs_realpath(root))
+    MiniTest.expect.equality(vim.fn["gin#util#worktree"](""), vim.uv.fs_realpath(root))
+  end
+end
 T["linked worktree resolves to its own root"] = function()
   H.git(root, "commit", "--allow-empty", "-m", "initial")
   local linked = root .. " linked"

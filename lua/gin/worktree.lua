@@ -54,7 +54,7 @@ end
 ---@param explicit? string
 ---@return string
 function M.current(explicit)
-  if explicit then
+  if explicit and explicit ~= "" then
     return M.find(vim.fn.expand(explicit))
   end
   local worktree = vim.b.gin_worktree

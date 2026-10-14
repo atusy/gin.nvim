@@ -1728,3 +1728,9 @@ and `+++ ` headers. Manually folding a whole diff (including its `diff --git` an
 cover both missing headers and either missing header; their expected strings
 were also verified by executing the pinned upstream foldtext function in an
 isolated Neovim. Existing custom-prefix and quoted-path decoding is preserved.
+
+An explicit empty worktree argument now follows the default current-buffer/cwd
+search, matching the truthy `options.worktree` selection in the pinned
+`git/worktree.ts`. A mini.test case exercises both Lua and Vimscript public APIs,
+first with a file in another repository and then with an unnamed buffer whose
+cwd supplies the repository. Nonempty invalid paths still fail without fallback.
