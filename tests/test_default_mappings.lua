@@ -25,6 +25,7 @@ local T = MiniTest.new_set({
         "stash",
         "diff",
         "buffer",
+        "blame",
       }) do
         vim.g["gin_" .. kind .. "_disable_default_mappings"] = nil
       end
@@ -83,6 +84,25 @@ local function default_maps(buf, prefix)
     end
   end
   return result
+end
+T["blame default mapping attributes match both pinned ftplugins"] = function()
+  for _, kind in ipairs({ "blame", "blame-nav" }) do
+    for _, disabled in ipairs({ 0, 1 }) do
+      vim.g.gin_blame_disable_default_mappings = disabled
+      local maps = {}
+      for _, runtime in ipairs({ { "/.deps/vim-gin/", "vim" }, { "/", "lua" } }) do
+        local buf = vim.api.nvim_create_buf(false, true)
+        local fixed = vim.wo.winfixbuf
+        vim.api.nvim_buf_call(buf, function()
+          vim.cmd.source(cwd .. runtime[1] .. "ftplugin/gin-" .. kind .. "." .. runtime[2])
+        end)
+        maps[#maps + 1] = default_maps(buf, "<Plug>(gin-blame-")
+        vim.wo.winfixbuf = fixed
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end
+      MiniTest.expect.equality(maps[2], maps[1])
+    end
+  end
 end
 for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
   for _, disabled in ipairs({ 0, 1 }) do

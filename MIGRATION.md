@@ -1667,3 +1667,10 @@ initialized, matching the locked ftplugin's deferred window-local default.
 Previously only explicit difffold setup applied that level. A two-window test
 changes focus before scheduled execution and checks that only the original
 window's folds are opened to level one. Closed windows are ignored safely.
+
+Blame's default Enter/older/newer mappings now match the pinned nonsilent nmap
+attributes; the underlying Plug callbacks remain silent. A source-based mapping
+comparison covers both blame ftplugins with defaults enabled and disabled,
+including RHS, mode, remapping, nowait and silent flags. Together with the
+existing list and diff/buffer comparisons this covers default mapping tables
+across all ten ftplugins, without claiming complete callback behavior parity.

@@ -117,7 +117,7 @@ function M.blame_mappings(target)
       "n",
       "<CR>",
       "<Plug>(gin-blame-switch-commit)",
-      { buffer = target, remap = true, silent = true }
+      { buffer = target, remap = true }
     )
   end
   for direction, key in pairs({ older = "<C-O>", newer = "<C-I>" }) do
@@ -129,7 +129,7 @@ function M.blame_mappings(target)
       not vim.g.gin_blame_disable_default_mappings
       or vim.g.gin_blame_disable_default_mappings == 0
     then
-      vim.keymap.set("n", key, plug, { buffer = target, remap = true, silent = true })
+      vim.keymap.set("n", key, plug, { buffer = target, remap = true })
     end
   end
   local undo = "unlet! b:_gin_blame_mappings| setlocal winfixbuf<"
