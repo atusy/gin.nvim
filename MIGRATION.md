@@ -1610,3 +1610,11 @@ both declarations and dispatches both events without loading a repository or
 component. Source comparison also found all pinned plugin-level URI BufReadCmd
 and FileReadCmd event/pattern pairs represented in the Lua plugin; handler
 semantics remain covered separately rather than inferred from registration.
+
+The main loaded marker now uses presence semantics like upstream's
+`exists('g:loaded_gin')`: an existing `v:false` value must prevent initialization
+instead of being overwritten. A fresh Neovim test verifies the marker is retained
+and no Gin command or GinCommandPost placeholder is registered. The upstream
+plugin has additional per-feature loaded markers; their independent disable
+semantics are still an open startup compatibility item in the monolithic Lua
+plugin and are not established by this main-marker regression check.

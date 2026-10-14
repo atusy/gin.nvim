@@ -66,4 +66,33 @@ T["public User events exist immediately after plugin startup"] = function()
   assert(result.code == 0, result.stderr)
 end
 
+T["a false loaded marker still disables plugin initialization"] = function()
+  local result = vim
+    .system({
+      vim.v.progpath,
+      "--headless",
+      "-u",
+      "NONE",
+      "-i",
+      "NONE",
+      "--cmd",
+      "set runtimepath^=" .. vim.fn.fnameescape(vim.fn.getcwd()),
+      "-c",
+      "let g:loaded_gin = v:false",
+      "-c",
+      "runtime plugin/gin.lua",
+      "-c",
+      [[lua local ok, err = pcall(function()
+      assert(vim.g.loaded_gin == false, 'loaded marker was overwritten')
+      assert(vim.fn.exists(':Gin') == 0, 'Gin was registered despite the loaded marker')
+      assert(vim.fn.exists('#User#GinCommandPost') == 0, 'Gin events were registered')
+    end)
+    if not ok then io.stderr:write(tostring(err)); vim.cmd('cquit 1') end]],
+      "-c",
+      "qa!",
+    }, { text = true })
+    :wait(10000)
+  assert(result.code == 0, result.stderr)
+end
+
 return T

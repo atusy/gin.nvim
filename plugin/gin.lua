@@ -1,4 +1,4 @@
-if vim.g.loaded_gin then
+if vim.g.loaded_gin ~= nil then
   return
 end
 vim.g.loaded_gin = 1
