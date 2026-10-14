@@ -2925,3 +2925,19 @@ The fixtures also verify conflict markers/content are stripped from the shared
 working buffer and Git's index remains unmerged. As with Patch, test cleanup
 clears previewwindow after retaining a single window, preventing preview state
 from leaking into later cases.
+
+## Chaperon stage refresh
+
+The pinned initTheirs/initOurs routines reread their revision buffers with a
+non-forced silent edit. Lua previously reused already visible stage buffers
+without rereading them. After index stages changed, reopening Chaperon could
+therefore display old conflict alternatives.
+
+Chaperon now refreshes side panes before enabling diff, retaining explicit
+encoding/fileformat options. It does not reload the working pane, where the
+user may already have edited a resolution. A real Git regression replaces both
+stage-2 and stage-3 blobs through update-index, reopens Chaperon in a new tab,
+and verifies the same side buffers now show the updated contents. The test also
+checks that a manual unsaved resolution stays in the working buffer and the
+working file on disk remains unchanged. The old code failed by showing the old
+ours content after reopening.

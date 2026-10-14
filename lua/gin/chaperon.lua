@@ -126,6 +126,14 @@ function M.open(root, path, options)
   end
   for _, win in ipairs(windows) do
     vim.api.nvim_win_call(win, function()
+      if win ~= worktree_win then
+        -- Reused stage buffers may still contain an earlier conflict's version.
+        pcall(require("gin.buffer").open, vim.api.nvim_buf_get_name(0), {
+          enc = options.enc,
+          ff = options.ff,
+          smods = { silent = true, emsg_silent = true },
+        })
+      end
       vim.cmd.diffthis()
     end)
   end

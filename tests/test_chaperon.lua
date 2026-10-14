@@ -233,4 +233,34 @@ for _, opener in ipairs({ "split", "vsplit", "pedit" }) do
     end
   end
 end
+T["reopening chaperon refreshes visible conflict stages"] = function()
+  local panes = require("gin.chaperon").command({ fargs = { "file" }, smods = {} })
+  local working = vim.fn.readfile(root .. "/sub/file")
+  local resolution = { "before", "manual resolution", "after" }
+  vim.api.nvim_buf_set_lines(panes.worktree, 0, -1, false, resolution)
+  local git = require("gin.git")
+  for stage, content in pairs({ [2] = "new ours", [3] = "new theirs" }) do
+    local hash = vim.trim(git.run({ "hash-object", "-w", "--stdin" }, {
+      cwd = root,
+      stdin = "before\n" .. content .. "\nafter\n",
+    }).stdout)
+    git.run({ "update-index", "-z", "--index-info" }, {
+      cwd = root,
+      stdin = "100644 " .. hash .. " " .. stage .. "\tsub/file\0",
+    })
+  end
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(panes.ours, 1, 2, false), { "ours" })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(panes.theirs, 1, 2, false), { "theirs" })
+  local reopened =
+    require("gin.chaperon").command({ fargs = { "++opener=tabedit", "file" }, smods = {} })
+  MiniTest.expect.equality(reopened.ours, panes.ours)
+  MiniTest.expect.equality(reopened.theirs, panes.theirs)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(reopened.ours, 1, 2, false), { "new ours" })
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(reopened.theirs, 1, 2, false),
+    { "new theirs" }
+  )
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(reopened.worktree, 0, -1, false), resolution)
+end
 return T
