@@ -2044,8 +2044,14 @@ and updates each getter independently, uses TTL caches, and retains the previous
 value when a request fails (reporting errors when verbose is enabled). Lua
 publishes one combined snapshot, initializes immediately, also refreshes on
 DirChanged, clears values outside repositories and rejects outdated results.
-Spawn exceptions retain the snapshot, but nonzero process exits can currently
-publish empty branch/traffic fields without a verbose diagnostic. The existing
-successful-state fixtures do not establish failure-path compatibility or exact
-notification timing/count parity. Denops startup events do not apply to the Lua
+Spawn exceptions retain the snapshot. Failed branch and traffic process exits
+now retain the previously published values for the failed component and report
+a diagnostic only when verbose is enabled. A failed branch query still allows
+traffic to update, and failed traffic does not suppress a successful branch
+update. Four controlled-failure cases use a real renamed branch and new commit,
+verify retained versus refreshed fields with verbose both off and on, and check
+recovery after restoring successful Git responses. Ordinary fallback for a
+branch without an upstream still clears traffic, as covered by existing tests.
+Independent publication on spawn errors and exact cache/notification timing
+remain different or unverified. Denops startup events do not apply to the Lua
 runtime; no Denops dependency is introduced by the legacy getters.

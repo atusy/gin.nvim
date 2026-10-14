@@ -306,7 +306,9 @@ Lua functions return cached strings and update asynchronously:
     require('gin.component.worktree').name() / .full()
         Repository path.
 
-Listen for |GinComponentPost| to redraw the statusline.
+Listen for |GinComponentPost| to redraw the statusline. Failed branch or traffic
+queries retain their last published values; enable 'verbose' to see diagnostics.
+A subsequent refresh retries the query.
 
 Existing Vimscript statusline expressions can use these Lua-backed wrappers:
     gin#component#branch#ascii() / gin#component#branch#unicode()

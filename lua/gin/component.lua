@@ -18,6 +18,12 @@ local function publish(result, version)
   end, 100)
 end
 
+local function report_error(message)
+  if vim.o.verbose > 0 then
+    vim.notify(message, vim.log.levels.ERROR)
+  end
+end
+
 local function run(args, cwd, version, callback)
   local ok, err = pcall(git.start, args, { cwd = cwd }, function(result)
     vim.schedule(function()
@@ -26,8 +32,8 @@ local function run(args, cwd, version, callback)
       end
     end)
   end)
-  if not ok and vim.o.verbose > 0 then
-    vim.notify(tostring(err), vim.log.levels.ERROR)
+  if not ok then
+    report_error(tostring(err))
   end
 end
 
@@ -52,7 +58,7 @@ function M.refresh()
       end
       local root = found.stdout:gsub("\n$", "")
       root = vim.uv.fs_realpath(root) or root
-      local result = { root = root, branch = "", upstream = "", ahead = 0, behind = 0 }
+      local result = vim.tbl_extend("force", values, { root = root })
       local function traffic()
         run(
           { "rev-list", "--left-right", "--count", "HEAD...@{u}" },
@@ -62,6 +68,8 @@ function M.refresh()
             if counts.code == 0 then
               local ahead, behind = counts.stdout:match("(%d+)%s+(%d+)")
               result.ahead, result.behind = tonumber(ahead) or 0, tonumber(behind) or 0
+            else
+              report_error(git.error_message(counts, "git component traffic"))
             end
             publish(result, version)
           end
@@ -79,9 +87,13 @@ function M.refresh()
           else
             run({ "branch", "--show-current" }, root, version, function(current)
               if current.code == 0 then
-                result.branch = vim.trim(current.stdout)
+                result.branch, result.upstream = vim.trim(current.stdout), ""
+                result.ahead, result.behind = 0, 0
+                publish(result, version)
+              else
+                report_error(git.error_message(current, "git component branch"))
+                traffic()
               end
-              publish(result, version)
             end)
           end
         end
