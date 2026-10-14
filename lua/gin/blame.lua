@@ -428,14 +428,23 @@ end
 function M.read_nav(buf)
   -- The navigation URI selects the revision even when the paired file name differs.
   local read_name = vim.api.nvim_buf_get_name(buf):gsub("^ginblamenav:", "ginblame:")
-  local file = vim.b[buf].gin_blame_file_bufnr
-  if not file or not vim.api.nvim_buf_is_valid(file) then
-    local name = vim.b[buf].gin_blame_file_bufname
-    file = type(name) == "string" and vim.fn.bufnr(name) or -1
+  local fragment = vim.b[buf].gin_blame_file_fragment
+  assert(
+    type(fragment) == "string" and fragment ~= "",
+    "Cannot reload ginblamenav: file fragment not found"
+  )
+  fragment = fragment:gsub("\\", "/")
+  local parsed = parse_name(read_name)
+  if parsed.fragment ~= fragment then
+    read_name = uri.format("ginblame", parsed.root, parsed.params, fragment)
   end
+  local name = vim.b[buf].gin_blame_file_bufname
+  assert(
+    type(name) == "string" and name ~= "",
+    "Cannot reload ginblamenav: associated ginblame buffer not found"
+  )
+  local file = vim.fn.bufnr(name)
   if file == -1 then
-    local name = vim.b[buf].gin_blame_file_bufname
-    assert(type(name) == "string" and name ~= "", "GinBlame file buffer is missing")
     local navwin = vim.fn.bufwinid(buf)
     assert(navwin ~= -1, "GinBlame navigation window is missing")
     vim.api.nvim_win_call(navwin, function()

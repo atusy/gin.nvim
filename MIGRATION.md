@@ -1373,3 +1373,12 @@ and `gin_blame_file_fragment`. Re-reading after history navigation refreshes
 these values. A real Git test verifies the links at initial display and after
 history transitions, then removes Lua's numeric file link and reloads through
 the stored name without adding windows.
+
+Navigation reloads now read `gin_blame_file_fragment` instead of trusting the
+URI fragment, and resolve the paired file through `gin_blame_file_bufname`.
+Missing or empty values produce the pinned context-specific errors even when a
+Lua numeric link exists. The new fixtures cover a stale URI naming a nonexistent
+file while the stored path remains valid, plus rejection without changing the
+file content or layout when required context is absent. Differing fragments
+rebuild paired names in the native URI format; unchanged legacy names retain
+the existing reload path. Hidden paired-buffer recovery remains unaudited.

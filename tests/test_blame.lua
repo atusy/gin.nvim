@@ -291,6 +291,49 @@ T["navigation reload uses its revision rather than the paired file URI"] = funct
   MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[4].commitSha, second)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. second })
 end
+T["navigation reload uses the stored file fragment"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  local name = vim.api.nvim_buf_get_name(nav)
+  local parsed = require("gin.uri").parse(name)
+  vim.api.nvim_buf_set_name(
+    nav,
+    require("gin.uri").format("ginblamenav", parsed.root, parsed.params, "missing.lua")
+  )
+  vim.cmd.edit()
+  H.drain()
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, 0, -1, false),
+    { "", "one", "", "changed", "", "three" }
+  )
+  local restored = vim.b[file].gin_blame_nav_bufnr
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(restored), name)
+  MiniTest.expect.equality(vim.b[restored].gin_blame_file_fragment, "sub/file.lua")
+  MiniTest.expect.equality(vim.b[restored].gin_blame_line_map[4].commitSha, second)
+end
+T["navigation reload rejects missing stored context"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  local lines = vim.api.nvim_buf_get_lines(file, 0, -1, false)
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  for _, case in ipairs({
+    { "gin_blame_file_fragment", "file fragment not found" },
+    { "gin_blame_file_bufname", "associated ginblame buffer not found" },
+  }) do
+    local original = vim.b[nav][case[1]]
+    for _, value in ipairs({ vim.NIL, "" }) do
+      vim.b[nav][case[1]] = value
+      MiniTest.expect.error(function()
+        require("gin.blame").read_nav(nav)
+      end, "Cannot reload ginblamenav: " .. case[2])
+      vim.b[nav][case[1]] = original
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), lines)
+      MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+    end
+  end
+end
 T["legacy navigation recreates a missing file buffer"] = function()
   local suffix = "://" .. root .. ";commitish=" .. first .. "#sub/file.lua"
   vim.cmd.tabnew()
