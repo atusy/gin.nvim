@@ -60,4 +60,42 @@ for _, case in ipairs({
     MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
   end
 end
+for _, case in ipairs({
+  { "Cancel", ":Cancel<CR>" },
+  { "quit with rejection", ":q<CR>no<CR>" },
+}) do
+  T["keyboard input cancels through " .. case[1] .. " without changing the index"] = function()
+    child.lua([[
+      local git = require("gin.git")
+      local start = git.start
+      git.start = function(args, options, callback)
+        if args[1] ~= "commit" then
+          return start(args, options, callback)
+        end
+        return start(args, options, function(result)
+          _G.gin_test_exit = result.code
+          callback(result)
+        end)
+      end
+    ]])
+    child.type_keys(":silent! Gin commit<CR>")
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("vim.b.gin_editor_request ~= nil")
+      end, 10),
+      true
+    )
+    child.type_keys("gg0i", "discard this draft", "<Esc>", case[2])
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("_G.gin_test_exit ~= nil")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("_G.gin_test_exit ~= 0"), true)
+    MiniTest.expect.equality(H.git(root, "rev-list", "--all"), "")
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
+  end
+end
 return T

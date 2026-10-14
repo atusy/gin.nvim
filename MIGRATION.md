@@ -1791,3 +1791,15 @@ and no completion event had fired. Draining those keys and editing/applying via
 RPC allowed the real commit to finish. Thus scheduled API edits are insufficient
 evidence of usable keyboard interaction during synchronous waits; that remaining
 limitation is reproduced, not resolved by these asynchronous tests.
+
+The child-Neovim keyboard tests also cover typing a draft and cancelling with
+`:Cancel` or `:q` followed by `no`. They observe the real commit process exit,
+verify that no commit exists, and check both index and working-file contents.
+Only commit-exit observation wraps a callback; all editing and cancellation use
+normal input. This extends the asynchronous workflow evidence to rejection.
+
+A separate attempt to compare synchronous keyboard handling with pinned vim-gin
+and installed denops.vim `e82c5a94ca1154b05c9d74d6f6f58c9991b1424f` stalled during
+reference startup/RPC access before reaching the input observation. Those probe
+processes were terminated. Its source-level use of synchronous RPC alone does
+not prove runtime parity, so the Lua synchronous-input limitation remains open.
