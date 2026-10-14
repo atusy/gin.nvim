@@ -3781,3 +3781,35 @@ the decoder prerequisite only: automatic view encoding selection is not wired,
 and explicit nonfatal decoding remains under audit. The full suite passes all
 3,733 cases across 56 groups (`/tmp/gin-gb18030-full.log`). `make check`,
 `git diff --check` and the GB18030 oracle regeneration check pass.
+
+## Automatic fileencoding selection
+
+The shared read decoder now tries `fileencodings` in order when no nonempty
+explicit encoding is supplied. It uses the strict Lua candidates, skips failed
+or unknown candidates, and falls back to replacement-decoded UTF-8 with an empty
+fileencoding when none succeeds. Explicit encoding options retain precedence;
+their existing conversion path is unchanged and still needs a separate audit of
+nonfatal TextDecoder behavior.
+
+Actual headless GinBuffer and GinEdit probes against the locked upstream covered
+13 inputs per view: Latin-1, Shift_JIS, EUC-JP, Big5, EUC-KR, GBK four-byte input,
+ISO-2022-JP/UTF-8 candidate ordering, unknown candidates, invalid UTF-8 fallback,
+an empty candidate list, UTF-16LE and UTF-8 BOMs. Lua now matches the displayed
+bytes and final fileencoding in all cases. Neovim normalizes selected `gbk` to
+`cp936`. The regression suite also includes gb18030, addressed reads through both
+URI schemes without changing destination encoding, explicit-option precedence,
+and byte-exact Latin-1/UTF-16LE index write-back.
+
+BOM option parity is intentionally not claimed by these probes: upstream
+GinBuffer does not set bomb, and its GinEdit helper recognizes only the UTF-8
+byte prefix. Lua retains its existing decoded-BOM metadata/write-back behavior,
+including UTF-16, to preserve encoded index content on write. The observed
+remaining differences are GinBuffer's UTF-8/UTF-16 bomb metadata and GinEdit's
+UTF-16 bomb metadata, not displayed text or selected encoding. This remains an
+explicit compatibility difference for the broader encoding audit.
+
+The first Latin-1 automatic-view test failed before wiring the library. The
+34 new mini.nvim tests pass on Neovim 0.10.0; the preceding 110-case run included
+31 of them plus existing fileformat/edit/buffer coverage, also passing. Formatting
+and diff checks pass. The full integrated suite passes all 3,767 cases across
+57 groups (`/tmp/gin-auto-encoding-full.log`).

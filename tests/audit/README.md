@@ -230,7 +230,7 @@ candidate selection, fallback UTF-8 replacement and BOM metadata.
 
 This is preparatory library coverage, not complete encoding parity. All 39
 Deno-supported encoding families now have strict candidate decoders. The library
-is not yet connected to buffer encoding selection, and explicit nonfatal decoding
+now supplies automatic buffer encoding selection; explicit nonfatal decoding
 remains under audit. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
 oracle, so exhaustive byte tests verify the Lua lookup path, not Deno itself.
@@ -250,8 +250,7 @@ longer inputs in the common encoding fixture. Big5's four two-codepoint mappings
 are preserved as strings, with an explicit concatenated regression. Big5 has
 18,594 mapped pairs; EUC-KR has 17,048. Both use lazily loaded tables indexed by
 lead and trail byte. Candidate tests cover Korean text, expanding Big5 output
-and fallback after incomplete leads. These decoders are still preparatory and
-are not yet used by the view readers.
+and fallback after incomplete leads. Automatic view selection is covered separately by `tests/test_fileencodings.lua`.
 
 EUC-JP has matrices for all byte pairs and all triples starting with 0x8F,
 exercised by `tests/test_euc_jp.lua`. Its ordinary encoding fixture covers every
@@ -261,7 +260,7 @@ characters and reject truncated triples. JIS0208 (7,336 mappings) and JIS0212
 (6,067 mappings) use independent generated codepoint tables. The generator also
 checks every mapped JIS0208 pair against ISO-2022-JP; the ISO-2022-JP decoder reuses this
 table. EUC-JP halfwidth kana is algorithmic.
-These additions do not yet change the view readers' encoding selection.
+View-level selection is covered separately by `tests/test_fileencodings.lua`.
 
 ISO-2022-JP has full matrices for every byte pair in JIS mode and every pair
 following ESC. Its common fixture includes every byte in each of the five
