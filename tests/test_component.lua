@@ -58,6 +58,27 @@ T["components asynchronously publish branch traffic and worktree values"] = func
   MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
   vim.api.nvim_del_autocmd(autocmd)
 end
+T["components preserve trailing spaces in repository directory names"] = function()
+  other = root
+  root = root .. " "
+  assert(vim.uv.fs_rename(other, root))
+  -- Keep the incorrectly trimmed path valid so a regression completes visibly.
+  vim.fn.mkdir(other)
+  vim.cmd.cd(root)
+  local worktree = require("gin.component.worktree")
+  local previous = worktree.full()
+  require("gin.component").refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() ~= previous
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(worktree.full(), vim.uv.fs_realpath(root))
+  MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
+  MiniTest.expect.equality(require("gin.component.branch").ascii(), "main -> origin/main")
+  MiniTest.expect.equality(require("gin.component.traffic").ascii(), "^1v1")
+end
 T["legacy statusline expressions use the Lua component cache"] = function()
   local expression = "%{gin#component#branch#ascii()}|%{gin#component#traffic#ascii()}"
   local function statusline()

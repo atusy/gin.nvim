@@ -47,7 +47,7 @@ function M.refresh()
         end
         return
       end
-      local root = vim.trim(found.stdout)
+      local root = found.stdout:gsub("\n$", "")
       root = vim.uv.fs_realpath(root) or root
       local result = { root = root, branch = "", upstream = "", ahead = 0, behind = 0 }
       local function traffic()

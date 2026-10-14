@@ -1706,3 +1706,11 @@ dot segments without interpreting the URI root as a home-directory expression,
 including on Neovim 0.10. Eighteen POSIX cases cover three root forms, all three
 file schemes and native/legacy URI forms, retaining literal backslashes in the
 filename. Windows backslash semantics are intentionally outside this POSIX test.
+
+Component discovery now removes only Git's trailing newline from the worktree
+path, preserving whitespace that belongs to the directory name. The previous
+trim changed both the displayed worktree and the cwd used for branch/traffic
+queries. A real repository renamed with a trailing space verifies full/name
+components and the existing upstream/ahead/behind values; a valid empty directory
+at the trimmed path makes the regression fail deterministically without a spawn
+error. This follows the pinned finder's preservation of the first output line.
