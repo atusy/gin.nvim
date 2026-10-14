@@ -2017,3 +2017,35 @@ each chunk without streaming; the Lua implementation deliberately retains its
 existing incomplete-sequence buffering across chunks. Chunk-level notification
 parity, BOM handling and non-default encoding behavior are not established by
 these tests.
+
+## Component API audit
+
+The pinned `autoload/gin/component/{branch,traffic,worktree}.vim` files expose
+six getters. Their implementations in `denops/gin/component/*.ts` return the
+following strings; `tests/test_component.lua` now exercises all tracking states
+with real Git refs, in addition to the legacy statusline expression test.
+
+| Public getter pair | Verified values |
+| --- | --- |
+| branch ascii / unicode | Branch alone, branch plus upstream with the corresponding arrow, detached empty string, unborn branch name |
+| traffic ascii / unicode | Diverged, ahead-only, behind-only and synchronized histories; empty without an upstream |
+| worktree full / name | Canonical repository path and basename, including trailing spaces |
+
+The new BufEnter regression opens a file in a second repository while retaining
+the first repository as cwd, checks all three components, then returns to an
+unnamed buffer and checks cwd fallback. Removing only the BufEnter subscription
+makes this test fail while the other component cases still pass. Existing
+fixtures cover DirChanged, GinCommandPost, symlink resolution, Gin URI anchors,
+spawn failure recovery and stale asynchronous responses.
+
+The component checklist remains open because error and cache behavior differ
+from the pinned `autoload/gin/internal/component.vim`: upstream initializes
+and updates each getter independently, uses TTL caches, and retains the previous
+value when a request fails (reporting errors when verbose is enabled). Lua
+publishes one combined snapshot, initializes immediately, also refreshes on
+DirChanged, clears values outside repositories and rejects outdated results.
+Spawn exceptions retain the snapshot, but nonzero process exits can currently
+publish empty branch/traffic fields without a verbose diagnostic. The existing
+successful-state fixtures do not establish failure-path compatibility or exact
+notification timing/count parity. Denops startup events do not apply to the Lua
+runtime; no Denops dependency is introduced by the legacy getters.

@@ -58,6 +58,71 @@ T["components asynchronously publish branch traffic and worktree values"] = func
   MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
   vim.api.nvim_del_autocmd(autocmd)
 end
+for _, case in ipairs({
+  { name = "synchronized", local_ref = "HEAD", upstream_ref = "HEAD", ascii = "", unicode = "" },
+  { name = "ahead", local_ref = "HEAD", upstream_ref = "HEAD^", ascii = "^1", unicode = "↑1" },
+  {
+    name = "behind",
+    local_ref = "HEAD^",
+    upstream_ref = "remote-side",
+    ascii = "v1",
+    unicode = "↓1",
+  },
+}) do
+  T["components report " .. case.name .. " tracking history"] = function()
+    local local_commit = vim.trim(H.git(root, "rev-parse", case.local_ref))
+    local upstream_commit = vim.trim(H.git(root, "rev-parse", case.upstream_ref))
+    H.git(root, "reset", "--hard", local_commit)
+    H.git(root, "update-ref", "refs/remotes/origin/main", upstream_commit)
+    local worktree = require("gin.component.worktree")
+    worktree.full()
+    require("gin.component").refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return worktree.full() == vim.uv.fs_realpath(root)
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(require("gin.component.branch").ascii(), "main -> origin/main")
+    MiniTest.expect.equality(require("gin.component.traffic").ascii(), case.ascii)
+    MiniTest.expect.equality(require("gin.component.traffic").unicode(), case.unicode)
+  end
+end
+T["BufEnter selects the file repository without changing cwd"] = function()
+  local worktree = require("gin.component.worktree")
+  local branch = require("gin.component.branch")
+  local traffic = require("gin.component.traffic")
+  other = H.repo()
+  H.git(other, "switch", "--orphan", "file-context")
+  vim.fn.writefile({ "other repository" }, other .. "/file")
+  worktree.full()
+  require("gin.component").refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == vim.uv.fs_realpath(root)
+    end, 10),
+    true
+  )
+  local directory = vim.fn.getcwd()
+  vim.cmd.edit(other .. "/file")
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == vim.uv.fs_realpath(other)
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality({ branch.ascii(), traffic.ascii() }, { "file-context", "" })
+  MiniTest.expect.equality(vim.fn.getcwd(), directory)
+  vim.cmd.enew()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == vim.uv.fs_realpath(root)
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality({ branch.ascii(), traffic.ascii() }, { "main -> origin/main", "^1v1" })
+  MiniTest.expect.equality(vim.fn.getcwd(), directory)
+end
 T["components preserve trailing spaces in repository directory names"] = function()
   other = root
   root = root .. " "
