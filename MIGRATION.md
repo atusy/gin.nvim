@@ -4343,3 +4343,37 @@ This is preparation, not an applied runtime fix. Prototype files:
 `/tmp/gin-view-git-errors-nvim010-lua.json`. Removing the internal Git exit-code
 prefix and preserving raw stderr's trailing whitespace still requires separate
 handling; the prototype only removes callback context and the traceback.
+
+
+### Remove nested callback traces from friendly errors
+
+The shared reporter now unwraps Neovim API callback errors before displaying
+them. It recognizes both current and 0.10 callback labels and removes the final
+stack suffix only within an nvim API context. Literal traceback-like text in a
+diagnostic remains intact. A real GinEdit missing-file test first failed with
+the complete BufReadCmd context/stack; it now displays the underlying Git error.
+
+Four additional cases exercise current/old context and literal multiline text.
+They also exposed the old source-prefix removal matching across newlines and
+deleting diagnostic content up to an embedded filename:line marker. Limiting
+that operation to the first line fixes the three reproduced failures.
+
+All 137 command/boundary cases pass on current Neovim and 0.10.0; the fresh live
+Git-error probe yields 23 friendly messages without callback context or traces.
+Formatting and diff checks pass. The full suite passes 4,646 cases across 60
+groups (`/tmp/gin-nested-error-full.log`). The internal "git exited" prefix and trimmed
+stderr whitespace remain differences from upstream; this change does not
+claim byte-identical Git failure diagnostics.
+
+
+### Git diagnostic preservation follow-up
+
+The remaining stderr whitespace is lost in git.error_message, which applies
+vim.trim before git.run raises a string. The friendly boundary cannot recover
+those bytes after Neovim wraps the exception. Existing direct execute tests also
+assert the trimmed "git exited 7: broken" string, so preserving stderr requires
+an intentional diagnostic-contract update rather than only an echo change.
+Throwing behavior and status reporting must remain tested. The pinned executor
+throws decoded, ANSI-stripped stderr, while its separate captured-query process
+helper prefixes the exit status. Those paths must not be conflated when aligning
+friendly diagnostics. No runtime changes for this follow-up are applied yet.

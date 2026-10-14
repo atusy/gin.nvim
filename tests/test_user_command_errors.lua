@@ -55,4 +55,58 @@ for _, kind in ipairs(commands) do
     end, "Unknown Gin option")
   end
 end
+T["GinEdit reports Git failure without nested callback context"] = function()
+  local H = require("tests.helpers")
+  local root, cwd = H.repo(), vim.fn.getcwd()
+  local echo, message = vim.api.nvim_echo, nil
+  local expected = vim.system({ "git", "-C", root, "show", ":missing" }):wait()
+  assert(expected.code ~= 0)
+  vim.api.nvim_echo = function(chunks)
+    if chunks[1][2] == "ErrorMsg" then
+      message = chunks[1][1]
+    end
+  end
+  local ok, err = pcall(function()
+    vim.cmd.cd(root)
+    vim.cmd("GinEdit missing")
+  end)
+  vim.api.nvim_echo = echo
+  vim.cmd.cd(cwd)
+  H.cleanup(root)
+  assert(ok, err)
+  MiniTest.expect.equality(
+    message,
+    "[gin]: git exited " .. expected.code .. ": " .. vim.trim(expected.stderr)
+  )
+end
+local literal = "first\nstack traceback:\n\tuser.lua:42: diagnostic text"
+for _, case in ipairs({
+  { "direct multiline diagnostic", literal, literal },
+  { "callback text without API context", "Lua callback: " .. literal, "Lua callback: " .. literal },
+  {
+    "current callback context",
+    "nvim_exec2()[1]: Lua callback: " .. literal .. "\nstack traceback:\n\t[C]: in function error",
+    literal,
+  },
+  {
+    "0.10 callback context",
+    "vim/_editor.lua:0: nvim_exec2(): Error executing lua callback: "
+      .. literal
+      .. "\nstack traceback:\n\t[C]: in function error",
+    literal,
+  },
+}) do
+  T["friendly errors preserve " .. case[1]] = function()
+    local echo, message = vim.api.nvim_echo, nil
+    vim.api.nvim_echo = function(chunks)
+      message = chunks[1][1]
+    end
+    local ok, err = pcall(require("gin.command").friendly, function()
+      error(case[2], 0)
+    end, {})
+    vim.api.nvim_echo = echo
+    assert(ok, err)
+    MiniTest.expect.equality(message, "[gin]: " .. case[3])
+  end
+end
 return T
