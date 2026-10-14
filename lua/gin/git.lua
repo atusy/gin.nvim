@@ -47,9 +47,12 @@ local function wait_for(start)
     completed = value
   end))
   -- Process progress and proxy requests before returning the completed output.
-  if not vim.wait(2147483647, function()
-    return completed ~= nil
-  end, 10) then
+  if
+    not vim.wait(2147483647, function()
+      require("gin.editor").process_input()
+      return completed ~= nil
+    end, 10)
+  then
     if not process:is_closing() then
       process:kill(15)
     end

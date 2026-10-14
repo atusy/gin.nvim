@@ -65,9 +65,10 @@ Remaining direct queries include repository discovery, browse URL/ref resolution
 diff merge-base lookup, branch color configuration, index-mode lookup and fixup
 parent detection. Upstream also separates captured internal process execution
 from its indicator executor (for example finder and component queries). This
-inventory does not establish full compatibility for those queries. Manual
-keyboard interaction during synchronous waits, custom indicator APIs and
-the wider command/URI contracts remain open audit items.
+inventory does not establish full compatibility for those queries. Keyboard
+interaction is now tested for Gin ++wait commits/rebase and GinBuffer
+commit. Other synchronous editing workflows, custom indicator APIs and the wider
+command/URI contracts remain open audit items.
 
 ## Validation rules
 
@@ -2501,3 +2502,19 @@ the returned address must be live and stable on repeated environment reads.
 The fixture restores the old listener on failure so a failing regression does
 not contaminate later proxy tests. This verifies recovery before a new operation,
 not migration of an already-running client whose connection was interrupted.
+
+## Keyboard editing during synchronous waits
+
+`vim.wait` serviced proxy RPCs but left ordinary editing keys queued, so a
+keyboard-driven `Gin ++wait commit` opened its editor and then stalled. The wait
+loops now process input while a fully initialized Git editor request is pending.
+The consumed key is put back at the front of the queue to preserve input order;
+requests are tracked independently of the current window so preview editors can
+be entered with normal window navigation.
+
+The interaction suite runs commit Apply through all five openers, confirmed wq,
+Cancel, rejected quit, and two consecutive rewords both asynchronously and with
+++wait. It checks the actual Git history, file content and index, not just editor
+visibility. A separate case commits through synchronous GinBuffer. All 19 cases
+pass on Neovim 0.10. Nested commands and other synchronous mutation workflows are
+not covered by this evidence; the overall migration checklist remains open.

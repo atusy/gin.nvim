@@ -142,12 +142,27 @@ function M.request(path)
           vim.api.nvim_del_augroup_by_id(group)
         end,
       })
+      requests[id].interactive = true
     end)
     if not ok then
       requests[id] = { done = true, accepted = false, error = tostring(err) }
     end
   end)
   return id
+end
+
+-- vim.wait services RPCs, but needs an explicit input pump for editor requests.
+function M.process_input()
+  for _, request in pairs(requests) do
+    if request.interactive and not request.done then
+      local key = vim.fn.getcharstr(0)
+      if key ~= "" then
+        -- Prepend the consumed key to preserve its order; allow Insert mode to wait.
+        vim.api.nvim_feedkeys(key, "mitx!", false)
+      end
+      return
+    end
+  end
 end
 
 function M.poll(id)

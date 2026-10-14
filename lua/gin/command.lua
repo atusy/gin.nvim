@@ -176,6 +176,7 @@ function M.execute(opts)
     running = process
     -- Process scheduled callbacks and editor RPCs while the caller waits.
     local done = vim.wait(2147483647, function()
+      require("gin.editor").process_input()
       return completed ~= nil or failure ~= nil
     end, 10)
     if not done then
