@@ -2178,3 +2178,19 @@ preset, an empty-string prefix and numeric zero. The configured dictionary must
 remain unchanged. Child errors, timeouts and malformed output fail the test.
 This verifies fold text for these configurations and real diff statuses, without
 claiming complete folding-layout or arbitrary configuration-value parity.
+
+## Syntax highlight definition audit
+
+`test_syntax.lua` now extracts all 16 Gin highlight groups declared by the four
+pinned syntax files and compares their Neovim attributes with the Lua syntax
+files in independent fresh processes. Links, GUI colors, terminal colors and
+style attributes match. The comparison removes only the default-installation
+flag and an empty terminal-style table: Lua intentionally retains theme overrides
+for blame, with existing reload tests covering that behavior. Changing the Stash
+branch link from Identifier to Special makes this new audit fail while the other
+syntax tests continue passing. Child failures and timeouts are fatal.
+
+This closes the default-attribute inventory for the four syntax files. It does
+not claim identical matching at every byte position: the previously documented
+Stash branch/Reflog action fixes and custom-theme preservation remain deliberate
+differences from the pinned syntax implementation.

@@ -14,6 +14,71 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["default syntax highlight attributes match the pinned definitions"] = function()
+  local root = vim.fn.getcwd()
+  local files, groups = {}, {}
+  for _, path in ipairs(vim.fn.glob(root .. "/.deps/vim-gin/syntax/*.vim", false, true)) do
+    files[#files + 1] = vim.fn.fnamemodify(path, ":t:r")
+    for _, line in ipairs(vim.fn.readfile(path)) do
+      local name = line:match("^highlight%s+default%s+link%s+(Gin%S+)")
+        or line:match("^highlight%s+link%s+(Gin%S+)")
+        or line:match("^highlight%s+(Gin%S+)")
+      if name then
+        groups[#groups + 1] = name
+      end
+    end
+  end
+  MiniTest.expect.equality(#files, 4)
+  MiniTest.expect.equality(#groups, 16)
+  local function inspect(directory, extension)
+    local script = ([=[
+      local ok, err = pcall(function()
+        vim.opt.runtimepath:prepend(%q)
+        local data = vim.json.decode(%q)
+        for _, name in ipairs(data.files) do
+          vim.cmd.enew({bang=true})
+          vim.cmd.source(data.directory .. '/syntax/' .. name .. data.extension)
+        end
+        local result = {}
+        for _, name in ipairs(data.groups) do
+          local attrs = vim.api.nvim_get_hl(0, {name=name})
+          -- Default-only installation deliberately preserves user overrides in Lua.
+          attrs.default = nil
+          if type(attrs.cterm) == 'table' and next(attrs.cterm) == nil then attrs.cterm = nil end
+          result[name] = attrs
+        end
+        io.stdout:write(vim.json.encode(result))
+      end)
+      if not ok then io.stderr:write(tostring(err)); vim.cmd('cquit 1') end
+    ]=]):format(
+      root,
+      vim.json.encode({
+        files = files,
+        groups = groups,
+        directory = directory,
+        extension = extension,
+      })
+    )
+    local result = vim
+      .system({
+        vim.v.progpath,
+        "--headless",
+        "--clean",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "-c",
+        "lua " .. script,
+        "-c",
+        "qa!",
+      }, { text = true })
+      :wait(10000)
+    assert(result.code == 0, result.stderr)
+    return vim.json.decode(result.stdout)
+  end
+  MiniTest.expect.equality(inspect(root, ".lua"), inspect(root .. "/.deps/vim-gin", ".vim"))
+end
 for kind, spec in pairs({
   tag = {
     line = "abcdef012 release 2026-10-14 release notes",
