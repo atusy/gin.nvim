@@ -32,9 +32,9 @@ function M.parse(args, allowed)
     end
     local name, value
     if not separated then
-      name, value = arg:match("^%+%+([^=]+)=(.*)$")
+      name, value = arg:match("^%+%+([a-zA-Z0-9-]+)=(.*)$")
       if not name then
-        name = arg:match("^%+%+(.+)$")
+        name = arg:match("^%+%+([a-zA-Z0-9-]+)")
         value = ""
       end
     end

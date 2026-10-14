@@ -86,6 +86,14 @@ T["Gin treats plus-prefixed paths after the separator as literal arguments"] = f
   vim.cmd("Gin ++wait add -- " .. table.concat(paths, " "))
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), table.concat(paths, "\0") .. "\0")
 end
+T["plus-prefixed paths outside the option grammar remain Git arguments"] = function()
+  local paths = { "++", "++=file", "++_file", "++日本語" }
+  for _, path in ipairs(paths) do
+    vim.fn.writefile({ "literal" }, root .. "/" .. path)
+  end
+  vim.cmd("Gin ++wait add " .. table.concat(paths, " "))
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), table.concat(paths, "\0") .. "\0")
+end
 T["Gin consumes every bare wait token before parsing options"] = function()
   for _, args in ipairs({ "++wait ++wait", "++wait", "" }) do
     H.git(root, "read-tree", "--empty")

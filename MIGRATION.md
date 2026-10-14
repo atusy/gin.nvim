@@ -1850,3 +1850,10 @@ Bare `++option` values now use an empty string, matching denops std v7's
 repository discovery. A real Git regression test stages a file through
 `Gin ++wait ++worktree add -- file` and checks its index contents. The separate
 Gin wait-token handling remains boolean and runs before the shared parser.
+
+Gin option names now follow the pinned denops std v7 `[a-zA-Z0-9-]+` prefix
+grammar. Arguments such as `++=file`, `++_file` and `++日本語` have no matching
+option name and remain Git arguments, even before `--`; the former parser
+incorrectly rejected them as unknown options. A real Git fixture stages those
+paths together with `++` and checks the exact NUL-delimited index listing.
+Recognized name prefixes still undergo the usual allowed-option validation.
