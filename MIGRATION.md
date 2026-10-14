@@ -9,7 +9,7 @@ scope, not proof of complete upstream parity.
 
 - [x] Pin upstream and mini.nvim; headless mini.test harness.
 - [x] Git process execution and worktree discovery (files, subdirectories, symlinks, linked worktrees).
-- [ ] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events.
+- [x] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events (functional audit and subsequent boundary fixes below).
 - [x] GinBuffer: command output buffers, URI reads, reload and decorations (functional scope audited below).
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [x] GinBranch, GinTag: parsed views and ref actions (functional scope audited below).
@@ -25,8 +25,9 @@ scope, not proof of complete upstream parity.
 - [x] Shared actions: choice, repeat, help, range handling and Plug mappings (functional scope audited below).
 - [x] Editor/askpass proxies, commit/rebase integration (functional scope audited below).
 - [x] Branch/traffic/worktree components and component events (functional scope audited below).
-- [ ] Help, syntax, highlights, options and default mappings in Lua.
-- [ ] Full command/action audit against the pinned source and real Git-state integration tests.
+- [x] Help, syntax, highlights, options and default mappings in Lua (including compound FileType after-ftplugin lifecycle).
+- [x] Full command/action audit against the pinned source and real Git-state integration tests (public-surface inventory and per-view functional ledgers below).
+- [ ] Resolve the pinned writer BOM/end-of-line policy difference and apply/document the chosen contract before declaring the migration complete.
 
 ## Configuration audit: custom parser overrides
 
@@ -4529,3 +4530,35 @@ groups (`/tmp/gin-compound-ftplugin-{current,010}.log`). The tests append the
 plugin's after directory to runtimepath and trigger FileType normally. Makefile
 format checking now includes the new after tree. The next full suite covers
 these changes together with the previously integrated opener fixes.
+
+
+### Final public-surface inventory
+
+The bounded source inventory accounts for all 17 pinned commands, 18 URI read
+hooks (11 BufReadCmd and seven FileReadCmd), the index write hook, 13 public
+autoload APIs, 33 action modules and 308 per-view action registrations. Counts
+for branch/status/log/reflog/tag/stash are 44/79/62/62/30/31. The command and API
+suites discover declarations directly from the pinned source; action tests
+compare registrations, aliases and mapping attributes with the pinned oracle.
+Per-view functional ledgers above provide the separate real Git-state evidence.
+
+All twelve regular ftplugin paths (including nested gitcommit/gitrebase
+extensions), the sole after-ftplugin path, four syntax files and sixteen
+default highlight groups have destinations. The new compound-Blame tests
+exercise the previously missing after-ftplugin lifecycle. Internal Denops
+helpers are implemented by Lua modules rather than preserved as public internal
+Vimscript symbols. Blame navigation, diff jumps, components, utilities and
+proxy/editor routes are accounted for in their functional ledgers.
+
+This closes the entrypoint discovery inventory; it is not a claim of identical
+behavior for every input or scheduling order. Existing documented differences
+include component cache timing, native writer behavior and the corrected
+Browse working-directory bug. The outstanding writer BOM/end-of-line policy
+question above still prevents declaring the migration complete. The integrated
+full suite at 8d9bbed5bd38a0e5e84c529a2210b0e24c207134 passed all 4,697 cases
+across 62 groups, with zero failures and notes. Log:
+`/tmp/gin-parallel-second-full.log`. The top-level audit checklist now records
+the completed functional/source audits and retains the writer-policy decision
+as an explicit unresolved completion requirement. Earlier chronological entries
+that say an audit remains open describe their historical stage; this final
+inventory and integrated result supersede those status statements.
