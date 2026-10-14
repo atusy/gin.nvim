@@ -3997,3 +3997,44 @@ success and an empty `:messages` history do not prove successful decoding.
 The probe captures `:redir` across timer processing and checks actual buffer
 content, rather than treating that command return as success evidence.
 Temporary evidence: `/tmp/gin-explicit-label-probe-upstream.json`.
+
+## Reject unsupported explicit read encodings
+
+Explicit reads now always use the TextDecoder-compatible replacement decoder.
+The prior fallback to native Unicode and iconv accepted `ucs-2le`, despite the
+pinned upstream reporting an invalid label. The initial real-view rejection
+regression failed because this input succeeded. Both views and addressed reads
+now reject native-only and unknown labels while preserving source bytes and
+read destinations. Automatic selection continues to skip invalid candidates.
+
+Native writer byte comparisons remain intact. UCS-2LE writer output is read
+back using UTF-16LE, and UCS-4 writer cases retain their byte-exact comparison
+without attempting a TextDecoder-unsupported read. Failed-read snapshot tests
+now provoke an unsupported-label error after a successful UTF-16LE load and
+verify a later supported reload restores normal operation. The related 298
+tests pass on current Neovim and Neovim 0.10.0; formatting checks pass.
+The full suite passes 4,550 cases across 59 groups
+(`/tmp/gin-label-rejection-full.log`). General notification/error-handling parity and the
+metadata, write-encoding and API audits are still separate unfinished work.
+
+### Pinned-upstream write-metadata evidence
+
+A fresh isolated Git-index probe compares actual staged bytes and confirms these
+remaining differences (all cases restore the original working file):
+
+| Input/options | Pinned upstream bytes | Current Lua bytes |
+| --- | --- | --- |
+| `A`, noendofline/nofixendofline | `41 0A` | `41` |
+| empty buffer, noendofline/nofixendofline | `0A` | empty |
+| UTF-16LE with bomb | `EF BB BF 41 00 0A 00` | `FF FE 41 00 0A 00` |
+| UTF-16BE with bomb | `EF BB BF 00 41 00 0A` | `FE FF 00 41 00 0A` |
+| Latin-1 with bomb | `EF BB BF 41 0A` | `41 0A` |
+| binary, dos, bomb, noendofline | `EF BB BF 41 0D 0A` | `41` |
+
+UTF-8 BOM and ordinary DOS output agree. Upstream `edit/write.ts` always joins
+content with a final fileformat line ending and `util/bom.ts` always adds the
+UTF-8 prefix. This is a real output-policy difference, not a decoder failure.
+The user has been asked whether to retain correct encoding-specific BOMs and
+missing-final-newline preservation with documented deviations, or reproduce
+these pinned behaviors. No decision has yet been applied.
+Evidence: `/tmp/gin-write-metadata-{upstream,lua}.json`.
