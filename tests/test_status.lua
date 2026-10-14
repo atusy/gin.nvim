@@ -351,6 +351,8 @@ T["intent-to-add registers new files before a later staging failure"] = function
   MiniTest.expect.equality(H.git(root, "show", ":tracked"), "base\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/new-file"), { "new content" })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/tracked"), { "changed" })
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, 2, false), { " A new-file" })
 end
 T["stash keep-index preserves selected staged content"] = function()
   H.git(root, "config", "user.name", "Gin Test")

@@ -1957,3 +1957,10 @@ regression checks that the new file already has an empty index entry, the
 tracked index content is unchanged, and both working files survive. Unstage's
 intent-to-add conversion still follows reset. This verifies partial Git state;
 completion-event handling after a later command failure remains a separate audit.
+
+Status's multi-command staging actions now schedule GinCommandPost after each
+successful Git command, as the pinned command dispatcher does. A later failure
+no longer loses the update from an earlier intent-to-add operation. The existing
+clean-filter failure fixture now drains pending events and checks that the
+visible new-file row changes from untracked to intent-to-add. Failed commands
+still propagate their errors; the shared post-event debounce remains in use.

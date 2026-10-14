@@ -208,32 +208,29 @@ function M.action(buf, name, range)
   if #paths == 0 and #removed == 0 and #intent == 0 then
     return
   end
+  local function run(args)
+    git.run(args, { cwd = root, progress = "both" })
+    require("gin.command").post()
+  end
   local function add_intent()
     if #intent > 0 then
-      git.run(
-        vim.list_extend({ "add", "--ignore-errors", "--force", "--intent-to-add", "--" }, intent),
-        { cwd = root, progress = "both" }
-      )
+      run(vim.list_extend({ "add", "--ignore-errors", "--force", "--intent-to-add", "--" }, intent))
     end
   end
   if not unstage then
     add_intent()
   end
   if #removed > 0 then
-    git.run(
-      vim.list_extend({ "rm", "--quiet", "--ignore-unmatch", "--cached", "--" }, removed),
-      { cwd = root, progress = "both" }
-    )
+    run(vim.list_extend({ "rm", "--quiet", "--ignore-unmatch", "--cached", "--" }, removed))
   end
   if #paths > 0 then
     local args = unstage and { "reset", "--quiet", "--" }
       or { "add", "--ignore-errors", "--force", "--" }
-    git.run(vim.list_extend(args, paths), { cwd = root, progress = "both" })
+    run(vim.list_extend(args, paths))
   end
   if unstage then
     add_intent()
   end
-  require("gin.command").post()
 end
 
 function M.mappings(buf)
