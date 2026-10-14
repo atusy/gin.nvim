@@ -1343,3 +1343,11 @@ exercise log/reflog yank, tag deletion and stash dropping with number, boolean
 and table settings; rejection leaves refs, working/index state and the register
 unchanged. This implements the type-validation boundary only. String-valued
 JavaScript regex matching is still unimplemented and remains a migration gap.
+
+A backend investigation for custom parser regexes is recorded in
+[the proposed regex ADR](docs/ADR/20261014-000000-preserve-custom-parser-regex-semantics.md).
+The tested jsregexp revision handles the sampled ASCII lookahead/backreference
+cases, but automatically enabling Unicode for a non-BMP pattern disagrees with
+the pinned no-flags constructor. It has not been added as a dependency. Backend
+selection and custom matching remain incomplete; this finding prevents treating
+an unmodified ECMAScript-labelled binding as sufficient parity evidence.
