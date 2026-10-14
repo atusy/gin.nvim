@@ -13,6 +13,7 @@ local T = MiniTest.new_set({
         vim.b.undo_ftplugin = nil
       end
       vim.cmd.bwipeout({ bang = true })
+      vim.wo.winfixbuf = false
     end,
   },
 })
@@ -47,4 +48,33 @@ T["diff filetype inherits and undoes the runtime diff settings"] = function()
   MiniTest.expect.equality(vim.bo.modeline, vim.go.modeline)
   MiniTest.expect.equality(vim.bo.commentstring, vim.go.commentstring)
 end
+T["blame filetypes install and undo navigation without a blame read"] = function()
+  for _, kind in ipairs({ "gin-blame", "gin-blame-nav" }) do
+    vim.bo.filetype = kind
+    MiniTest.expect.equality(vim.b.did_ftplugin, 1)
+    MiniTest.expect.equality(vim.wo.winfixbuf, true)
+    for key, action in pairs({
+      ["<CR>"] = "switch-commit",
+      ["<C-O>"] = "navigate-older",
+      ["<C-I>"] = "navigate-newer",
+    }) do
+      local plug = "<Plug>(gin-blame-" .. action .. ")"
+      MiniTest.expect.equality(vim.fn.maparg(key, "n"), plug)
+      MiniTest.expect.equality(type(vim.fn.maparg(plug, "n", false, true).callback), "function")
+    end
+    vim.bo.filetype = "text"
+    MiniTest.expect.equality(vim.wo.winfixbuf, vim.go.winfixbuf)
+    for _, key in ipairs({
+      "<CR>",
+      "<C-O>",
+      "<C-I>",
+      "<Plug>(gin-blame-switch-commit)",
+      "<Plug>(gin-blame-navigate-older)",
+      "<Plug>(gin-blame-navigate-newer)",
+    }) do
+      MiniTest.expect.equality(vim.fn.maparg(key, "n"), "")
+    end
+  end
+end
+
 return T

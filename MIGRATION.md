@@ -1635,3 +1635,12 @@ options. A runtime-file matrix exercises all four Lua syntax files and all eight
 existing Lua ftplugins, preserving sentinel syntax, normal mappings, display
 options and marker values. This does not establish parity for absent ftplugins
 or all syntax matches; blame ftplugin initialization still needs separate audit.
+
+Both blame filetypes now have Lua ftplugin entrypoints. Setting gin-blame or
+gin-blame-nav directly installs navigation keys, Plug callbacks, winfixbuf and
+undo settings without requiring GinBlame to read a repository first. Shared
+mapping setup is also used by the existing blame read path, retaining its
+compound-filetype support. A FileType lifecycle test checks both entrypoints
+and cleanup; the runtime guard matrix automatically includes both new files.
+The read path still reinstalls mappings, so user overrides across blame reloads
+and plugin-disabled initialization remain separate lifecycle audit items.

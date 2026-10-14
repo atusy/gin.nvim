@@ -101,4 +101,57 @@ function M.jump_mappings(buf, kind)
   end
 end
 
+function M.blame_mappings(target)
+  vim.keymap.set("n", "<Plug>(gin-blame-switch-commit)", function()
+    require("gin.blame").switch_commit()
+  end, { buffer = target, silent = true })
+  if
+    not vim.g.gin_blame_disable_default_mappings or vim.g.gin_blame_disable_default_mappings == 0
+  then
+    vim.keymap.set(
+      "n",
+      "<CR>",
+      "<Plug>(gin-blame-switch-commit)",
+      { buffer = target, remap = true, silent = true }
+    )
+  end
+  for direction, key in pairs({ older = "<C-O>", newer = "<C-I>" }) do
+    local plug = "<Plug>(gin-blame-navigate-" .. direction .. ")"
+    vim.keymap.set("n", plug, function()
+      require("gin.blame").navigate_history(direction)
+    end, { buffer = target, silent = true })
+    if
+      not vim.g.gin_blame_disable_default_mappings
+      or vim.g.gin_blame_disable_default_mappings == 0
+    then
+      vim.keymap.set("n", key, plug, { buffer = target, remap = true, silent = true })
+    end
+  end
+  local undo = "setlocal winfixbuf<"
+  for _, key in ipairs({
+    "<CR>",
+    "<C-O>",
+    "<C-I>",
+    "<Plug>(gin-blame-switch-commit)",
+    "<Plug>(gin-blame-navigate-older)",
+    "<Plug>(gin-blame-navigate-newer)",
+  }) do
+    -- Spaces before a command separator become part of an unmap key.
+    undo = undo .. "| silent! nunmap <buffer> " .. key
+  end
+  local existing = vim.b[target].undo_ftplugin or ""
+  if not existing:find(undo, 1, true) then
+    vim.b[target].undo_ftplugin = existing ~= "" and (existing .. "| " .. undo) or undo
+  end
+end
+
+function M.blame()
+  if vim.b.did_ftplugin ~= nil then
+    return
+  end
+  vim.b.did_ftplugin = 1
+  vim.wo.winfixbuf = true
+  M.blame_mappings(vim.api.nvim_get_current_buf())
+end
+
 return M
