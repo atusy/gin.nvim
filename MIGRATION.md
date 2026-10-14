@@ -1449,3 +1449,10 @@ The regex audit now reads its JSON fixture in binary mode. Text-mode
 `readfile()` removed U+FEFF from an input string, creating a false whitespace
 mismatch for jsregexp. With input preserved, that candidate passes 23/29 cases
 and fails six, including the previously reproduced SIGSEGV.
+
+A test-only pure Lua regex candidate now passes the initial 29-case JavaScript
+oracle. It includes an AST compiler, UTF-16 matching, ordered backtracking,
+numbered/named captures, lookaround and backreferences for the exercised grammar.
+Known legacy-syntax and capture-name gaps are documented in the audit README;
+resource limits and broader differential tests remain required. No runtime
+action uses it yet, and custom parser globals remain a production migration gap.

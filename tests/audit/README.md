@@ -49,3 +49,21 @@ action integration and error propagation still require separate product tests.
 The oracle must be read in binary mode: Vimscript `readfile()` in text mode
 removes U+FEFF bytes, including inside JSON strings. An earlier audit incorrectly
 reported a whitespace mismatch because of this input corruption.
+
+## Pure Lua candidate
+
+`lua_regex.lua` is an experimental compiler and matcher, exercised by
+`tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
+code units, per-match capture state and continuation-based backtracking. The
+initial 29-case corpus passes, including cases that reject the C candidate.
+Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
+
+This is not an adopted runtime backend and no Gin action calls it. Its output
+is a list of UTF-16 capture arrays (full match first, unmatched groups null),
+not the strings needed by action parsers. Known unimplemented areas include
+legacy octal/decimal escape rules, some legacy control escapes and character
+class ranges, non-ASCII/escaped capture names and duplicate-name rules. Some
+valid JavaScript patterns therefore raise an unsupported-syntax error. Input
+encoding edge cases, large patterns/inputs, recursion limits, resource bounds
+and a broader differential corpus must also be audited before integration.
+Passing the initial corpus does not establish full ECMAScript compatibility.

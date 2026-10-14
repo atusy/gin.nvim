@@ -113,3 +113,16 @@ empty matches, Unicode whitespace and non-BMP input. Then use mini.nvim tests to
 prove that custom captures control the four real action paths and that failed
 compilation/matching does not fall back to unrelated candidates. Validate the
 minimum supported Neovim and document installation on supported platforms.
+
+## Pure Lua candidate progress
+
+A test-only compiler/matcher now lives in `tests/audit/lua_regex.lua`. It passes
+the initial 29-case Node oracle using UTF-16 units and per-match backtracking
+state. It is not connected to candidate actions. Legacy escape syntax, capture
+name rules, encoding/resource limits and broader differential validation remain
+open; see `tests/audit/README.md`. The ADR remains proposed and no native
+runtime dependency or production backend is selected by this experiment.
+
+The initial C audit's U+FEFF mismatch was a fixture-reader defect: binary JSON
+reading corrects it. The C candidate still fails six of the initial 29 cases,
+including the unmatched-capture SIGSEGV.
