@@ -122,6 +122,39 @@ T["user callback overrides replace registered actions and restore ranges after e
   MiniTest.expect.equality(captured, { 3, 5 })
   MiniTest.expect.equality(action.range(), { 1, 1 })
 end
+for _, case in ipairs({
+  { "Visual", "x", "ggVj", { 1, 2 } },
+  { "Select", "s", "ggVj<C-g>", { 1, 2 } },
+  { "operator pending", "o", "ggd", { 1, 1 }, "normal" },
+}) do
+  T["nested actions follow native dispatch in " .. case[1] .. " mode"] = function()
+    local action = require("gin.action")
+    local buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "one", "two", "three" })
+    action.setup(buf)
+    local captured
+    action.define(buf, "capture", function()
+      captured = { "normal", action.range() }
+    end)
+    vim.keymap.set(case[2], "<Plug>(gin-action-capture)", function()
+      captured = { case[1], action.range() }
+    end, { buffer = buf })
+    action.define(buf, "invoke", function(target, range)
+      action.call(target, "capture", range)
+    end)
+    vim.api.nvim_feedkeys(
+      vim.api.nvim_replace_termcodes(case[3] .. "<Plug>(gin-action-invoke)", true, false, true),
+      "mx",
+      false
+    )
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+    MiniTest.expect.equality(captured, { case[5] or case[1], case[4] })
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(buf, 0, -1, false),
+      { "one", "two", "three" }
+    )
+  end
+end
 T["custom command mappings receive captured action ranges"] = function()
   local action = require("gin.action")
   local buf = vim.api.nvim_get_current_buf()

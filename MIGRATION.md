@@ -1760,3 +1760,12 @@ when staging `++unknown`; the resulting index contains exactly that literal
 path. Previously the separator appeared only after classification, and the next
 argument was incorrectly rejected as an unknown Gin option. The separate bare
 `:Gin ++wait` filtering still happens before filename expansion, as upstream.
+
+Nested action calls now resolve Visual and Select mappings rather than always
+looking up the Normal mapping, preserving mode-specific user overrides. Actual
+key-input tests check the selected override, captured range and unchanged buffer
+content. A separate runtime check of the pinned core's `execute`/`feedkeys`
+expression confirms Visual/Select dispatch and Normal dispatch when called from
+operator-pending mode. The test sends Escape only after dispatch, since queued
+keys run before the upstream's appended action keys. Existing Normal callback,
+expression-mapping, alias and range-restoration tests remain in place.

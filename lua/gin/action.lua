@@ -138,7 +138,17 @@ function M.call(buf, name, range)
     end
   end
   local plug = "<Plug>(gin-action-" .. name .. ")"
-  local mapping = vim.fn.maparg(plug, "n", false, true)
+  local mode = vim.fn.mode(1)
+  if vim.tbl_contains({ "v", "V", "\22" }, mode:sub(1, 1)) then
+    mode = "x"
+  elseif vim.tbl_contains({ "s", "S", "\19" }, mode:sub(1, 1)) then
+    mode = "s"
+  elseif mode:match("^[iR]") then
+    mode = "i"
+  else
+    mode = mode:sub(1, 1)
+  end
+  local mapping = vim.fn.maparg(plug, mode, false, true)
   assert(next(mapping), "Unknown Gin action: " .. name)
   local previous = range_internal
   range_internal = vim.deepcopy(range)
