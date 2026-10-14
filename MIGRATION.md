@@ -4562,3 +4562,15 @@ the completed functional/source audits and retains the writer-policy decision
 as an explicit unresolved completion requirement. Earlier chronological entries
 that say an audit remains open describe their historical stage; this final
 inventory and integrated result supersede those status statements.
+
+
+### Writer decision prepared for review
+
+The current index-write rules are now documented in help alongside read-label
+rules: encoding-specific Unicode BOMs, no Latin-1 BOM, binary LF/no-BOM,
+encoding retention, and explicit noendofline/nofixendofline preservation.
+These descriptions were checked against edit.encode and existing byte-level
+native-write comparisons in test_edit.lua. The help explicitly identifies the
+pinned writer differences and pending final policy, rather than treating an
+unanswered question as acceptance. No runtime or test behavior changed; the
+4,697-case integrated result remains applicable to the runtime tree.

@@ -298,6 +298,18 @@ The ordinary :Gin command defaults to UTF-8 instead of using 'fileencodings'.
 The raw Git output is preserved; decoding affects its display. These read rules
 do not define which encodings the index writer accepts.
 
+Current index writes honor 'fileencoding', 'fileformat', 'bomb', 'binary',
+'endofline' and 'fixendofline'. With nobinary, bomb uses the selected Unicode
+encoding's BOM; Latin-1 receives no BOM. Binary writes use LF separators and
+omit the BOM while retaining the selected encoding. To preserve a missing
+final newline, set noendofline and nofixendofline before writing.
+
+This differs from the pinned vim-gin writer, which always appends a line ending
+and uses UTF-8 BOM bytes even for other encodings. The migration's final policy
+for these differences is still pending; see MIGRATION.md. Reading uses the
+TextDecoder labels above, so native write-encoding names are not necessarily
+valid read labels.
+
 :read {URI} inserts output for gin://, ginedit://, gindiff://, gintag://,
 ginlog://, ginreflog:// and ginstash:// buffers. Obtain the URI from an existing
 Gin buffer's name. Reads support line addresses and decoding without changing
