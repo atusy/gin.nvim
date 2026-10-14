@@ -2272,3 +2272,20 @@ makes the new navigation-restoration case fail.
 These tests exercise restoration of loaded hidden buffers. The normal unload
 policy still closes the companion buffers, as covered separately; they do not
 claim history persistence after buffers are wiped or across Neovim sessions.
+
+## Blame continuation group sizes
+
+The Lua parser now remembers each commit's latest explicit porcelain group size
+and applies it when continuation headers omit the count, matching the pinned
+parser's `numLinesInGroup` values. A real six-line history with an edit in the
+middle produces groups of two, one and three lines, including two differently
+sized groups attributed to the same commit. Both panes must expose
+`{2, 2, 1, 3, 3, 3}`; before the fix they exposed `{2, 1, 1, 3, 1, 1}`.
+
+The broader result-shape audit remains open: Lua's `commits` entries currently
+contain raw porcelain metadata (for example a string author and separate
+`author-time`), whereas the pinned parser constructs nested author/committer
+objects, booleans and structured previous-commit metadata. The exact date
+representation crossing Denops into buffer variables also needs verification.
+Per-line metadata remains necessary for the Lua rename-following behavior and
+must not be lost while resolving these representation differences.

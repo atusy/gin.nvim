@@ -38,6 +38,7 @@ end
 -- including when the same commit contributed lines from different paths.
 function M.parse(output)
   local result = { commits = {}, lines = {} }
+  local group_sizes = {}
   local entry, metadata
   for line in (output .. "\n"):gmatch("([^\n]*)\n") do
     if line:sub(1, 1) == "\t" and entry then
@@ -54,11 +55,12 @@ function M.parse(output)
     else
       local sha, original, final, count = line:match("^(%x+) (%d+) (%d+)%s*(%d*)$")
       if sha then
+        group_sizes[sha] = tonumber(count) or group_sizes[sha] or 1
         entry = {
           commitSha = sha,
           originalLineNumber = tonumber(original),
           lineNumber = tonumber(final),
-          numLinesInGroup = tonumber(count) or 1,
+          numLinesInGroup = group_sizes[sha],
         }
         metadata = {}
       end

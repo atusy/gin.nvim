@@ -29,6 +29,25 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["blame lines retain group sizes when continuation headers omit them"] = function()
+  vim.fn.writefile({ "one", "two", "three", "four", "five", "six" }, root .. "/sub/groups.txt")
+  H.git(root, "add", "sub/groups.txt")
+  H.git(root, "commit", "-m", "six lines")
+  local initial = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  vim.fn.writefile({ "one", "two", "changed", "four", "five", "six" }, root .. "/sub/groups.txt")
+  H.git(root, "commit", "-am", "split attribution groups")
+  local changed = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  vim.cmd("GinBlame groups.txt")
+  for _, buf in ipairs({ vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr }) do
+    local sizes, commits = {}, {}
+    for _, line in ipairs(vim.b[buf].gin_blame_result.lines) do
+      sizes[#sizes + 1] = line.numLinesInGroup
+      commits[#commits + 1] = line.commitSha
+    end
+    MiniTest.expect.equality(sizes, { 2, 2, 1, 3, 3, 3 })
+    MiniTest.expect.equality(commits, { initial, initial, changed, initial, initial, initial })
+  end
+end
 T["blame attribution formats past and future time boundaries from real commits"] = function()
   local real_time = os.time
   local now = real_time({ year = 2025, month = 1, day = 15, hour = 12 })
