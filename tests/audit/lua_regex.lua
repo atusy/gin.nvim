@@ -71,8 +71,35 @@ local function class_matches(node, cp)
   return node.negated and not found or not node.negated and found
 end
 
+-- Decimal escapes depend on the total capture count, including forward groups.
+local function capture_count(source)
+  local index, count, in_class = 1, 0, false
+  while index <= #source do
+    local cp = source[index]
+    if cp == 92 then
+      index = index + 2
+    else
+      if cp == 91 and not in_class then
+        in_class = true
+      elseif cp == 93 and in_class then
+        in_class = false
+      elseif cp == 40 and not in_class then
+        local named = source[index + 2] == 60
+          and source[index + 3] ~= 61
+          and source[index + 3] ~= 33
+        if source[index + 1] ~= 63 or named then
+          count = count + 1
+        end
+      end
+      index = index + 1
+    end
+  end
+  return count
+end
+
 function M.compile(pattern)
   local source, cursor, count, names = units(pattern), 1, 0, {}
+  local total_captures = capture_count(source)
   local function peek()
     return ascii(source[cursor])
   end
@@ -134,17 +161,29 @@ function M.compile(pattern)
       return { kind = "reference", name = name }
     end
     if char:match("^[0-9]$") then
-      local digits = char
-      while peek():match("^[0-9]$") do
-        digits = digits .. peek()
-        cursor = cursor + 1
+      if not in_class and char ~= "0" then
+        local digits, after = char, cursor
+        while ascii(source[after]):match("^[0-9]$") do
+          digits = digits .. ascii(source[after])
+          after = after + 1
+        end
+        local number = tonumber(digits)
+        if number <= total_captures then
+          cursor = after
+          return { kind = "reference", number = number }
+        end
       end
-      if digits == "0" then
-        return literal(0)
+      if char:match("^[0-7]$") then
+        local digits = char
+        local limit = char <= "3" and 3 or 2
+        while #digits < limit and peek():match("^[0-7]$") do
+          digits = digits .. peek()
+          cursor = cursor + 1
+        end
+        return literal(tonumber(digits, 8))
       end
-      assert(char ~= "0", "Unsupported regular expression: legacy octal escape")
-      assert(not in_class, "Unsupported regular expression: class decimal escape")
-      return { kind = "reference", number = tonumber(digits) }
+      -- Non-octal 8/9 are identity escapes; later digits remain separate atoms.
+      return literal(cp)
     end
     return literal(cp)
   end

@@ -35,7 +35,7 @@ an incompatible candidate result, not a passing product test. This finite corpus
 is a selection gate, not proof of complete ECMAScript compatibility.
 
 At jsregexp `aadbcc2045ac5bddad8b211c80cb17b002775c26`, on macOS arm64,
-23 of 29 cases pass. Failures with this adapter are:
+23 of the initial 29 cases pass. Failures with this adapter are:
 
 - `optional`, `unmatched-backreference`: absent captures become empty strings.
 - `optional-wide`: child exits on signal 11 (SIGSEGV).
@@ -55,15 +55,18 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-initial 29-case corpus passes, including cases that reject the C candidate.
+51-case corpus passes, including the initial cases that reject the C candidate
+and 22 decimal/octal escape cases. Numeric escapes account for total capture
+count (including forward references), class context, octal digit limits and
+quantifier binding on remaining digits.
 Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 
 This is not an adopted runtime backend and no Gin action calls it. Its output
 is a list of UTF-16 capture arrays (full match first, unmatched groups null),
 not the strings needed by action parsers. Known unimplemented areas include
-legacy octal/decimal escape rules, some legacy control escapes and character
-class ranges, non-ASCII/escaped capture names and duplicate-name rules. Some
-valid JavaScript patterns therefore raise an unsupported-syntax error. Input
+some legacy control escapes and character class ranges, non-ASCII/escaped
+capture names and duplicate-name rules. Some valid JavaScript patterns therefore
+raise an unsupported-syntax error. Input
 encoding edge cases, large patterns/inputs, recursion limits, resource bounds
 and a broader differential corpus must also be audited before integration.
 Passing the initial corpus does not establish full ECMAScript compatibility.

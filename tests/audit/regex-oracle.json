@@ -546,5 +546,443 @@
     "expected": {
       "status": "no-match"
     }
+  },
+  {
+    "name": "octal-one",
+    "pattern": "^\\1$",
+    "input": "\u0001",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-leading-zero",
+    "pattern": "^(\\01)$",
+    "input": "\u0001",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-three-digits",
+    "pattern": "^(\\377)$",
+    "input": "ÿ",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          255
+        ],
+        [
+          255
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-limit",
+    "pattern": "^(\\400)$",
+    "input": " 0",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          32,
+          48
+        ],
+        [
+          32,
+          48
+        ]
+      ]
+    }
+  },
+  {
+    "name": "decimal-identity",
+    "pattern": "^(\\89)$",
+    "input": "89",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          56,
+          57
+        ],
+        [
+          56,
+          57
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-and-digit",
+    "pattern": "^(\\18)$",
+    "input": "\u00018",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          56
+        ],
+        [
+          1,
+          56
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-tail-quantifier",
+    "pattern": "^(\\18+)$",
+    "input": "\u0001888",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          56,
+          56,
+          56
+        ],
+        [
+          1,
+          56,
+          56,
+          56
+        ]
+      ]
+    }
+  },
+  {
+    "name": "octal-tail-not-group-quantifier",
+    "pattern": "^(\\18+)$",
+    "input": "\u00018\u00018",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "octal-leading-zero-before-capture",
+    "pattern": "^\\01(a)$",
+    "input": "\u0001a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "forward-reference",
+    "pattern": "^\\1(a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "forward-reference-two",
+    "pattern": "^\\2(a)(b)$",
+    "input": "ab",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98
+        ],
+        [
+          97
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "decimal-not-reference-prefix",
+    "pattern": "^(a)\\18$",
+    "input": "a\u00018",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          1,
+          56
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "decimal-reference-ten",
+    "pattern": "^(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\\10$",
+    "input": "abcdefghijj",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          106
+        ],
+        [
+          97
+        ],
+        [
+          98
+        ],
+        [
+          99
+        ],
+        [
+          100
+        ],
+        [
+          101
+        ],
+        [
+          102
+        ],
+        [
+          103
+        ],
+        [
+          104
+        ],
+        [
+          105
+        ],
+        [
+          106
+        ]
+      ]
+    }
+  },
+  {
+    "name": "forward-reference-ten",
+    "pattern": "^\\10(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)$",
+    "input": "abcdefghij",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106
+        ],
+        [
+          97
+        ],
+        [
+          98
+        ],
+        [
+          99
+        ],
+        [
+          100
+        ],
+        [
+          101
+        ],
+        [
+          102
+        ],
+        [
+          103
+        ],
+        [
+          104
+        ],
+        [
+          105
+        ],
+        [
+          106
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-octal-with-capture",
+    "pattern": "^(a)[\\1]$",
+    "input": "a\u0001",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          1
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-octal-range",
+    "pattern": "^([\\1-\\3]+)$",
+    "input": "\u0001\u0002\u0003",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-decimal-identity",
+    "pattern": "^([\\8\\9]+)$",
+    "input": "8998",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          56,
+          57,
+          57,
+          56
+        ],
+        [
+          56,
+          57,
+          57,
+          56
+        ]
+      ]
+    }
+  },
+  {
+    "name": "escaped-parentheses-not-captures",
+    "pattern": "^\\1\\(a\\)$",
+    "input": "\u0001(a)",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          40,
+          97,
+          41
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-parentheses-not-captures",
+    "pattern": "^\\1[(]$",
+    "input": "\u0001(",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          40
+        ]
+      ]
+    }
+  },
+  {
+    "name": "noncapture-not-capture",
+    "pattern": "^\\1(?:a)$",
+    "input": "\u0001a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "lookaround-not-capture",
+    "pattern": "^\\1(?=a)a$",
+    "input": "\u0001a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-group-counted",
+    "pattern": "^\\1(?<name>a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
   }
 ]

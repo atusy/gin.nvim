@@ -1456,3 +1456,10 @@ numbered/named captures, lookaround and backreferences for the exercised grammar
 Known legacy-syntax and capture-name gaps are documented in the audit README;
 resource limits and broader differential tests remain required. No runtime
 action uses it yet, and custom parser globals remain a production migration gap.
+
+The test-only regex candidate now resolves decimal escapes using the total
+capture count, including forward groups, and falls back to legacy octal or
+identity escapes as JavaScript does without flags. Class escapes and trailing
+digits retain their own parsing and quantifier boundaries. Twenty-two added
+Node-oracle cases bring the candidate corpus to 51; this remains bounded
+experimental coverage, with no production action integration.
