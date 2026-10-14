@@ -387,28 +387,6 @@ function M.read(buf, name)
       vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
     end)
   end
-  if require("gin.ftplugin").default_mappings(buf, "branch") then
-    for key, name in pairs({
-      a = "choice",
-      ["."] = "repeat",
-      ["?"] = "help",
-      ["<CR>"] = "switch",
-      yy = "yank:branch",
-    }) do
-      vim.keymap.set(
-        (key == "a" or key == ".") and { "n", "x", "s", "o" } or "n",
-        key,
-        "<Plug>(gin-action-" .. name .. ")",
-        { buffer = buf, remap = true, nowait = true }
-      )
-    end
-    vim.keymap.set(
-      { "x", "s" },
-      "y",
-      "<Plug>(gin-action-yank:branch)<Esc>",
-      { buffer = buf, remap = true, nowait = true }
-    )
-  end
 end
 
 function M.command(opts)

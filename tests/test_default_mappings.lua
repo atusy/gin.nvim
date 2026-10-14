@@ -15,6 +15,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.cmd("filetype plugin on")
       for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
         vim.g["gin_" .. kind .. "_disable_default_mappings"] = nil
       end
@@ -111,6 +112,34 @@ for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) d
     vim.cmd.edit()
     H.drain()
     MiniTest.expect.equality(vim.fn.maparg("yy", "n"), default)
+  end
+end
+for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+  T[kind .. " honors default-key overrides from FileType hooks"] = function()
+    local rhs = "<Cmd>let g:gin_test_mapping = 2<CR>"
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "gin-" .. kind,
+      once = true,
+      callback = function(event)
+        vim.keymap.set("n", "yy", rhs, { buffer = event.buf })
+      end,
+    })
+    vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
+    MiniTest.expect.equality(vim.fn.maparg("yy", "n"), rhs)
+    vim.cmd.edit()
+    H.drain()
+    MiniTest.expect.equality(vim.fn.maparg("yy", "n"), rhs)
+  end
+end
+for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+  T[kind .. " does not install default keys with filetype plugins disabled"] = function()
+    vim.cmd("filetype plugin off")
+    vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
+    MiniTest.expect.equality(
+      default_maps(vim.api.nvim_get_current_buf()),
+      { n = {}, x = {}, s = {}, o = {} }
+    )
+    MiniTest.expect.equality(vim.fn.maparg("<Plug>(gin-action-choice)", "n", false, true).buffer, 1)
   end
 end
 return T

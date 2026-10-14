@@ -1419,3 +1419,11 @@ keys on every read. Six real-list tests cover override, removal and filetype
 transition; the upstream mapping comparison now also covers disabled defaults
 before and after reload. Plug action redefinition and arbitrary FileType-hook
 ordering remain separate compatibility concerns.
+
+List default mappings are now installed by the actual ftplugins, before later
+user FileType hooks, instead of at the end of each view's read function. Their
+shared definitions retain the already-tested upstream modes and flags. Six
+fixtures verify initial FileType-hook overrides and their retention on reload;
+six more verify that disabling filetype plugins suppresses default keys while
+leaving explicitly callable Plug actions available. This covers ordinary
+post-ftplugin customization, not every possible autocmd registration order.

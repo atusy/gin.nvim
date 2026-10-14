@@ -146,28 +146,6 @@ function M.read(buf, name)
       vim.api.nvim_del_augroup_by_id(group)
     end,
   })
-  if require("gin.ftplugin").default_mappings(buf, "stash") then
-    for key, name in pairs({
-      a = "choice",
-      ["."] = "repeat",
-      ["?"] = "help",
-      ["<CR>"] = "show",
-      yy = "yank:stash",
-    }) do
-      vim.keymap.set(
-        (key == "a" or key == "." or key == "<CR>") and { "n", "x", "s", "o" } or "n",
-        key,
-        "<Plug>(gin-action-" .. name .. ")" .. (key == "<CR>" and "zv" or ""),
-        { buffer = buf, remap = true, nowait = true }
-      )
-    end
-    vim.keymap.set(
-      { "x", "s" },
-      "y",
-      "<Plug>(gin-action-yank:stash)<Esc>",
-      { buffer = buf, remap = true, nowait = true }
-    )
-  end
 end
 
 function M.command(opts)

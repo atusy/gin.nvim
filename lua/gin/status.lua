@@ -238,39 +238,6 @@ function M.mappings(buf)
   end
   action.alias(buf, "reset", "unstage")
   require("gin.file_actions").setup(buf, M.candidates)
-  if require("gin.ftplugin").default_mappings(buf, "status") then
-    vim.keymap.set(
-      "n",
-      "yy",
-      "<Plug>(gin-action-yank:path)",
-      { buffer = buf, remap = true, nowait = true }
-    )
-    vim.keymap.set(
-      { "x", "s" },
-      "y",
-      "<Plug>(gin-action-yank:path)<Esc>",
-      { buffer = buf, remap = true, nowait = true }
-    )
-    for lhs, action in pairs({
-      ["<<"] = "stage",
-      [">>"] = "unstage",
-      ["=="] = "stash",
-      dd = "diff:smart",
-      pp = "patch",
-      ["!!"] = "chaperon",
-      a = "choice",
-      ["<CR>"] = "edit",
-      ["."] = "repeat",
-      ["?"] = "help",
-    }) do
-      vim.keymap.set(
-        lhs == "?" and "n" or { "n", "x", "s", "o" },
-        lhs,
-        "<Plug>(gin-action-" .. action .. ")" .. (lhs == "<CR>" and "zv" or ""),
-        { buffer = buf, remap = true, nowait = true }
-      )
-    end
-  end
 end
 
 return M
