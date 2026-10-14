@@ -123,6 +123,26 @@ function M.read(buf, name)
       worktree = fields[7] ~= "" and fields[7] or nil,
       kind = fields[8] ~= "" and "alias" or remote and "remote" or "local",
     }
+    -- Keep display-facing records separate from refs used to execute actions.
+    row.candidate = {
+      kind = row.kind,
+      target = names[i],
+      branch = row.branch,
+    }
+    if row.kind == "alias" then
+      row.candidate.remote = remote
+      row.candidate.origin = fields[8]:gsub("^refs/heads/", ""):gsub("^refs/remotes/", "")
+    else
+      row.candidate.commit = row.commit
+      row.candidate.message = fields[4]
+      if row.kind == "remote" then
+        row.candidate.remote = remote
+      else
+        row.candidate.active = row.head == "*"
+        row.candidate.worktree = row.head ~= "*" and row.worktree or nil
+        row.candidate.upstream = fields[5] ~= "" and fields[5] or nil
+      end
+    end
     local tracking = fields[5] ~= ""
         and (" [" .. paint("upstream", fields[5]) .. (fields[6] ~= "" and ": " .. fields[6]:sub(
           2,
@@ -160,8 +180,16 @@ function M.read(buf, name)
     "gin-branch",
     parsed.params
   )
+  local displayed = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  for i, row in ipairs(rows) do
+    row.candidate.record = row.candidate.record or displayed[i]
+  end
   vim.b[buf].gin_branches = rows
-  action.setup(buf, M.candidates)
+  action.setup(buf, M.candidates, nil, function(target, range)
+    return vim.tbl_map(function(row)
+      return row.candidate
+    end, M.candidates(target, range))
+  end)
   local group = vim.api.nvim_create_augroup("gin_branch_" .. buf, { clear = true })
   vim.api.nvim_create_autocmd("User", {
     group = group,

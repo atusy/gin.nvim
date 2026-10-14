@@ -2534,3 +2534,20 @@ Both cases pass without changing the implementation. Replacing the operation
 labels with plain HEAD makes both fail on the displayed output. This closes the
 rebase/bisect display and commit-selection evidence gap; it does not validate
 mutating branch actions against detached operation rows.
+
+## Branch echo candidate records
+
+The branch echo action previously exposed executor metadata, losing the pinned
+parser's record, active flag, upstream, message and symbolic-reference origin.
+It now gathers a display-facing record separately from the refs used by mutating
+and navigation actions. Alias records omit commit/message; remote targets in an
+all-branches view retain their displayed `remotes/` prefix. Current local branches
+omit a worktree location, as native branch output does.
+
+A real repository with an upstream, a linked worktree, a remote ref and its HEAD
+alias checks the complete JSON objects in default and all-branches views, with
+and without explicit color suppression, before and after reload. The four
+all-branches expectations were independently passed through the pinned TypeScript
+branch parser and matched exactly. Existing structured selection for custom
+formats remains an extension; this fixture does not claim parser equivalence for
+arbitrary format/encoding options or remote-only listings.

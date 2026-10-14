@@ -36,6 +36,79 @@ T["branch action registrations match the pinned initialization oracle"] = functi
   end
   MiniTest.expect.equality(mappings, oracle.branch)
 end
+T["echo exposes pinned local remote and alias branch records"] = function()
+  H.git(root, "remote", "add", "origin", root .. "/remote.git")
+  H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+  H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+  H.git(root, "branch", "--set-upstream-to=origin/main", "main")
+  local linked = root .. "/linked"
+  H.git(root, "worktree", "add", linked, "topic")
+  local commit = H.git(root, "rev-parse", "--short", "HEAD"):gsub("\n$", "")
+  local native =
+    vim.split(H.git(root, "branch", "--list", "-vv", "--all", "--no-color"):gsub("\n$", ""), "\n")
+  local expected = {
+    {
+      kind = "local",
+      record = native[1],
+      active = true,
+      target = "main",
+      branch = "main",
+      commit = commit,
+      upstream = "origin/main",
+      message = "initial",
+    },
+    {
+      kind = "local",
+      record = native[2],
+      active = false,
+      target = "topic",
+      branch = "topic",
+      commit = commit,
+      worktree = vim.uv.fs_realpath(linked),
+      message = "initial",
+    },
+    {
+      kind = "alias",
+      record = native[3],
+      target = "remotes/origin/HEAD",
+      remote = "origin",
+      branch = "HEAD",
+      origin = "origin/main",
+    },
+    {
+      kind = "remote",
+      record = native[4],
+      target = "remotes/origin/main",
+      remote = "origin",
+      branch = "main",
+      commit = commit,
+      message = "initial",
+    },
+  }
+  for _, flags in ipairs({ "--all", "--all --no-color", "" }) do
+    local records = vim.deepcopy(expected)
+    if flags == "" then
+      records = { records[1], records[2] }
+      local local_lines =
+        vim.split(H.git(root, "branch", "--list", "-vv", "--no-color"):gsub("\n$", ""), "\n")
+      records[1].record, records[2].record = local_lines[1], local_lines[2]
+    end
+    vim.cmd("GinBranch " .. flags)
+    for _ = 1, 2 do
+      local echo, output = vim.api.nvim_echo
+      vim.api.nvim_echo = function(chunks)
+        output = chunks[1][1]
+      end
+      local ok, err =
+        pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), "echo", { 1, #records })
+      vim.api.nvim_echo = echo
+      assert(ok, err)
+      MiniTest.expect.equality(vim.json.decode(output), records)
+      vim.cmd.edit()
+    end
+  end
+  H.git(root, "worktree", "remove", linked)
+end
 T["branch view lists refs and switches the selected branch"] = function()
   vim.cmd.GinBranch()
   MiniTest.expect.equality(vim.bo.filetype, "gin-branch")

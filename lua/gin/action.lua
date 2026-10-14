@@ -196,7 +196,7 @@ function M.complete(lead)
   end, M.list(vim.api.nvim_get_current_buf()))
 end
 
-function M.setup(buf, gather, target_field)
+function M.setup(buf, gather, target_field, echo_gather)
   if not actions[buf] then
     vim.api.nvim_create_autocmd("BufWipeout", {
       buffer = buf,
@@ -210,7 +210,7 @@ function M.setup(buf, gather, target_field)
   if gather then
     require("gin.browse").setup(buf, gather, target_field)
     M.define(buf, "echo", function(target, range)
-      local selected = gather(target, range)
+      local selected = (echo_gather or gather)(target, range)
       local output = #selected == 0 and "[]" or pretty_json(vim.json.encode(selected))
       vim.api.nvim_echo({ { output, "None" } }, true, {})
     end)
