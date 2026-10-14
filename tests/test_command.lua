@@ -268,17 +268,17 @@ T["Unicode command display removes only the leading byte order mark"] = function
     })
     vim.api.nvim_echo = echo
     assert(ok, result)
-    MiniTest.expect.equality(displayed, "first" .. bom .. "second")
+    MiniTest.expect.equality(displayed, "first" .. bom .. "second\n")
     MiniTest.expect.equality(result.stdout, data)
   end
 end
 
 for _, spec in ipairs({
-  { option = "++ff=unix", expected = "first\r\nsecond\r" },
-  { option = "++fileformat=unix", expected = "first\r\nsecond\r" },
-  { option = "++ff=dos", expected = "first\nsecond" },
-  { option = "++ff=mac", expected = "first\n\nsecond\n" },
-  { option = "", expected = "first\nsecond" },
+  { option = "++ff=unix", expected = "first\r\nsecond\r\n" },
+  { option = "++fileformat=unix", expected = "first\r\nsecond\r\n" },
+  { option = "++ff=dos", expected = "first\nsecond\n" },
+  { option = "++ff=mac", expected = "first\n\nsecond\n\n" },
+  { option = "", expected = "first\nsecond\n" },
 }) do
   for _, wait in ipairs({ false, true }) do
     T["command output decoding " .. spec.option .. " wait=" .. tostring(wait)] = function()
@@ -425,7 +425,10 @@ T["Gin displays progress before exit and retains final output"] = function()
     MiniTest.expect.equality(pending, true)
     MiniTest.expect.equality(result.stdout, "early\nfinished\n")
     MiniTest.expect.equality(result.stderr, "warning\n")
-    MiniTest.expect.equality(output[#output], { text = "early\nfinished\nwarning", history = true })
+    MiniTest.expect.equality(
+      output[#output],
+      { text = "early\nfinished\nwarning\n", history = true }
+    )
     MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
   end)
   vim.api.nvim_echo = echo
@@ -563,6 +566,21 @@ T["Gin processors receive no implicit process deadline"] = function()
   MiniTest.expect.equality(deadline, false)
   H.drain()
   MiniTest.expect.equality(events, 1)
+end
+T["command display preserves the final newline"] = function()
+  local echo, displayed = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    displayed = chunks[1][1]
+  end
+  local ok, err = pcall(
+    require("gin.command").finish,
+    { code = 0, stdout = "output\n", stderr = "" },
+    { eventignore_all = true },
+    {}
+  )
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(displayed, "output\n")
 end
 T["command display replaces malformed Shift_JIS and retains ASCII"] = function()
   local echo, displayed = vim.api.nvim_echo, nil

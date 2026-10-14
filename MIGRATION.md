@@ -4231,3 +4231,25 @@ and all 115 upstream lookups pass on current Neovim and 0.10.0 (the latter with
 filetype plugins disabled to avoid the system vimdoc parser ABI mismatch).
 This improves documentation coverage without closing the full runtime or
 configuration compatibility audit.
+
+
+### Bare Gin final newline preservation
+
+A fresh six-case comparison of normal/silent/silent! and success/failure found
+that normal successful output lost one final newline in Lua. The pinned
+bare/command.ts joins decoded lines without trimming, and Denops helper echo
+passes that text to Vim's echo. Removed the final newline trim in command.finish.
+The new regression first failed with "output" instead of "output\n"; command
+tests now pass with retained final newlines, including the existing fileformat,
+Unicode BOM and joined stdout/stderr cases. The six live modifier cases now
+match upstream for captured output, return behavior and completion events.
+Formatting and diff checks pass. The full suite passes 4,588 cases across 59
+groups (`/tmp/gin-final-newline-full.log`), and all 79 command cases pass on
+Neovim 0.10.0 (`/tmp/gin-final-newline-nvim010.log`).
+
+A separate fresh history probe clears :messages before each case. Upstream
+leaves history empty in all six cases, whereas Lua records normal successful
+output. This matches the source distinction between upstream :echo and Lua's
+nvim_echo history=true. History behavior remains to be fixed independently.
+Probe: `/tmp/gin-command-history.lua`, with results in
+`/tmp/gin-command-history-{upstream,lua}.json`.
