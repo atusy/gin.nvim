@@ -15,7 +15,7 @@ scope, not proof of complete upstream parity.
 - [ ] GinBranch, GinTag: parsed views and ref actions.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
 - [x] GinEdit: revision and index buffers with write-back; working files via edit actions (functional scope audited below).
-- [ ] GinDiff: revision selection, read and diff navigation/folding.
+- [x] GinDiff: revision selection, read and unified-diff navigation/folding (functional scope audited below).
 - [x] GinPatch: staging/unstaging partial changes (functional scope audited below).
 - [x] GinChaperon: conflict panes and resolution (functional scope audited below).
 - [ ] GinBlame: blame navigation, history and detail.
@@ -148,8 +148,9 @@ GinDiff now displays working-tree, cached and revision comparisons and backs the
 status diff actions. Jumps resolve working/index/revision targets, including the
 merge base for three-dot comparisons. File folds show status and change counts.
 Addressed reads support encoding/fileformat overrides; command buffers also retain encoding/fileformat options on reload.
-Buffer/diff processors transform successful Git output and survive reloads/reads;
-combined diffs and nonstandard prefix options still need a navigation audit. GinPatch provides three/two-pane diff editing
+Buffer/diff processors transform successful Git output and survive reloads/reads.
+The functional navigation/folding audit and its combined-diff boundary are
+recorded below. GinPatch provides three/two-pane diff editing
 with index write-back and status actions. Its functional completion audit and
 Visual-range compatibility boundary are recorded below.
 
@@ -3142,3 +3143,40 @@ by this source audit. The broader GinDiff functional checklist remains open.
 
 Validation: `make check` and all 1,262 full-suite cases pass. All 61 GinDiff
 cases also pass on minimum Neovim 0.10.0.
+
+## GinDiff functional completion audit
+
+The pinned `command/diff/{main,command,edit,read,commitish}.ts` routes map to
+`plugin/gin-diff.lua`, `lua/gin/diff.lua`, the shared buffer insertion/opening
+helpers, and `lua/gin/diffjump.lua`. The pinned `feat/diffjump` and
+`feat/difffold` implementations provide the navigation and folding reference.
+The checked scope is ordinary unified-diff display, revision selection,
+addressed insertion, navigation and folding, with the boundaries below.
+
+| Functional scope | Exercised evidence in `tests/test_diff.lua` |
+| --- | --- |
+| Comparisons | Working/index, cached, explicit revision ranges and status smart-diff dispatch use actual Git repositories with different HEAD/index/working content. |
+| Reload and flags | Cached views, repeated filters, short/long flag order, escaped legacy URIs, encoding, processors and no-color options survive reload with expected output. |
+| Jump targets | Working files, editable index buffers and immutable revisions are checked; three-dot old targets resolve the merge base and reversed diffs swap the targets. |
+| Jump mappings | Old/new/smart Plug mappings run from Normal, Visual, Select and operator-pending modes without modifying Git state. Mapping disable options are covered separately. |
+| Positions | A two-hunk fixture inserts a line in the first hunk and replaces a later line in the second. Context jumps select index line 26 or working line 27, preserve the cursor column and leave both contents/index entries unchanged. No-final-newline markers also have an offset regression. |
+| Paths | Quoted Unicode/tab paths, literal backslashes, default/custom/no-prefix ordering, reverse diffs and deleted-file markers have direct target or fold assertions. |
+| Folding | File status labels, custom/published prefixes, header-like removed text and clearing folds after a reload to an empty diff are checked. |
+| Addressed reads | Reading a diff URI inserts output while retaining the destination's ordinary filetype and editability. |
+
+The new position tests were mutation-checked: using the old hunk's start line
+for the new side makes the new-side test land on `replacement` instead of
+`line 26`; the old-side case still passes. The mutation was then restored.
+
+These checks do not certify every Git output mode as navigable. Combined
+`@@@` hunks are not recognized by the pinned diffjump range parser or this
+port's parser. Arbitrary processors, word-diff, line-prefix and relative-path
+output may change the structure expected by navigation. Explicit custom
+source/destination prefixes are supported as tested above. Merge-base,
+reverse/cached target handling, quoted paths and excluding hunk content from
+header detection include corrections beyond the pinned implementation; this
+is not a claim of identical upstream behavior. Full command/options/API
+compatibility remains on the broader migration checklist.
+
+Validation: all 63 GinDiff cases pass on minimum Neovim 0.10.0. `make check`
+and the integrated full suite pass (1,264 cases in 48 groups).

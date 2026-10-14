@@ -627,4 +627,49 @@ for name, expected in pairs({
     assert(ok, err)
   end
 end
+for _, side in ipairs({ "old", "new" }) do
+  T["context jumps after an earlier hunk use the selected side " .. side] = function()
+    local original = {}
+    for i = 1, 30 do
+      original[i] = "line " .. i
+    end
+    vim.fn.writefile(original, root .. "/sub/file")
+    H.git(root, "add", "sub/file")
+    local working = vim.deepcopy(original)
+    table.insert(working, 3, "inserted")
+    working[26] = "replacement"
+    vim.fn.writefile(working, root .. "/sub/file")
+    local before = H.git(root, "ls-files", "--stage")
+    vim.cmd("GinDiff -- sub/file")
+    vim.cmd("normal! zR")
+    local hunks, target = 0, nil
+    for row, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if line:match("^@@ ") then
+        hunks = hunks + 1
+      elseif line == " line 26" then
+        target = row
+      end
+    end
+    MiniTest.expect.equality(hunks, 2)
+    assert(target)
+    vim.api.nvim_win_set_cursor(0, { target, 4 })
+    require("gin.diffjump").jump(side)
+    MiniTest.expect.equality(vim.api.nvim_get_current_line(), "line 26")
+    MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0), { side == "old" and 26 or 27, 4 })
+    if side == "old" then
+      MiniTest.expect.equality(vim.bo.buftype, "acwrite")
+      MiniTest.expect.equality(vim.b.gin_path, "sub/file")
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), original)
+    else
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_name(0),
+        vim.uv.fs_realpath(root) .. "/sub/file"
+      )
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), working)
+    end
+    MiniTest.expect.equality(vim.bo.modified, false)
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), before)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
+  end
+end
 return T
