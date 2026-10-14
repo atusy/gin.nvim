@@ -1566,3 +1566,9 @@ retains the file with `bufhidden=hide`, closes its pane, commits new content and
 reloads the navigation pane. It verifies the same file buffer, refreshed content
 and attribution/detail, restored three-pane layout and window pinning. This is
 a Lua recovery regression check, not an upstream runtime parity claim.
+
+Custom indicator backends now receive whitespace-only Git output as a single
+empty line, as the pinned `IndicatorStream` does after trimming. The regression
+uses a real Git alias and checks raw captured output plus open/write/close
+notifications; EOF does not add a write notification. This check does not cover
+all chunk-boundary or decoder differences from the upstream TextDecoder.

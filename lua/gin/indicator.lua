@@ -90,9 +90,9 @@ function M.stream(name)
         failure = stream_error
         return
       end
-      local text = vim.trim(decode(data))
+      local text = decode(data)
       if text ~= "" then
-        local ok, message = pcall(call, "write", vim.split(text, "\n", { plain = true }))
+        local ok, message = pcall(call, "write", vim.split(vim.trim(text), "\n", { plain = true }))
         if not ok then
           failure = message
         end

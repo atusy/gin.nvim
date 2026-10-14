@@ -65,6 +65,18 @@ T["Git progress routes both channels through named indicators without changing o
   MiniTest.expect.equality(events[6], { "close", events[2][2] })
 end
 
+T["custom indicators receive whitespace chunks as an empty line"] = function()
+  local result = require("gin.git").run(
+    { "-c", [[alias.progress=!printf '\n \t\n']], "progress" },
+    { cwd = root, progress = "both", stdout_indicator = "gin_test", stderr_indicator = "null" }
+  )
+  MiniTest.expect.equality(result.stdout, "\n \t\n")
+  local events = vim.g.gin_test_indicator_events
+  MiniTest.expect.equality(#events, 3)
+  MiniTest.expect.equality(events[2], { "write", events[1][2], { "" } })
+  MiniTest.expect.equality(events[3], { "close", events[1][2] })
+end
+
 for _, failure in ipairs({ "write", "close" }) do
   T["backend " .. failure .. " failures close both channels and reach the caller"] = function()
     vim.g.gin_test_indicator_failure = failure
