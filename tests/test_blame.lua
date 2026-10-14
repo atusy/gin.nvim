@@ -29,6 +29,64 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["blame attribution formats past and future time boundaries from real commits"] = function()
+  local real_time = os.time
+  local now = real_time({ year = 2025, month = 1, day = 15, hour = 12 })
+  local cases = {}
+  for _, spec in ipairs({
+    { 0, "just now" },
+    { 59, "just now" },
+    { 60, "1 minute" },
+    { 3599, "59 minutes" },
+    { 3600, "1 hour" },
+    { 86399, "23 hours" },
+    { 86400, "1 day" },
+    { 604799, "6 days" },
+    { 604800, "1 week" },
+    { 2591999, "4 weeks" },
+    { 2592000, "1 month" },
+    { 31535999, "11 months", "12 months" },
+    { 31536000, "1 year" },
+  }) do
+    for _, direction in ipairs({ -1, 1 }) do
+      local expected = spec[2] == "just now" and spec[2]
+        or (direction == -1 and spec[2] .. " ago" or "in " .. (spec[3] or spec[2]))
+      cases[#cases + 1] = { now + direction * spec[1], expected }
+    end
+  end
+  -- Calendar anniversaries differ from dividing elapsed seconds by 30/365 days.
+  for _, spec in ipairs({
+    { 2024, 10, 16, "2 months ago" },
+    { 2025, 4, 14, "in 2 months" },
+    { 2023, 1, 16, "1 year ago" },
+    { 2027, 1, 14, "in 1 year" },
+  }) do
+    cases[#cases + 1] = {
+      real_time({ year = spec[1], month = spec[2], day = spec[3], hour = 12 }),
+      spec[4],
+    }
+  end
+  local lines = {}
+  for i, case in ipairs(cases) do
+    lines[#lines + 1] = "line " .. i
+    vim.fn.writefile(lines, root .. "/sub/relative.txt")
+    H.git(root, "add", "sub/relative.txt")
+    H.git(root, "commit", "--date=@" .. case[1] .. " +0000", "-m", "time " .. i)
+  end
+  os.time = function()
+    return now
+  end
+  local ok, err = pcall(vim.cmd, "GinBlame relative.txt")
+  os.time = real_time
+  assert(ok, err)
+  local displayed = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local actual, expected = {}, {}
+  for i, case in ipairs(cases) do
+    actual[i] = assert(displayed[i * 2]:match("^%s*%d+ (.-)\t"))
+    expected[i] = case[2]
+  end
+  MiniTest.expect.equality(actual, expected)
+end
 T["blame opens synchronized attribution and committed content from a subdirectory"] = function()
   vim.fn.writefile({ "dirty" }, root .. "/sub/file.lua")
   local tabs = #vim.api.nvim_list_tabpages()

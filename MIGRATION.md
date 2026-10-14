@@ -2227,3 +2227,18 @@ filetype change, and preservation of the existing user commands. Six enabled
 cases failed before the initialization-order fix; all twelve pass afterward.
 Existing real Git editor tests separately cover accepting and cancelling proxy
 requests. This does not close the remaining proxy interaction audit.
+
+## Blame relative-time display boundaries
+
+A real Git history with thirty independently attributed lines now exercises the
+navigation pane's relative-time labels against a fixed local clock. The cases
+cover both time directions at the minute/hour/day/week/month/year thresholds,
+singular/plural labels, and calendar month/year anniversaries. The test reads
+the resulting GinBlame navigation rows rather than a helper's return value.
+
+The pinned relativeTime function also confirms the intentionally asymmetric
+364-day-plus boundary for the chosen January 2025 clock: `11 months ago` but
+`in 12 months`. Month and year values use calendar dates once their elapsed-time
+threshold is reached. Changing the Lua minute threshold from `<` to `<=` makes
+the new test fail. These fixtures cover normal Git timestamps, not arbitrary
+invalid date values or all timezone transitions.
