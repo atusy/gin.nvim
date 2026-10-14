@@ -3890,3 +3890,27 @@ Neovim 0.10.0. Oracle regeneration, formatting and diff checks pass. The full
 suite passes 4,394 cases across 59 groups (`/tmp/gin-explicit-utf16-full.log`).
 Legacy multibyte replacement decoding and the remaining
 API/metadata/write compatibility audits are not complete.
+
+## Explicit Shift_JIS, Big5 and EUC-KR replacement
+
+Shift_JIS and the shared Big5/EUC-KR decoder now support strict and replacement
+modes. Invalid pairs emit U+FFFD; an ASCII trail is reprocessed rather than
+swallowed, whereas a non-ASCII trail is consumed with its valid lead. Invalid
+standalone leads and incomplete final leads emit one replacement. Strict mode
+still fails on the same malformed inputs and remains the automatic-selection
+default. The initial Shift_JIS view regression failed because iconv returned
+`??` before the quote instead of one replacement character.
+
+The Deno generator now records strict and replacement output for every byte
+pair in all three families, with single-byte and longer replacement cases in
+the common fixture. The integrated decoders also passed a separate 75,792-case
+corpus each. Real-view and addressed-read tests cover ASCII recovery, non-ASCII
+invalid trails, standalone failures, truncation and 0x80. Source bytes and read
+destination encoding are preserved. Pinned-upstream probes now agree on text
+and encoding for the confirmed Shift_JIS and Big5 failures.
+
+All 1,080 targeted encoding/explicit-read/edit/buffer tests pass on Neovim 0.10.0.
+Generation, formatting and diff checks pass. The full suite passes 4,434 cases
+across 59 groups (`/tmp/gin-nonfatal-pairs-full.log`).
+EUC-JP, ISO-2022-JP and GBK/gb18030 replacement decoding remain, together with the
+broader metadata, write-encoding and API compatibility audits.

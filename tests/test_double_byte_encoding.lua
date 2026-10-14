@@ -14,6 +14,8 @@ for _, encoding in ipairs({ "big5", "euc-kr" }) do
         if ok then
           MiniTest.expect.equality(text, expected)
         end
+        local replacement = require("gin.encoding").decode(bytes, encoding, { fatal = false })
+        MiniTest.expect.equality(replacement, oracle.replacement_rows[first][second])
       end
     end
   end

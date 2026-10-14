@@ -13,6 +13,12 @@ for index, row in ipairs(oracle.rows) do
       if ok then
         MiniTest.expect.equality(text, expected)
       end
+      local replacement = require("gin.encoding").decode(
+        string.char(index - 1, second - 1),
+        "shift_jis",
+        { fatal = false }
+      )
+      MiniTest.expect.equality(replacement, oracle.replacement_rows[index][second])
     end
   end
 end

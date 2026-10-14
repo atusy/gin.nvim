@@ -17,6 +17,9 @@ function M.supports_replacement(label)
   return encoding == "utf-8"
     or encoding == "utf-16le"
     or encoding == "utf-16be"
+    or encoding == "shift_jis"
+    or encoding == "big5"
+    or encoding == "euc-kr"
     or require("gin.encoding.single_byte")[encoding] ~= nil
 end
 
@@ -45,11 +48,11 @@ function M.decode(data, label, options)
     return require("gin.encoding.euc_jp")(data), false
   end
   if encoding == "shift_jis" then
-    return require("gin.encoding.shift_jis")(data), false
+    return require("gin.encoding.shift_jis")(data, fatal), false
   end
   if encoding == "big5" or encoding == "euc-kr" then
     local map = require("gin.encoding." .. encoding:gsub("-", "_") .. "_map")
-    return require("gin.encoding.double_byte")(data, map), false
+    return require("gin.encoding.double_byte")(data, map, fatal), false
   end
   local map = assert(
     require("gin.encoding.single_byte")[encoding],

@@ -304,7 +304,8 @@ Single-byte replacement decoding is checked separately from strict selection.
 The common oracle includes nonfatal output for every single byte and one input
 containing all 256 bytes for each of the 29 single-byte families (7,453 reference
 comparisons). `gin.encoding.decode(data, label, { fatal = false })` enables
-replacement for UTF-8, UTF-16 and these families; unsupported replacement codecs fail
+replacement for UTF-8, UTF-16, these families, Shift_JIS, Big5 and EUC-KR;
+unsupported replacement codecs fail
 explicitly. `supports_replacement` gates the view integration while the remaining
 nonfatal codecs are implemented. Strict decoding remains the default used by
 automatic selection. Real-view tests cover Latin-1/ASCII Windows-1252 aliases,
@@ -320,3 +321,11 @@ surrogates. The view suite also covers partial units, malformed surrogate pairs,
 labels, addressed reads and unchanged source bytes. Native write-encoding names
 remain separate: big-endian utf-16/ucs-2 writes are read back explicitly as
 utf-16be in the existing write tests.
+
+Shift_JIS, Big5 and EUC-KR fixtures also contain nonfatal output matrices for
+every byte pair. The existing pair tests now check both strict success/error and
+exact replacement text; common fixture cases cover each single byte and longer
+inputs in both modes. Invalid pairs reprocess an ASCII trailing byte, while
+non-ASCII trails are consumed with the failed lead. Invalid standalone leads
+consume only themselves. The explicit-read suite covers both views and addressed
+reads, including retained ASCII delimiters, incomplete leads and 0x80 differences.

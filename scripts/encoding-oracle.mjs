@@ -14,7 +14,7 @@ let aliases = header + 'return {\n', single = header + 'return {\n';
 const records = [];
 const additionalOutputs = {};
 let shiftJis = header + 'return {\n';
-const shiftJisRows = [];
+const shiftJisRows = [], shiftJisReplacementRows = [];
 function decode(name, bytes, fatal = true) {
   try { return { text: new TextDecoder(name, { fatal }).decode(Uint8Array.from(bytes)) }; }
   catch { return { error: true }; }
@@ -113,14 +113,15 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     records.push({encoding:canonical,aliases:encoding.labels,cases});
   } else if (canonical === 'big5' || canonical === 'euc-kr') {
     const cases = Array.from({length:256}, (_, byte) => ({bytes:[byte], ...decode(canonical, [byte])}));
-    const rows = [], validPairs = [];
+    const rows = [], replacementRows = [], validPairs = [];
     let mapping = header + 'return {\n';
     for (let first=0; first<256; first++) {
-      const row = [];
+      const row = [], replacementRow = [];
       const entries = [];
       for (let second=0; second<256; second++) {
         const value = decode(canonical, [first, second]);
         row.push(value.error ? false : value.text);
+        replacementRow.push(decode(canonical, [first, second], false).text);
         if (first>=128 && !value.error) {
           const escaped = Array.from(new TextEncoder().encode(value.text), byte => '\\' + String(byte).padStart(3, '0')).join('');
           entries.push(`[${second}] = "${escaped}",`);
@@ -129,6 +130,7 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
       }
       if (entries.length) mapping += `[${first}] = {${entries.join('')}},\n`;
       rows.push(row);
+      replacementRows.push(replacementRow);
     }
     let seed=0x12345678;
     const randomByte=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed>>>24;};
@@ -141,21 +143,23 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     }
     for(const bytes of [[],[136,98],[136,100],[136,163],[136,165],[129],[129,32],[255,255],[0,65,0]])cases.push({bytes,...decode(canonical,bytes)});
     additionalOutputs[`lua/gin/encoding/${canonical.replace('-', '_')}_map.lua`] = lua(mapping + '}\n');
-    additionalOutputs[`tests/audit/${canonical}-oracle.json`] = '{"rows":[\n' + rows.map(row=>JSON.stringify(row)).join(',\n') + ']}\n';
-    records.push({encoding:canonical, aliases:encoding.labels, cases});
+    additionalOutputs[`tests/audit/${canonical}-oracle.json`] = '{"rows":[\n' + rows.map(row=>JSON.stringify(row)).join(',\n') + '],"replacement_rows":[\n' + replacementRows.map(row=>JSON.stringify(row)).join(',\n') + ']}\n';
+    records.push({encoding:canonical, aliases:encoding.labels, cases, replacement_cases:cases.map(item=>({bytes:item.bytes,...decode(canonical,item.bytes,false)}))});
   } else if (canonical === 'shift_jis') {
     const cases = Array.from({ length: 256 }, (_, byte) => ({ bytes: [byte], ...decode(canonical, [byte]) }));
     for (let first = 0; first < 256; first++) {
-      const row = [];
+      const row = [], replacementRow = [];
       for (let second = 0; second < 256; second++) {
         const value = decode(canonical, [first, second]);
         row.push(value.error ? false : value.text);
+        replacementRow.push(decode(canonical, [first, second], false).text);
         if (cases[first].error && !value.error) {
           if ([...value.text].length !== 1) throw new Error('Unexpected Shift_JIS expansion');
           shiftJis += `[${first * 256 + second}] = ${value.text.codePointAt(0)},\n`;
         }
       }
       shiftJisRows.push(row);
+      shiftJisReplacementRows.push(replacementRow);
     }
     for (const bytes of [[], [147,250,150,123,140,234,166], [0,128,161,223,127], [240,64,252,75], [130,160,130], [130,34], [130,160,255], [130,160,0,130,162]]) {
       cases.push({bytes, ...decode(canonical, bytes)});
@@ -173,7 +177,7 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
       for (let i = 0; i < 20; i++) valid.push(...validPairs[(randomByte() * 256 + randomByte()) % validPairs.length], randomByte() % 128);
       cases.push({ bytes: valid, ...decode(canonical, valid) });
     }
-    records.push({ encoding: canonical, aliases: encoding.labels, cases });
+    records.push({ encoding: canonical, aliases: encoding.labels, cases, replacement_cases:cases.map(item=>({bytes:item.bytes,...decode(canonical,item.bytes,false)})) });
   } else if (canonical.startsWith('utf-')) {
     const record = { encoding: canonical, aliases: encoding.labels, cases: unicodeCases.map(bytes => ({ bytes, ...decode(canonical, bytes) })) };
     if(canonical==='utf-16le'||canonical==='utf-16be') {
@@ -206,7 +210,7 @@ function lua(source) {
 const outputs = {
   ...additionalOutputs,
   'lua/gin/encoding/shift_jis_map.lua': lua(shiftJis + '}\n'),
-  'tests/audit/shift-jis-oracle.json': '{"rows":[\n' + shiftJisRows.map(row => JSON.stringify(row)).join(',\n') + ']}\n',
+  'tests/audit/shift-jis-oracle.json': '{"rows":[\n' + shiftJisRows.map(row => JSON.stringify(row)).join(',\n') + '],"replacement_rows":[\n' + shiftJisReplacementRows.map(row => JSON.stringify(row)).join(',\n') + ']}\n',
   'lua/gin/encoding/labels.lua': lua(aliases + '}\n'),
   'lua/gin/encoding/single_byte.lua': lua(single + '}\n'),
   'tests/audit/encoding-oracle.json': JSON.stringify({ upstream: head, labels_sha256: hash }).slice(0, -1) + ',"records":[\n' + records.map(value => JSON.stringify(value)).join(',\n') + ']}\n',

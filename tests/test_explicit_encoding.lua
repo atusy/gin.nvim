@@ -155,4 +155,48 @@ for _, scheme in ipairs({ "gin", "ginedit" }) do
     MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
   end
 end
+T["GinEdit replaces invalid Shift_JIS while retaining following ASCII"] = function()
+  stage(string.char(130, 34))
+  vim.cmd("GinEdit ++enc=sjis file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { '�"' })
+end
+for _, encoding in ipairs({ "sjis", "big5", "euc-kr" }) do
+  local lead = encoding == "sjis" and 130 or 129
+  for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+    for _, case in ipairs({
+      { "ASCII trail", { lead, 34 }, '�"' },
+      { "non-ASCII trail", { lead, 255 }, "�" },
+      { "invalid lead", { 255, 65 }, "�A" },
+      { "incomplete lead", { lead }, "�" },
+      { "single 0x80", { 128 }, encoding == "sjis" and vim.fn.nr2char(128) or "�" },
+    }) do
+      T[command .. " " .. encoding .. " replacement " .. case[1]] = function()
+        local bytes = string.char(unpack(case[2]))
+        stage(bytes)
+        local suffix = command == "GinBuffer" and " show :file" or " file"
+        vim.cmd(command .. " ++enc=" .. encoding .. suffix)
+        MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] })
+        MiniTest.expect.equality(
+          require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+          bytes
+        )
+      end
+    end
+  end
+  for _, scheme in ipairs({ "gin", "ginedit" }) do
+    T[scheme .. " addressed " .. encoding .. " read preserves ASCII after errors"] = function()
+      stage(string.char(lead, 34) .. "\n")
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+      vim.bo.fileencoding = "utf-8"
+      local fragment = scheme == "gin" and "show :file" or "file"
+      local name = require("gin.uri").format(scheme, root, {}, fragment)
+      vim.cmd("1read ++enc=" .. encoding .. " " .. vim.fn.fnameescape(name))
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_lines(0, 0, -1, false),
+        { "before", '�"', "after" }
+      )
+      MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+    end
+  end
+end
 return T
