@@ -53,4 +53,35 @@ for _, command in ipairs({ "GinStatus", "GinLog", "GinReflog", "GinTag", "GinSta
     end
   end
 end
+local function default_maps(buf)
+  local result = {}
+  for _, mode in ipairs({ "n", "x", "s", "o" }) do
+    result[mode] = {}
+    for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
+      if
+        not map.lhs:find("<Plug>", 1, true) and (map.rhs or ""):find("<Plug>(gin-action-", 1, true)
+      then
+        result[mode][map.lhs] = {
+          rhs = map.rhs,
+          noremap = map.noremap,
+          nowait = map.nowait,
+          silent = map.silent,
+        }
+      end
+    end
+  end
+  return result
+end
+for _, kind in ipairs({ "status", "branch", "log", "reflog", "tag", "stash" }) do
+  T[kind .. " default mappings match the pinned ftplugin"] = function()
+    local expected_buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_call(expected_buf, function()
+      vim.cmd.source(cwd .. "/.deps/vim-gin/ftplugin/gin-" .. kind .. ".vim")
+    end)
+    local expected = default_maps(expected_buf)
+    vim.api.nvim_buf_delete(expected_buf, { force = true })
+    vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
+    MiniTest.expect.equality(default_maps(vim.api.nvim_get_current_buf()), expected)
+  end
+end
 return T

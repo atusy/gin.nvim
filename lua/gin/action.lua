@@ -59,7 +59,7 @@ function M.define(buf, name, callback)
     return callback(buf, M.range())
   end
   actions[buf][name] = { callback = callback, dispatch = dispatch }
-  vim.keymap.set({ "n", "x" }, "<Plug>(gin-action-" .. name .. ")", dispatch, {
+  vim.keymap.set({ "n", "x", "s", "o" }, "<Plug>(gin-action-" .. name .. ")", dispatch, {
     buffer = buf,
     silent = true,
   })
@@ -70,7 +70,7 @@ function M.alias(buf, name, target)
     return M.call(buf, target, range)
   end)
   vim.keymap.set(
-    { "n", "x" },
+    { "n", "x", "s", "o" },
     "<Plug>(gin-action-" .. name .. ")",
     "<Plug>(gin-action-" .. target .. ")",
     { buffer = buf, remap = true }

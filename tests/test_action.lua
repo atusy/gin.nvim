@@ -200,4 +200,35 @@ T["help lists aliases without presenting their Plug names as user keys"] = funct
   MiniTest.expect.equality(reduced[1]:match("^~+$") ~= nil, true)
   MiniTest.expect.equality(reduced[1], reduced[3])
 end
+for _, case in ipairs({
+  { "Select", "ggVj<C-g>", { 1, 2 } },
+  { "operator pending", "ggd", { 1, 1 } },
+}) do
+  T["action aliases dispatch in " .. case[1] .. " mode"] = function()
+    local action = require("gin.action")
+    local buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "one", "two", "three" })
+    local ranges = {}
+    action.setup(buf)
+    action.define(buf, "capture", function(_, range)
+      ranges[#ranges + 1] = range
+    end)
+    action.alias(buf, "selected", "capture")
+    vim.api.nvim_feedkeys(
+      vim.api.nvim_replace_termcodes(
+        case[2] .. "<Plug>(gin-action-selected)<Esc>",
+        true,
+        false,
+        true
+      ),
+      "mx",
+      false
+    )
+    MiniTest.expect.equality(ranges, { case[3] })
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(buf, 0, -1, false),
+      { "one", "two", "three" }
+    )
+  end
+end
 return T

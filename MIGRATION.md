@@ -1400,3 +1400,13 @@ which moves into a closed fold, and send normal/Visual Enter through the actual
 mapping chain. They verify that the fold opens after dispatch. This isolates
 the mapping suffix behavior; it is not additional coverage of every underlying
 edit/show action or of all mapping modes and flags.
+
+The six list views' default mappings now match the pinned ftplugins across
+Normal, Visual, Select and operator-pending modes, including RHS, remapping,
+`nowait` and `silent` flags. Tests source each locked upstream ftplugin into an
+isolated buffer and compare its mappings with a real Lua-backed list. The fixes
+restore missing Select/operator-pending modes and yank `nowait`, and restrict
+status help to Normal mode. Action Plug definitions and aliases cover the same
+modes; actual Select/operator-pending key sequences verify one callback with
+the expected range and no unintended text edit. This does not complete the
+separate audit of user overrides, disabled defaults or non-list mappings.

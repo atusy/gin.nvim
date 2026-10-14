@@ -399,13 +399,18 @@ function M.read(buf, name)
       yy = "yank:branch",
     }) do
       vim.keymap.set(
-        (key == "a" or key == ".") and { "n", "x" } or "n",
+        (key == "a" or key == ".") and { "n", "x", "s", "o" } or "n",
         key,
         "<Plug>(gin-action-" .. name .. ")",
         { buffer = buf, remap = true, nowait = true }
       )
     end
-    vim.keymap.set("x", "y", "<Plug>(gin-action-yank:branch)<Esc>", { buffer = buf, remap = true })
+    vim.keymap.set(
+      { "x", "s" },
+      "y",
+      "<Plug>(gin-action-yank:branch)<Esc>",
+      { buffer = buf, remap = true, nowait = true }
+    )
   end
 end
 

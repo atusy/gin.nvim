@@ -249,7 +249,7 @@ function M.mappings(buf)
       { buffer = buf, remap = true, nowait = true }
     )
     vim.keymap.set(
-      "x",
+      { "x", "s" },
       "y",
       "<Plug>(gin-action-yank:path)<Esc>",
       { buffer = buf, remap = true, nowait = true }
@@ -267,7 +267,7 @@ function M.mappings(buf)
       ["?"] = "help",
     }) do
       vim.keymap.set(
-        { "n", "x" },
+        lhs == "?" and "n" or { "n", "x", "s", "o" },
         lhs,
         "<Plug>(gin-action-" .. action .. ")" .. (lhs == "<CR>" and "zv" or ""),
         { buffer = buf, remap = true, nowait = true }
