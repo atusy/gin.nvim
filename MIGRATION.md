@@ -3628,3 +3628,32 @@ Validation: the complete rerun passes all 1,315 mini.test cases in 49 groups
 (`/tmp/gin-proxy-audit-full-recheck.log`). The 34 isolated startup/editor/askpass
 interaction cases pass on Neovim 0.10.0 after the expected-cancellation test fix.
 `make check` and `git diff --check` pass.
+
+## Automatic fileformat preferences
+
+A headless probe against the pinned upstream with `fileencodings=utf-8,latin1`
+and `fileformats=mac` decoded a Latin-1/CR-only index blob into two Mac-format
+lines. Lua instead treated the output as UTF-8/UNIX. This change addresses the
+fileformat half of that confirmed gap; automatic encoding selection is still
+outstanding.
+
+The shared decoder now limits detected formats to `fileformats`, uses its first
+entry when no delimiter matches, and falls back to the target buffer's
+`fileformat` when the list is empty. Buffer and edit read/insert routes pass the
+target buffer explicitly, so a background output buffer does not inherit the
+current window's fallback. Explicit `++ff`/`++fileformat` still take precedence,
+and existing mixed-LF/CRLF native-read behavior is retained.
+
+The reference behavior is in Denops std 7.6.0 `buffer/fileformat.ts`, imported by
+the pinned view readers. New real-index fixtures cover allowed-format filtering,
+Mac CR-only text, detected UNIX despite a leading Mac preference, delimiter-free
+fallback and an empty preference list for both GinBuffer and GinEdit. A separate
+background-buffer fixture checks target-local fallback. Index bytes remain
+unchanged. The 79 fileformat/buffer/edit cases pass on Neovim 0.10.0; the full
+integrated run is recorded separately below when complete.
+
+Validation: the integrated run passes all 1,326 mini.test cases across 50 groups
+(`/tmp/gin-auto-fileformat-full.log`). The 79 targeted cases pass on Neovim
+0.10.0. `make check` and `git diff --check` pass. Re-running the original probe
+now selects Mac format and splits the CR-only lines correctly; its Latin-1
+encoding mismatch remains the next separate fix.

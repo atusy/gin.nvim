@@ -24,7 +24,7 @@ function M.path(root, filename)
   return path
 end
 
-function M.decode(data, options)
+function M.decode(data, options, buf)
   local encoding = options.enc or options.encoding or "utf-8"
   if unicode.supports(encoding) then
     data = unicode.decode(data, encoding)
@@ -37,8 +37,21 @@ function M.decode(data, options)
   end
   local ff = options.ff or options.fileformat
   if not ff then
+    local formats = vim.split(vim.o.fileformats, ",", { trimempty = true })
     local without_crlf = data:gsub("\r\n", "")
-    ff = data:find("\r\n", 1, true) and not without_crlf:find("\n", 1, true) and "dos" or "unix"
+    if
+      vim.tbl_contains(formats, "dos")
+      and data:find("\r\n", 1, true)
+      and not without_crlf:find("\n", 1, true)
+    then
+      ff = "dos"
+    elseif vim.tbl_contains(formats, "unix") and data:find("\n", 1, true) then
+      ff = "unix"
+    elseif vim.tbl_contains(formats, "mac") and data:find("\r", 1, true) then
+      ff = "mac"
+    else
+      ff = formats[1] or vim.bo[buf or 0].fileformat
+    end
   end
   if ff == "dos" then
     -- Forced DOS reads still accept LF-only lines, as native file reads do.
@@ -65,7 +78,7 @@ function M.read(buf, name)
   local path = M.path(parsed.root, parsed.fragment)
   local treeish = (parsed.params.commitish or "") .. ":" .. path
   local data = git.run({ "show", treeish }, { cwd = parsed.root, progress = true }).stdout
-  local lines, options = M.decode(data, buffer.read_options(parsed.params))
+  local lines, options = M.decode(data, buffer.read_options(parsed.params), buf)
   buffer.replace(buf, lines, parsed.root, vim.filetype.match({ filename = path, buf = buf }) or "")
   vim.b[buf].gin_path = path
   vim.bo[buf].modifiable = true
@@ -150,7 +163,7 @@ function M.insert(buf, name)
     { cwd = parsed.root, progress = true }
   ).stdout
   if data ~= "" then
-    local lines = M.decode(data, buffer.read_options(parsed.params))
+    local lines = M.decode(data, buffer.read_options(parsed.params), buf)
     local after = vim.fn.line("'[")
     local empty = vim.api.nvim_buf_line_count(buf) == 1
       and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""

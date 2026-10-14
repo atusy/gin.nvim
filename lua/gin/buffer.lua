@@ -75,7 +75,7 @@ end
 
 function M.replace_output(buf, output, root, filetype, options)
   options = M.read_options(options)
-  local lines, decoded = require("gin.edit").decode(output, options or {})
+  local lines, decoded = require("gin.edit").decode(output, options or {}, buf)
   if options and options.emojify ~= nil then
     lines = vim.tbl_map(require("gin.emoji").emojify, lines)
   end
@@ -154,7 +154,7 @@ function M.insert_output(buf, name, output)
     { "enc", "encoding", "ff", "fileformat" }
   )
   if output ~= "" then
-    local lines = require("gin.edit").decode(require("gin.csi").strip(output), options)
+    local lines = require("gin.edit").decode(require("gin.csi").strip(output), options, buf)
     if require("gin.uri").parse(name).params.emojify ~= nil then
       lines = vim.tbl_map(require("gin.emoji").emojify, lines)
     end
