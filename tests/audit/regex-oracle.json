@@ -1,0 +1,550 @@
+[
+  {
+    "name": "log",
+    "pattern": "^([a-f0-9]+)\\b",
+    "input": "abc123 message",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ],
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ]
+      ]
+    }
+  },
+  {
+    "name": "tag",
+    "pattern": "^([a-f0-9]+)\\s+(\\S+)",
+    "input": "abc123 release",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51,
+          32,
+          114,
+          101,
+          108,
+          101,
+          97,
+          115,
+          101
+        ],
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ],
+        [
+          114,
+          101,
+          108,
+          101,
+          97,
+          115,
+          101
+        ]
+      ]
+    }
+  },
+  {
+    "name": "stash",
+    "pattern": "^(stash@\\{(\\d+)\\})",
+    "input": "stash@{12}: saved",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          115,
+          116,
+          97,
+          115,
+          104,
+          64,
+          123,
+          49,
+          50,
+          125
+        ],
+        [
+          115,
+          116,
+          97,
+          115,
+          104,
+          64,
+          123,
+          49,
+          50,
+          125
+        ],
+        [
+          49,
+          50
+        ]
+      ]
+    }
+  },
+  {
+    "name": "alternation",
+    "pattern": "^(foo|bar)$",
+    "input": "bar",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          97,
+          114
+        ],
+        [
+          98,
+          97,
+          114
+        ]
+      ]
+    }
+  },
+  {
+    "name": "greedy",
+    "pattern": "^(a+)(a*)$",
+    "input": "aaaa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97,
+          97,
+          97
+        ],
+        [
+          97,
+          97,
+          97,
+          97
+        ],
+        []
+      ]
+    }
+  },
+  {
+    "name": "lazy",
+    "pattern": "^(a+?)(a*)$",
+    "input": "aaaa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97,
+          97,
+          97
+        ],
+        [
+          97
+        ],
+        [
+          97,
+          97,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "optional",
+    "pattern": "^(a)?(b)$",
+    "input": "b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "optional-wide",
+    "pattern": "^(a)?(β)$",
+    "input": "β",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          946
+        ],
+        null,
+        [
+          946
+        ]
+      ]
+    }
+  },
+  {
+    "name": "empty-capture",
+    "pattern": "^(a*)(b)$",
+    "input": "b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98
+        ],
+        [],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "lookahead",
+    "pattern": "^(?:hash: )([a-f0-9]+)(?= end$)",
+    "input": "hash: abc123 end",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          104,
+          97,
+          115,
+          104,
+          58,
+          32,
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ],
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ]
+      ]
+    }
+  },
+  {
+    "name": "negative-lookahead",
+    "pattern": "^(?!bad)(\\w+)$",
+    "input": "good",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          103,
+          111,
+          111,
+          100
+        ],
+        [
+          103,
+          111,
+          111,
+          100
+        ]
+      ]
+    }
+  },
+  {
+    "name": "lookbehind",
+    "pattern": "(?<=hash: )([a-f0-9]+)",
+    "input": "hash: abc123",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ],
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ]
+      ]
+    }
+  },
+  {
+    "name": "negative-lookbehind",
+    "pattern": "(?<!x)(a)",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "backreference",
+    "pattern": "^(a+)\\1$",
+    "input": "aaaa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97,
+          97,
+          97
+        ],
+        [
+          97,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "unmatched-backreference",
+    "pattern": "^(a)?\\1(b)$",
+    "input": "b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named",
+    "pattern": "^(?<commit>[a-f0-9]+)$",
+    "input": "abc123",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ],
+        [
+          97,
+          98,
+          99,
+          49,
+          50,
+          51
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-backreference",
+    "pattern": "^(?<letter>a)\\k<letter>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "invalid",
+    "pattern": "(",
+    "input": "abc",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "no-match",
+    "pattern": "^(a)$",
+    "input": "b",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "empty-match",
+    "pattern": "()",
+    "input": "abc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [],
+        []
+      ]
+    }
+  },
+  {
+    "name": "empty-pattern",
+    "pattern": "",
+    "input": "abc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        []
+      ]
+    }
+  },
+  {
+    "name": "whitespace",
+    "pattern": "^\\s+(a)$",
+    "input": " ﻿a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          160,
+          65279,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "non-bmp-class",
+    "pattern": "^([😀])$",
+    "input": "😀",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "non-bmp-dot",
+    "pattern": "^(.)$",
+    "input": "😀",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "surrogate-pair",
+    "pattern": "^(\\uD83D\\uDE00)$",
+    "input": "😀",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          55357,
+          56832
+        ],
+        [
+          55357,
+          56832
+        ]
+      ]
+    }
+  },
+  {
+    "name": "surrogate-captures",
+    "pattern": "^(.)(.)$",
+    "input": "😀",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          55357,
+          56832
+        ],
+        [
+          55357
+        ],
+        [
+          56832
+        ]
+      ]
+    }
+  },
+  {
+    "name": "nul",
+    "pattern": "^(a\\x00b)$",
+    "input": "a\u0000b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          0,
+          98
+        ],
+        [
+          97,
+          0,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "line-terminator",
+    "pattern": "^(.*)$",
+    "input": "a b",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "last-line-ending",
+    "pattern": "^(a)$",
+    "input": "a\n",
+    "expected": {
+      "status": "no-match"
+    }
+  }
+]

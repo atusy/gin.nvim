@@ -1351,3 +1351,11 @@ cases, but automatically enabling Unicode for a non-BMP pattern disagrees with
 the pinned no-flags constructor. It has not been added as a dependency. Backend
 selection and custom matching remain incomplete; this finding prevents treating
 an unmodified ECMAScript-labelled binding as sufficient parity evidence.
+
+The optional [regex backend audit](tests/audit/README.md) now contains 29
+Node-generated no-flags JavaScript cases, compared through mini.nvim with each
+candidate invocation isolated in a timed child process. The tested jsregexp
+revision fails seven cases, including a SIGSEGV on an unmatched group with a
+non-ASCII input. Other differences cover absent captures, Unicode, split
+surrogates and NUL. These are candidate rejection results, not passing migration
+tests; the backend and action integration remain unimplemented.

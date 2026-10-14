@@ -1,0 +1,48 @@
+# Custom parser regex backend audit
+
+These optional mini.nvim tests compare a candidate with the no-flags JavaScript
+`new RegExp(pattern)` used by the pinned vim-gin parsers. They are outside the
+normal `tests/test_*.lua` collection and do not add a runtime dependency.
+
+Regenerate or verify the checked-in oracle with Node (generated with v26.8.2):
+
+```sh
+node scripts/regex-oracle.mjs --check
+node scripts/regex-oracle.mjs --write
+```
+
+Review oracle changes before committing them. Captures include the full match
+at position 1, followed by numbered groups. Each string is represented as UTF-16
+code units, preserving lone surrogates and distinguishing an empty capture from
+an unmatched group (`null`). Error messages and named-group dictionaries are
+not compared: the current parsers consume numbered captures only.
+
+To audit jsregexp, build a separate checkout as described in the
+[regex ADR](../../docs/ADR/20261014-000000-preserve-custom-parser-regex-semantics.md),
+then run from the repository root:
+
+```sh
+env -u NVIM -u NVIM_LISTEN_ADDRESS GIN_JSREGEXP_ROOT=/path/to/jsregexp \
+  nvim --headless --clean -u tests/minimal_init.lua \
+  -c "lua MiniTest.run_file('tests/audit/regex.lua')"
+```
+
+The checkout must contain `jsregexp.lua` and the built `jsregexp.so`. Each case
+runs in a fresh Neovim process with a five-second timeout. Missing dependencies,
+execution errors, signals, malformed output, and semantic differences fail the
+audit. Compilation errors are compared as a distinct result. A nonzero exit is
+an incompatible candidate result, not a passing product test. This finite corpus
+is a selection gate, not proof of complete ECMAScript compatibility.
+
+At jsregexp `aadbcc2045ac5bddad8b211c80cb17b002775c26`, on macOS arm64,
+22 of 29 cases pass. Failures with this adapter are:
+
+- `optional`, `unmatched-backreference`: absent captures become empty strings.
+- `optional-wide`: child exits on signal 11 (SIGSEGV).
+- `whitespace`: returned full-match code units omit U+FEFF.
+- `non-bmp-class`: automatic Unicode mode changes whether a match exists.
+- `surrogate-captures`: split surrogate captures differ from JavaScript.
+- `nul`: no match for an input containing NUL.
+
+No candidate is installed or selected by these tools. Actual log/reflog/tag/stash
+action integration and error propagation still require separate product tests.
