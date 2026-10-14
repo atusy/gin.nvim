@@ -1618,3 +1618,12 @@ and no Gin command or GinCommandPost placeholder is registered. The upstream
 plugin has additional per-feature loaded markers; their independent disable
 semantics are still an open startup compatibility item in the monolithic Lua
 plugin and are not established by this main-marker regression check.
+
+Startup now uses one Lua plugin file per locked upstream plugin. All fourteen
+loaded markers independently use presence checks. Disabling `loaded_gin` only
+skips Gin/GinBuffer and their events/URI handlers; disabling a feature skips its
+own commands and handlers while the other features load normally. The previous
+monolithic-startup limitation is resolved. Fresh Neovim cases cover each marker
+with false and 1, retained marker values, enabled commands and BufReadCmd routes,
+absence of disabled read/write routes, public event registration and idempotent
+re-sourcing. Normal command declarations remain compared against upstream.

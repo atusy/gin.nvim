@@ -66,7 +66,7 @@ T["public User events exist immediately after plugin startup"] = function()
   assert(result.code == 0, result.stderr)
 end
 
-T["a false loaded marker still disables plugin initialization"] = function()
+T["a false main loaded marker skips main initialization"] = function()
   local result = vim
     .system({
       vim.v.progpath,

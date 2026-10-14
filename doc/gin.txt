@@ -353,4 +353,20 @@ encodings remain under audit; matching currently has no implicit time limit.
 Custom indicator APIs, remaining display options, URI compatibility and legacy
 Vimscript APIs also remain under audit.
 
+STARTUP GUARDS                                                *gin-loaded-guards*
+
+Set a loaded marker before plugin loading to skip that feature. Presence is
+what matters: even v:false prevents loading. g:loaded_gin controls Gin,
+GinBuffer and their public event placeholders; it does not disable the other
+features. The independent markers are:
+
+    g:loaded_gin_blame       g:loaded_gin_branch      g:loaded_gin_browse
+    g:loaded_gin_cd          g:loaded_gin_chaperon    g:loaded_gin_diff
+    g:loaded_gin_edit        g:loaded_gin_log         g:loaded_gin_patch
+    g:loaded_gin_reflog      g:loaded_gin_stash       g:loaded_gin_status
+    g:loaded_gin_tag
+
+The cd marker controls GinCd, GinLcd and GinTcd together. To disable the whole
+plugin, omit it from your plugin manager or set all fourteen markers.
+
  vim:tw=78:ts=8:noet:ft=help:norl:
