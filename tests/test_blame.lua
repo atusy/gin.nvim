@@ -216,6 +216,16 @@ T["blame maintains upstream buffer links through history and reload"] = function
   local file = vim.b[nav].gin_blame_file_bufnr
   local detail = vim.b[nav].gin_blame_detail_bufnr
   local function check_links()
+    for _, pair in ipairs({
+      { file, "nav", nav },
+      { file, "detail", detail },
+      { nav, "file", file },
+      { nav, "detail", detail },
+      { detail, "file", file },
+      { detail, "nav", nav },
+    }) do
+      MiniTest.expect.equality(vim.b[pair[1]]["gin_blame_paired_bufnr_" .. pair[2]], pair[3])
+    end
     MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufname, vim.api.nvim_buf_get_name(file))
     MiniTest.expect.equality(vim.b[file].gin_blame_nav_bufname, vim.api.nvim_buf_get_name(nav))
     for _, buf in ipairs({ file, nav }) do
@@ -233,6 +243,7 @@ T["blame maintains upstream buffer links through history and reload"] = function
   require("gin.blame").navigate_history("older")
   check_links()
   vim.b[nav].gin_blame_file_bufnr = nil
+  vim.b[nav].gin_blame_paired_bufnr_file = nil
   vim.cmd.edit()
   H.drain()
   check_links()

@@ -2333,3 +2333,23 @@ and reverse mapping; the committed empty-file case checks empty dictionaries,
 an empty line array and blank displayed buffers. Both tests failed with list
 rather than dictionary types before the fix. Existing navigation, detail,
 encoding, rename and pane-restoration tests run against the corrected keys.
+
+## Blame buffer-variable inventory
+
+The pinned Blame TypeScript files reference thirteen distinct `gin_blame_*`
+buffer-variable names. All now have Lua counterparts:
+
+| Variables (with `gin_blame_` prefix) | Evidence / scope |
+| --- | --- |
+| `file_bufname`, `nav_bufname`, `detail_bufname`, `file_fragment` | Existing link/reload/legacy-path tests cover names and paths through navigation. |
+| `paired_bufnr_file`, `paired_bufnr_nav`, `paired_bufnr_detail` | Each of the three panes now exposes the other two pane numbers under the pinned names. The link test checks all six edges after opening, selecting, moving backward and reloading, including repair of a removed link. |
+| `result`, `line_map`, `file_line_to_physical` | Structured metadata, group-size, dictionary-type and navigation tests cover the implemented data contracts. Per-line raw metadata remains a Lua extension. |
+| `history`, `history_index` | Both panes retain history entries and zero-based positions; initial index is -1. Navigation and hidden-pane restoration are tested. |
+| `detail_last_commit` | Existing detail tests cover commit changes, dividers and failed queries. |
+
+Previously, the three `paired_bufnr_*` names were missing even though Lua's own
+`file_bufnr`/`nav_bufnr`/`detail_bufnr` links worked. Those existing Lua links remain
+available. The new aliases are assigned from the same pane IDs on every read;
+they do not add another cleanup callback or alter the companion-buffer unload
+policy. This closes the thirteen-name presence inventory, not every possible
+lifecycle transition or the full Blame migration checklist.

@@ -259,6 +259,11 @@ function M.read(buf, name, output)
     vim.b[target].gin_blame_file_bufnr = buf
     vim.b[target].gin_blame_nav_bufnr = nav
     vim.b[target].gin_blame_detail_bufnr = detail
+    for kind, paired in pairs({ file = buf, nav = nav, detail = detail }) do
+      if paired ~= target then
+        vim.b[target]["gin_blame_paired_bufnr_" .. kind] = paired
+      end
+    end
     local win = vim.fn.bufwinid(target)
     vim.wo[win].number, vim.wo[win].relativenumber = false, false
     vim.wo[win].wrap, vim.wo[win].signcolumn = false, "no"
