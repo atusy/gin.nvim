@@ -1,5 +1,32 @@
 local M = {}
 
+---Parse a flag prefix using the pinned argument parser's name grammar.
+---@param arg string
+---@return string? key
+---@return string? value
+function M.parse(arg)
+  local key = arg:match("^%-%-([a-zA-Z0-9-]+)")
+  local value
+  if key then
+    local rest = arg:sub(#key + 3)
+    value = rest:sub(1, 1) == "=" and rest:sub(2) or ""
+  else
+    key = arg:match("^%-([a-zA-Z0-9])")
+    if not key then
+      return
+    end
+    value = arg:sub(3)
+  end
+  -- JavaScript's dot stops at these four line terminators.
+  for _, separator in ipairs({ "\n", "\r", "\226\128\168", "\226\128\169" }) do
+    local index = value:find(separator, 1, true)
+    if index then
+      value = value:sub(1, index - 1)
+    end
+  end
+  return key, value
+end
+
 ---Serialize one flag name and its ordered values into Git arguments.
 ---@param key string
 ---@param values string|string[]|nil
@@ -20,13 +47,8 @@ end
 function M.group(args)
   local groups, order = {}, {}
   for _, arg in ipairs(args) do
-    local key, value = arg:match("^%-%-([^=]+)=(.*)$")
-    if not key then
-      key, value = arg:match("^%-%-(.+)$"), ""
-    end
-    if not key then
-      key, value = arg:sub(2, 2), arg:sub(3)
-    end
+    local key, value = M.parse(arg)
+    assert(key, "Invalid Git flag: " .. arg)
     if not groups[key] then
       groups[key] = {}
       order[#order + 1] = key

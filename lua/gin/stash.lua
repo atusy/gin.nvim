@@ -1,5 +1,6 @@
 local M = {}
 local uri = require("gin.uri")
+local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
 local action = require("gin.action")
 local git = require("gin.git")
@@ -168,10 +169,7 @@ function M.command(opts)
     { "worktree", "opener", "emojify", "enc", "encoding", "ff", "fileformat" }
   )
   for _, arg in ipairs(residue) do
-    assert(
-      arg:match("^%-[a-zA-Z0-9]") or arg:match("^%-%-[a-zA-Z0-9-]"),
-      "GinStash does not accept positional arguments"
-    )
+    assert(parse_flag(arg), "GinStash does not accept positional arguments")
   end
   options.bang, options.smods = opts.bang, opts.smods
   return require("gin.buffer").open(

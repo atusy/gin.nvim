@@ -1,5 +1,6 @@
 local M = {}
 local uri = require("gin.uri")
+local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
 local action = require("gin.action")
 
@@ -436,7 +437,7 @@ function M.command(opts, kind)
     if arg == "--" and not separator then
       separator = #positional + 1
       positional[#positional + 1] = arg
-    elseif not separator and (arg:match("^%-[a-zA-Z0-9]") or arg:match("^%-%-[a-zA-Z0-9-]")) then
+    elseif not separator and parse_flag(arg) then
       flags[#flags + 1] = arg
     else
       positional[#positional + 1] = arg

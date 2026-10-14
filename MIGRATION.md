@@ -1318,3 +1318,12 @@ Real Git log/reflog fixtures mix --n=2 with -n1 and use --no-decorate=, checking
 selected output on open, reload and insertion. Previously the empty boolean
 value reached Git unchanged and failed. Malformed flag-name parsing remains
 outside this normalization coverage.
+
+Flag-name recognition is now shared by Status, Branch, Tag, Log/Reflog, Stash
+and Diff command handlers and by native flag grouping. It follows the pinned
+ASCII short/long name patterns and prefix matching, with JavaScript dot's line
+terminators for captured values. A real status fixture distinguishes literal
+`-`/`-!` paths from flags, exercises a suffix outside the recognized long-name
+prefix and a newline-terminated value, and verifies identical URI reloads with
+no index changes. This replaces broader leading-dash checks; it does not prove
+exhaustive malformed-input or numeric-key object-order parity.

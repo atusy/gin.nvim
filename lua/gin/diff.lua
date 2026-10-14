@@ -1,4 +1,5 @@
 local uri = require("gin.uri")
+local parse_flag = require("gin.flags").parse
 local buffer = require("gin.buffer")
 local M = {}
 
@@ -66,18 +67,12 @@ function M.command(opts)
   options.flags, options.paths, options.flag_order = {}, {}, {}
   local path_mode = false
   for _, arg in ipairs(residue) do
+    local key, value = parse_flag(arg)
     if path_mode then
       options.paths[#options.paths + 1] = arg
     elseif arg == "--" then
       path_mode = true
-    elseif arg:sub(1, 1) == "-" then
-      local key, value = arg:match("^%-%-([^=]+)=(.*)$")
-      key = key or arg:match("^%-%-(.+)$")
-      if not key then
-        key, value = arg:match("^%-([a-zA-Z0-9])(.*)$")
-        key = key or arg
-      end
-      value = value or ""
+    elseif key then
       if options.flags[key] == nil then
         options.flags[key] = value
         options.flag_order[#options.flag_order + 1] = key

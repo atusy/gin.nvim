@@ -1,5 +1,6 @@
 local git = require("gin.git")
 local uri = require("gin.uri")
+local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
 local buffer = require("gin.buffer")
 local M = {}
@@ -133,14 +134,10 @@ function M.command(opts)
     "find-renames",
   }
   for _, arg in ipairs(residue) do
+    local key, value = parse_flag(arg)
     if not path_mode and arg == "--" then
       path_mode = true
-    elseif not path_mode and arg:sub(1, 1) == "-" then
-      local key, value = arg:match("^%-%-([^=]+)=(.*)$")
-      key = key or arg:match("^%-%-(.+)$")
-      if arg:match("^%-u") then
-        key, value = "u", arg:sub(3)
-      end
+    elseif not path_mode and key then
       if not vim.tbl_contains(allowed, key) then
         error("Unsupported GinStatus flag: " .. arg, 0)
       end

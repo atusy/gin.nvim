@@ -525,6 +525,24 @@ T["status preserves upstream flag grouping through URI reload"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/new/file"), { "nested" })
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "")
 end
+T["status distinguishes flag prefixes from literal dash paths"] = function()
+  for _, path in ipairs({ "-", "-!", "file" }) do
+    vim.fn.writefile({ "content" }, root .. "/" .. path)
+  end
+  for _, case in ipairs({
+    { "-", { "?? -" } },
+    { "-!", { "?? -!" } },
+    { "--untracked-files!ignored=no", { "?? -", "?? -!", "?? file" } },
+    { "--untracked-files=all\nignored", { "?? -", "?? -!", "?? file" } },
+  }) do
+    require("gin.status").command({ fargs = { case[1] } })
+    for _ = 1, 2 do
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
+      vim.cmd.edit()
+    end
+  end
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "")
+end
 T["short untracked flags survive reload and stop at the path separator"] = function()
   vim.fn.mkdir(root .. "/new", "p")
   vim.fn.writefile({ "nested" }, root .. "/new/file")

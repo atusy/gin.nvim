@@ -1,6 +1,7 @@
 local M = {}
 local git = require("gin.git")
 local uri = require("gin.uri")
+local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
 local action = require("gin.action")
 
@@ -418,7 +419,7 @@ function M.command(opts)
   for _, value in ipairs(residue) do
     if value == "--" and not paths then
       paths = true
-    elseif not paths and value:sub(1, 1) == "-" then
+    elseif not paths and parse_flag(value) then
       flags[#flags + 1] = value
     else
       patterns[#patterns + 1] = value
