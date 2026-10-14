@@ -46,6 +46,26 @@ T["accepting an empty choice clears the previous repeat action"] = function()
   MiniTest.expect.equality(calls, 0)
   MiniTest.expect.equality(vim.b.denops_action_previous, "")
 end
+T["undefined action choices and repeats follow unmapped Plug behavior"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "original", "unchanged" })
+  local input = vim.ui.input
+  vim.ui.input = function(_, callback)
+    callback("not-defined")
+  end
+  local ok, err = pcall(action.call, buf, "choice", { 1, 2 })
+  vim.ui.input = input
+  assert(ok, err)
+  MiniTest.expect.equality(vim.b.denops_action_previous, "not-defined")
+  action.call(buf, "repeat", { 2, 2 })
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(buf, 0, -1, false),
+    { "original", "unchanged" }
+  )
+  MiniTest.expect.equality(action.range(), { 1, 1 })
+end
 T["aliases dispatch the target and help shows user mappings"] = function()
   local action = require("gin.action")
   local buf = vim.api.nvim_get_current_buf()

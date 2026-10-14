@@ -149,10 +149,6 @@ function M.call(buf, name, range)
     mode = mode:sub(1, 1)
   end
   local mapping = vim.fn.maparg(plug, mode, false, true)
-  if name == "" and not next(mapping) then
-    return
-  end
-  assert(next(mapping), "Unknown Gin action: " .. name)
   local previous = range_internal
   range_internal = vim.deepcopy(range)
   local ok, result = pcall(function()

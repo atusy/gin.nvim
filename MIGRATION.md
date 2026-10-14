@@ -1878,3 +1878,10 @@ chunks, matching the pinned IndicatorStream's String.trim(). Tests exercise all
 non-whitespace U+0085/U+180E/U+200B, and verify Unicode-only chunks still reach
 custom backends as an empty line. Raw process output is unaffected. This does
 not establish complete TextDecoder parity for malformed or split byte sequences.
+
+Undefined action names now fall through to Neovim's Plug dispatch, matching the
+pinned core action call, instead of raising a Lua-only unknown-action error.
+The regression test accepts an undefined choice, checks that it is remembered,
+repeats it, and verifies unchanged buffer contents and restored action range.
+A native execution of the pinned feedkeys expression also leaves the buffer
+unchanged. Existing callback and mapped-alias dispatch tests remain in place.
