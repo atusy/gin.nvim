@@ -123,7 +123,7 @@ end
 
 function M.setup(buf)
   for _, side in ipairs({ "old", "new", "smart" }) do
-    vim.keymap.set("n", "<Plug>(gin-diffjump-" .. side .. ")", function()
+    vim.keymap.set({ "n", "x", "s", "o" }, "<Plug>(gin-diffjump-" .. side .. ")", function()
       M.jump(side)
     end, { buffer = buf })
   end

@@ -217,6 +217,35 @@ local function jump(line, keys)
   vim.api.nvim_win_set_cursor(0, { row, 0 })
   vim.api.nvim_feedkeys(keys or "\r", "mx", false)
 end
+for _, mode in ipairs({
+  { "Normal", "" },
+  { "Visual", "v" },
+  { "Select", "gh" },
+  { "operator pending", "d" },
+}) do
+  for _, side in ipairs({ "old", "new", "smart" }) do
+    T[side .. " diff Plug jumps from " .. mode[1] .. " mode"] = function()
+      local status = H.git(root, "status", "--porcelain")
+      vim.cmd("GinDiff -- sub/file")
+      jump(
+        "+working",
+        vim.api.nvim_replace_termcodes(
+          mode[2] .. "<Plug>(gin-diffjump-" .. side .. ")<Esc>",
+          true,
+          false,
+          true
+        )
+      )
+      MiniTest.expect.equality(
+        vim.api.nvim_get_current_line(),
+        side == "old" and "index" or "working"
+      )
+      MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0), { 1, 0 })
+      MiniTest.expect.equality(vim.bo.modified, false)
+      MiniTest.expect.equality(H.git(root, "status", "--porcelain"), status)
+    end
+  end
+end
 T["smart jump opens the working file for added lines"] = function()
   vim.cmd("GinDiff -- sub/file")
   jump("+working")

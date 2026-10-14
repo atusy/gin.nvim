@@ -1436,3 +1436,11 @@ and disabled default-key tables against the locked ftplugins and verify
 customization through initial display and reload. Patch/chaperon source checks
 confirm their explicit Normal/Visual mode lists; their full mapping lifecycle
 and diff-jump Plug modes remain separate audit items.
+
+Diff-jump Plug mappings now cover Normal, Visual, Select and operator-pending
+modes. The pinned initializer omits a mode; denops std's
+[mapping implementation](https://github.com/vim-denops/deno-denops-std/blob/v7.0.0/mapping/mod.ts)
+therefore emits `noremap`, rather than `nnoremap`. Twelve real Git tests invoke
+old/new/smart Plug keys from all four modes and verify destination text/cursor,
+unmodified buffers and unchanged Git status. Nine non-Normal cases failed
+before the mode fix. The ordinary Enter defaults remain Normal-only.
