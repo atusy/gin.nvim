@@ -1198,5 +1198,242 @@
         ]
       ]
     }
+  },
+  {
+    "name": "control-incomplete-quantifier",
+    "pattern": "^(\\c+)$",
+    "input": "\\ccc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          99,
+          99
+        ],
+        [
+          92,
+          99,
+          99,
+          99
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-incomplete",
+    "pattern": "^(\\c)$",
+    "input": "\\c",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99
+        ],
+        [
+          92,
+          99
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-incomplete-keeps-backslash",
+    "pattern": "^(\\c)$",
+    "input": "c",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-nonalphabetic",
+    "pattern": "^(\\c0)$",
+    "input": "\\c0",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          48
+        ],
+        [
+          92,
+          99,
+          48
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-incomplete-group",
+    "pattern": "^\\c(a)\\1$",
+    "input": "\\caa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-incomplete-quantifier-no-slash-repeat",
+    "pattern": "^(\\c+)$",
+    "input": "\\c\\c",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-class-incomplete",
+    "pattern": "^([\\c]+)$",
+    "input": "\\cc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          99
+        ],
+        [
+          92,
+          99,
+          99
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-punctuation",
+    "pattern": "^([\\c!]+)$",
+    "input": "\\c!",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          33
+        ],
+        [
+          92,
+          99,
+          33
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-inverted",
+    "pattern": "^([^\\c!]+)$",
+    "input": "xyz",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          120,
+          121,
+          122
+        ],
+        [
+          120,
+          121,
+          122
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-inverted-backslash",
+    "pattern": "^([^\\c!]+)$",
+    "input": "\\",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-class-incomplete-range",
+    "pattern": "^([\\c-e]+)$",
+    "input": "\\cde",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          100,
+          101
+        ],
+        [
+          92,
+          99,
+          100,
+          101
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-uppercase",
+    "pattern": "^(\\cA)$",
+    "input": "\u0001",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-lowercase",
+    "pattern": "^(\\cz)$",
+    "input": "\u001a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          26
+        ],
+        [
+          26
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-letter",
+    "pattern": "^([\\cA-\\cC]+)$",
+    "input": "\u0001\u0002\u0003",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    }
   }
 ]

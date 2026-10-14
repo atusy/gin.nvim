@@ -68,6 +68,20 @@ const cases = [
   ['class-reversed-range', String.raw`[z-a]`, 'a'],
   ['class-trailing-hyphen', String.raw`^([\d-]+)$`, '9-'],
   ['class-leading-hyphen', String.raw`^([-\d]+)$`, '-9'],
+  ['control-incomplete-quantifier', String.raw`^(\c+)$`, String.raw`\ccc`],
+  ['control-incomplete', String.raw`^(\c)$`, String.raw`\c`],
+  ['control-incomplete-keeps-backslash', String.raw`^(\c)$`, 'c'],
+  ['control-nonalphabetic', String.raw`^(\c0)$`, String.raw`\c0`],
+  ['control-incomplete-group', String.raw`^\c(a)\1$`, String.raw`\caa`],
+  ['control-incomplete-quantifier-no-slash-repeat', String.raw`^(\c+)$`, String.raw`\c\c`],
+  ['control-class-incomplete', String.raw`^([\c]+)$`, String.raw`\cc`],
+  ['control-class-punctuation', String.raw`^([\c!]+)$`, String.raw`\c!`],
+  ['control-class-inverted', String.raw`^([^\c!]+)$`, 'xyz'],
+  ['control-class-inverted-backslash', String.raw`^([^\c!]+)$`, '\\'],
+  ['control-class-incomplete-range', String.raw`^([\c-e]+)$`, String.raw`\cde`],
+  ['control-uppercase', String.raw`^(\cA)$`, '\x01'],
+  ['control-lowercase', String.raw`^(\cz)$`, '\x1a'],
+  ['control-class-letter', String.raw`^([\cA-\cC]+)$`, '\x01\x02\x03'],
 ];
 const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
 const records = cases.map(([name, pattern, input]) => {

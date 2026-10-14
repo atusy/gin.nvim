@@ -148,7 +148,9 @@ function M.compile(pattern)
         cursor = cursor + 1
         return literal(string.byte(next_char:upper()) % 32)
       end
-      error("Unsupported regular expression: invalid control escape")
+      -- Legacy fallback consumes only the backslash; c remains its own atom.
+      cursor = cursor - 1
+      return literal(92)
     end
     if not in_class and char == "k" and take("<") then
       local name = ""

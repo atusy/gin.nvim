@@ -1469,3 +1469,10 @@ class escapes: `[\d-a]` includes digits, a literal hyphen and `a`. Thirteen
 Node-oracle cases cover endpoint combinations, complements, negated classes,
 subsequent hyphens, ordinary ranges and reversed-range errors. The 64-case
 corpus passes without changing production action parsers.
+
+Incomplete control escapes in the test-only compiler now preserve the literal
+backslash and leave `c` to be parsed separately. Fourteen Node-oracle cases
+cover literal matching, quantifier binding, following capture groups, class
+unions and negation, and existing valid alphabetic controls. The corpus now
+contains 78 cases. Class digit/underscore controls and capture-name syntax still
+need work before production integration.
