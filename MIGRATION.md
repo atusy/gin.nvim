@@ -1366,3 +1366,10 @@ A real two-commit fixture with divergent legacy names verifies refreshed file
 content, attribution and commit details without duplicate windows or renaming
 the paired file buffer. This does not establish complete parity for divergent
 stored file fragments, hidden paired buffers or all option combinations.
+
+Blame file/navigation buffers now publish the pinned name-based links
+(`gin_blame_nav_bufname`, `gin_blame_file_bufname`, `gin_blame_detail_bufname`)
+and `gin_blame_file_fragment`. Re-reading after history navigation refreshes
+these values. A real Git test verifies the links at initial display and after
+history transitions, then removes Lua's numeric file link and reloads through
+the stored name without adding windows.

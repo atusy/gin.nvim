@@ -264,6 +264,13 @@ function M.read(buf, name, output)
       end,
     })
     if target ~= detail then
+      vim.b[target].gin_blame_file_fragment = path
+      vim.b[target].gin_blame_detail_bufname = detailname
+      if target == buf then
+        vim.b[target].gin_blame_nav_bufname = navname
+      else
+        vim.b[target].gin_blame_file_bufname = name
+      end
       vim.wo[win].winfixbuf = true
       vim.bo[target].modifiable = true
       vim.bo[target].fileencoding, vim.bo[target].fileformat = encoding, ff

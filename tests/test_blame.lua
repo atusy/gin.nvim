@@ -60,6 +60,35 @@ T["blame opens synchronized attribution and committed content from a subdirector
   end
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "dirty" })
 end
+T["blame maintains upstream buffer links through history and reload"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  local detail = vim.b[nav].gin_blame_detail_bufnr
+  local function check_links()
+    MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufname, vim.api.nvim_buf_get_name(file))
+    MiniTest.expect.equality(vim.b[file].gin_blame_nav_bufname, vim.api.nvim_buf_get_name(nav))
+    for _, buf in ipairs({ file, nav }) do
+      MiniTest.expect.equality(vim.b[buf].gin_blame_file_fragment, "sub/file.lua")
+      MiniTest.expect.equality(
+        vim.b[buf].gin_blame_detail_bufname,
+        vim.api.nvim_buf_get_name(detail)
+      )
+    end
+  end
+  check_links()
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  check_links()
+  require("gin.blame").navigate_history("older")
+  check_links()
+  vim.b[nav].gin_blame_file_bufnr = nil
+  vim.cmd.edit()
+  H.drain()
+  check_links()
+  MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufnr, file)
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+end
 T["legacy blame paths survive reload and history navigation"] = function()
   local path = "sub/space + 日本語$.lua"
   H.git(root, "mv", "sub/file.lua", path)
