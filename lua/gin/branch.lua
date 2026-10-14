@@ -225,6 +225,7 @@ function M.read(buf, name)
         default = not orphan and from or nil,
       }, function(value)
         if not value or value == "" then
+          vim.api.nvim_echo({ { "Cancelled", "ErrorMsg" } }, true, {})
           return
         end
         local args =
@@ -249,6 +250,7 @@ function M.read(buf, name)
         default = from,
       }, function(value)
         if not value or value == "" then
+          vim.api.nvim_echo({ { "Cancelled", "ErrorMsg" } }, true, {})
           return
         end
         local args = worktree and { "worktree", "move" } or { "branch", "--move" }
@@ -270,6 +272,7 @@ function M.read(buf, name)
         default = not orphan and from or nil,
       }, function(branch)
         if not branch or branch == "" then
+          vim.api.nvim_echo({ { "Cancelled", "ErrorMsg" } }, true, {})
           return
         end
         local common =
@@ -284,6 +287,7 @@ function M.read(buf, name)
           completion = "dir",
         }, function(path)
           if not path or path == "" then
+            vim.api.nvim_echo({ { "Cancelled", "ErrorMsg" } }, true, {})
             return
           end
           if path:sub(1, 1) ~= "/" then

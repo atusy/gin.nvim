@@ -272,6 +272,51 @@ local function prompt_action(name, range, value)
   assert(callback, "Expected an input prompt")
   callback(value)
 end
+T["cancelled branch prompts report cancellation without changing Git state"] = function()
+  vim.cmd("GinBranch topic")
+  local refs = H.git(root, "show-ref")
+  local worktrees = H.git(root, "worktree", "list", "--porcelain")
+  local directory = vim.fn.getcwd()
+  local input, echo = vim.ui.input, vim.api.nvim_echo
+  local ok, err = pcall(function()
+    for _, name in ipairs({
+      "new",
+      "new:force",
+      "new:orphan",
+      "move",
+      "move:force",
+      "worktree",
+      "worktree:force",
+      "worktree:orphan",
+    }) do
+      for stage = 1, name:match("^worktree") and 2 or 1 do
+        for _, empty in ipairs({ false, true }) do
+          local prompts, messages = 0, {}
+          vim.ui.input = function(_, callback)
+            prompts = prompts + 1
+            if prompts < stage then
+              callback("cancelled-branch")
+            else
+              callback(empty and "" or nil)
+            end
+          end
+          vim.api.nvim_echo = function(chunks)
+            messages[#messages + 1] = chunks
+          end
+          require("gin.action").call(vim.api.nvim_get_current_buf(), name, { 1, 1 })
+          MiniTest.expect.equality(prompts, stage)
+          MiniTest.expect.equality(messages, { { { "Cancelled", "ErrorMsg" } } })
+          MiniTest.expect.equality(H.git(root, "show-ref"), refs)
+          MiniTest.expect.equality(H.git(root, "worktree", "list", "--porcelain"), worktrees)
+          MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+          MiniTest.expect.equality(vim.fn.getcwd(), directory)
+        end
+      end
+    end
+  end)
+  vim.ui.input, vim.api.nvim_echo = input, echo
+  assert(ok, err)
+end
 T["new branch starts from the selected ref and switches to it"] = function()
   vim.cmd("GinBranch topic")
   local source = H.git(root, "rev-parse", "topic")

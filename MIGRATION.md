@@ -1899,3 +1899,11 @@ replaces the destination with the selected source commit and removes the old
 source ref. The test also checks the current branch, working file and index
 remain unchanged. Temporarily omitting --force caused this new case alone to
 fail; the original implementation was restored before the full suite.
+
+Branch new/move and worktree creation prompts now report Cancelled with the
+ErrorMsg highlight when dismissed or accepted empty, matching the pinned
+actions' helper.echoerr calls. The regression matrix covers all eight action
+variants, both worktree input stages, and both cancellation forms. Each case
+checks that refs, worktree registration, working-tree/index status and cwd
+remain unchanged. This covers cancellation feedback rather than the full
+Denops helper message scheduling and silent-state behavior.
