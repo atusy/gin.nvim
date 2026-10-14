@@ -7,13 +7,27 @@ local function remove_bom(text)
   return present and text:sub(4) or text, present
 end
 
----Decode a candidate with TextDecoder's fatal-error behavior.
-function M.decode(data, label)
-  local normalized = label:match("^[\t\n\f\r ]*(.-)[\t\n\f\r ]*$"):lower()
-  local encoding = assert(labels[normalized], "Unsupported encoding: " .. label)
+local function canonical(label)
+  return labels[label:match("^[\t\n\f\r ]*(.-)[\t\n\f\r ]*$"):lower()]
+end
+
+---Whether replacement decoding is implemented for this label.
+function M.supports_replacement(label)
+  local encoding = canonical(label)
+  return encoding == "utf-8" or require("gin.encoding.single_byte")[encoding] ~= nil
+end
+
+---Decode a candidate strictly by default; fatal=false replaces malformed input.
+function M.decode(data, label, options)
+  local encoding = assert(canonical(label), "Unsupported encoding: " .. label)
+  local fatal = not options or options.fatal ~= false
+  assert(
+    fatal or M.supports_replacement(label),
+    "Replacement decoding not implemented: " .. encoding
+  )
   if encoding == "utf-8" then
     local text = require("gin.stream_text").utf8(data)
-    assert(text == data, "Invalid UTF-8")
+    assert(not fatal or text == data, "Invalid UTF-8")
     return remove_bom(text)
   elseif encoding == "utf-16le" or encoding == "utf-16be" then
     return remove_bom(require("gin.unicode").decode(data, encoding))
@@ -44,7 +58,9 @@ function M.decode(data, label)
     if byte < 128 then
       output[#output + 1] = string.char(byte)
     else
-      local code = assert(map[byte - 127], "Invalid " .. encoding .. " byte")
+      local code = map[byte - 127]
+      assert(code or not fatal, "Invalid " .. encoding .. " byte")
+      code = code or 0xfffd
       output[#output + 1] = vim.fn.nr2char(code)
     end
   end

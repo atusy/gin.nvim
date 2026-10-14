@@ -27,7 +27,10 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
   if (group.heading === 'Legacy single-byte encodings' || canonical === 'x-user-defined') {
     const bytes = Array.from({ length: 256 }, (_, byte) => decode(canonical, [byte]));
     single += `[${JSON.stringify(canonical)}] = {${bytes.slice(128).map(value => value.error ? 'false' : value.text.codePointAt(0)).join(',')}},\n`;
-    records.push({ encoding: canonical, aliases: encoding.labels, cases: bytes.map((value, byte) => ({ bytes: [byte], ...value })) });
+    const replacementInputs = Array.from({length:256}, (_, byte) => [byte]);
+    replacementInputs.push(Array.from({length:256}, (_, byte) => byte));
+    const replacement_cases = replacementInputs.map(bytes => ({bytes,...decode(canonical,bytes,false)}));
+    records.push({ encoding: canonical, aliases: encoding.labels, cases: bytes.map((value, byte) => ({ bytes: [byte], ...value })), replacement_cases });
   } else if (canonical === 'iso-2022-jp') {
     const modes=[[27,40,66],[27,40,74],[27,40,73],[27,36,64],[27,36,66]];
     const cases=[],rows=[],escapes=[],valid=[];

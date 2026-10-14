@@ -6,6 +6,19 @@ end
 local oracle =
   vim.json.decode(table.concat(vim.fn.readfile("tests/audit/encoding-oracle.json", "b"), "\n"))
 for _, record in ipairs(oracle.records) do
+  if record.replacement_cases then
+    T[record.encoding .. " replaces undefined bytes like TextDecoder"] = function()
+      for _, case in ipairs(record.replacement_cases) do
+        local actual = require("gin.encoding").decode(
+          string.char(unpack(case.bytes)),
+          record.encoding,
+          { fatal = false }
+        )
+        MiniTest.expect.equality(actual, case.text)
+      end
+    end
+  end
+
   T[record.encoding .. " matches the fatal TextDecoder oracle"] = function()
     for _, case in ipairs(record.cases) do
       local ok, actual =
@@ -82,5 +95,11 @@ T["GBK accepts GB18030 four-byte characters"] = function()
     require("gin.encoding").decode(string.char(129, 48, 129, 48), "gbk"),
     vim.fn.nr2char(128)
   )
+end
+T["UTF-8 replacement mode does not weaken strict candidate decoding"] = function()
+  local data = string.char(255, 65)
+  MiniTest.expect.equality(require("gin.encoding").decode(data, "utf-8", { fatal = false }), "�A")
+  local ok = pcall(require("gin.encoding").decode, data, "utf-8")
+  MiniTest.expect.equality(ok, false)
 end
 return T

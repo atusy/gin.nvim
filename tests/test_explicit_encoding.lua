@@ -77,4 +77,40 @@ for _, scheme in ipairs({ "gin", "ginedit" }) do
     MiniTest.expect.equality(vim.bo.fileencoding, "latin1")
   end
 end
+for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+  for _, case in ipairs({
+    { "latin1", 128, "€" },
+    { "ascii", 128, "€" },
+    { "windows-1252", 128, "€" },
+    { "iso-8859-3", 165, "�" },
+    { "windows-1253", 170, "�" },
+  }) do
+    T[command .. " explicitly decodes " .. case[1]] = function()
+      local data = string.char(case[2]) .. "A"
+      stage(data)
+      local suffix = command == "GinBuffer" and " show :file" or " file"
+      vim.cmd(command .. " ++enc=" .. case[1] .. suffix)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] .. "A" })
+      MiniTest.expect.equality(
+        require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+        data
+      )
+    end
+  end
+end
+for _, scheme in ipairs({ "gin", "ginedit" }) do
+  T[scheme .. " addressed reads use TextDecoder Latin-1 semantics"] = function()
+    stage(string.char(128) .. "\n")
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.bo.fileencoding = "utf-8"
+    local fragment = scheme == "gin" and "show :file" or "file"
+    local name = require("gin.uri").format(scheme, root, {}, fragment)
+    vim.cmd("1read ++enc=latin1 " .. vim.fn.fnameescape(name))
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", "€", "after" }
+    )
+    MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+  end
+end
 return T

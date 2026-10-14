@@ -30,11 +30,11 @@ function M.decode(data, options, buf)
   if not encoding or encoding == "" then
     local candidates = vim.split(vim.o.fileencodings, ",", { plain = true })
     data, encoding, bomb = require("gin.encoding").detect(data, candidates)
+  elseif require("gin.encoding").supports_replacement(encoding) then
+    data, bomb = require("gin.encoding").decode(data, encoding, { fatal = false })
   else
     if unicode.supports(encoding) then
       data = unicode.decode(data, encoding)
-    elseif encoding == "utf-8" or encoding == "utf8" then
-      data = require("gin.stream_text").utf8(data)
     else
       data = vim.fn.iconv(data, encoding, "utf-8")
     end

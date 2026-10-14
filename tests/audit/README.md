@@ -299,3 +299,13 @@ env -u NVIM -u NVIM_LISTEN_ADDRESS nvim --headless --clean -u tests/minimal_init
 The expected digest is independent of the compressed runtime tables. Deno accepts
 1,087,996 of these candidates. This exhaustive four-byte audit does not establish
 arbitrary-length/nonfatal decoding parity or view integration.
+
+Single-byte replacement decoding is checked separately from strict selection.
+The common oracle includes nonfatal output for every single byte and one input
+containing all 256 bytes for each of the 29 single-byte families (7,453 reference
+comparisons). `gin.encoding.decode(data, label, { fatal = false })` enables
+replacement for UTF-8 and these families; unsupported replacement codecs fail
+explicitly. `supports_replacement` gates the view integration while the remaining
+nonfatal codecs are implemented. Strict decoding remains the default used by
+automatic selection. Real-view tests cover Latin-1/ASCII Windows-1252 aliases,
+undefined bytes, and destination-option preservation on addressed reads.

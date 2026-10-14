@@ -3837,3 +3837,26 @@ difference is separate from decoding parity. UTF-16, legacy single-byte aliases
 and multibyte nonfatal decoding still need fixes. Full-suite validation for this
 UTF-8 change passes all 3,821 cases across 58 groups
 (`/tmp/gin-explicit-utf8-full.log`).
+
+## Explicit single-byte decoding
+
+Explicit single-byte encodings now use the same label registry and mappings as
+automatic selection, with undefined bytes replaced by U+FFFD. The initial
+Latin-1 regression failed because iconv treated 0x80 as U+0080 instead of the
+Windows-1252 Euro mapping used by TextDecoder. UTF-8 explicit decoding also now
+uses the common replacement entrypoint, preserving its existing BOM behavior.
+
+Replacement mode is opt-in; default strict candidate decoding still rejects
+undefined bytes. The view calls it only for implemented replacement codecs
+(UTF-8 plus 29 single-byte families). The oracle generator records every byte
+and a full 256-byte concatenation per family, giving 7,453 nonfatal reference
+comparisons. Real-view and addressed-read cases cover Latin-1/ASCII/Windows-1252
+aliases and undefined ISO-8859-3/Windows-1253 bytes while preserving source data
+and destination encoding. The live pinned-upstream Latin-1 probe now agrees on
+displayed bytes and selected encoding.
+
+All 249 encoding/explicit-read/edit/buffer tests pass on Neovim 0.10.0. Oracle
+regeneration, formatting and diff checks pass. The full suite passes all 3,863
+cases across 58 groups (`/tmp/gin-explicit-single-full.log`).
+UTF-16 and legacy multibyte replacement decoding, metadata differences and the
+broader write-encoding audit remain separate work.
