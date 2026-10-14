@@ -1986,3 +1986,10 @@ unmerged branch, the view still refreshes to remove the obsolete worktree path.
 The regression uses a real clean linked worktree with an unmerged commit and
 checks worktree removal, retained branch SHA, unchanged main worktree/index,
 and updated candidate metadata after the deferred completion event.
+
+The GinEdit index-write handler now preserves eventignore=all from entry and
+does not schedule a suppressed GinCommandPost after writing. Tests call the
+handler directly because all also suppresses BufWriteCmd, restore eventignore
+before draining, and compare normal versus suppressed completion. Both cases
+verify updated index content, an unchanged working file and a cleared modified
+flag. Existing write/filter/failure tests continue to exercise the write path.

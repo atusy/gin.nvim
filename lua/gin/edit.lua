@@ -77,6 +77,7 @@ function M.encode(buf)
 end
 
 function M.write(buf, name)
+  local ignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
   local parsed = uri.parse(name)
   assert(
     not parsed.params.commitish or parsed.params.commitish == "",
@@ -104,7 +105,9 @@ function M.write(buf, name)
   )
   vim.bo[buf].modified = false
   vim.api.nvim_exec_autocmds("BufWritePost", { buffer = buf, modeline = false })
-  require("gin.command").post()
+  if not ignore_all then
+    require("gin.command").post()
+  end
 end
 
 function M.insert(buf, name)

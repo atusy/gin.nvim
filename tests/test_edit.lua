@@ -69,6 +69,35 @@ T["writing GinEdit changes only the index from a subdirectory"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
   MiniTest.expect.equality(vim.bo.modified, false)
 end
+for _, suppress in ipairs({ false, true }) do
+  T["index write completion suppression=" .. tostring(suppress)] = function()
+    vim.cmd("GinEdit sub/file.lua")
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "edited index" })
+    H.drain()
+    local events = 0
+    local autocmd = vim.api.nvim_create_autocmd("User", {
+      pattern = "GinCommandPost",
+      callback = function()
+        events = events + 1
+      end,
+    })
+    local ignored = vim.o.eventignore
+    local ok, err = pcall(function()
+      vim.o.eventignore = suppress and "all" or ""
+      -- Call the handler directly: eventignore=all also suppresses BufWriteCmd.
+      require("gin.edit").write(vim.api.nvim_get_current_buf(), vim.api.nvim_buf_get_name(0))
+      vim.o.eventignore = ignored
+      H.drain()
+      MiniTest.expect.equality(events, suppress and 0 or 1)
+      MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "edited index\n")
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+      MiniTest.expect.equality(vim.bo.modified, false)
+    end)
+    vim.o.eventignore = ignored
+    vim.api.nvim_del_autocmd(autocmd)
+    assert(ok, err)
+  end
+end
 T["index writes preserve executable mode when the working file is missing"] = function()
   H.git(root, "update-index", "--chmod=+x", "sub/file.lua")
   vim.cmd("GinEdit sub/file.lua")
