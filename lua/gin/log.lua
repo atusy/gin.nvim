@@ -1,4 +1,5 @@
 local M = {}
+local candidate_field = require("gin.candidate").field
 local uri = require("gin.uri")
 local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
@@ -7,12 +8,10 @@ local action = require("gin.action")
 function M.candidates(buf, range)
   local result = {}
   local reflog = vim.api.nvim_buf_get_name(buf):match("^ginreflog://") ~= nil
-  local setting = reflog and "gin_reflog_parse_pattern" or "gin_log_parse_pattern"
-  local pattern = vim.g[setting]
-  assert(
-    pattern == nil or pattern == vim.NIL or type(pattern) == "string",
-    "g:" .. setting .. " must be string"
-  )
+  local custom = require("gin.candidate").custom(buf, range, reflog and "reflog" or "log")
+  if custom then
+    return custom
+  end
   for _, line in
     ipairs(
       vim.api.nvim_buf_get_lines(
@@ -101,7 +100,7 @@ function M.read(buf, name)
   local output = require("gin.git").run(args, { cwd = parsed.root, progress = true }).stdout
   require("gin.buffer").replace_output(buf, output, parsed.root, "gin-" .. kind, parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
-  action.setup(buf, M.candidates)
+  action.setup(buf, M.candidates, "commit")
   for _, opener in ipairs({ "edit", "split", "vsplit", "tabedit" }) do
     for _, emojify in ipairs({ false, true }) do
       action.define(
@@ -111,10 +110,10 @@ function M.read(buf, name)
           for _, row in ipairs(M.candidates(target, range)) do
             require("gin.buffer").open(
               uri.format("gin", parsed.root, {
-                diffjump = row.commit,
+                diffjump = candidate_field(row, "commit"),
                 difffold = "",
                 emojify = emojify and "" or nil,
-              }, uri.join({ "show", row.commit })),
+              }, uri.join({ "show", candidate_field(row, "commit") })),
               { opener = opener }
             )
           end
@@ -134,7 +133,7 @@ function M.read(buf, name)
       if detach then
         args[#args + 1] = "--detach"
       end
-      vim.list_extend(args, { "--", row.commit })
+      vim.list_extend(args, { "--", candidate_field(row, "commit") })
       require("gin.command").finish(
         require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
         {},
@@ -154,7 +153,12 @@ function M.read(buf, name)
       local row = M.candidates(target, range)[1]
       if row then
         return require("gin.command").execute({
-          fargs = { "++worktree=" .. parsed.root, "merge", "--" .. method, row.commit },
+          fargs = {
+            "++worktree=" .. parsed.root,
+            "merge",
+            "--" .. method,
+            candidate_field(row, "commit"),
+          },
           smods = {},
           on_exit = function()
             vim.cmd("silent checktime")
@@ -171,8 +175,14 @@ function M.read(buf, name)
         return
       end
       local args = variant == "rebase:instant-drop"
-          and { "rebase", "--onto", row.commit .. "~", row.commit, "HEAD" }
-        or { "rebase", row.commit }
+          and {
+            "rebase",
+            "--onto",
+            candidate_field(row, "commit") .. "~",
+            candidate_field(row, "commit"),
+            "HEAD",
+          }
+        or { "rebase", candidate_field(row, "commit") }
       local interactive = variant == "rebase:i" or variant == "rebase:i:x"
       if interactive then
         args[#args + 1] = "--interactive"
@@ -219,7 +229,7 @@ function M.read(buf, name)
           if mainline ~= "" then
             vim.list_extend(args, { "--mainline", mainline })
           end
-          args[#args + 1] = row.commit
+          args[#args + 1] = candidate_field(row, "commit")
           return require("gin.command").execute({
             fargs = args,
             smods = {},
@@ -241,7 +251,7 @@ function M.read(buf, name)
       if mode ~= "" then
         args[#args + 1] = "--" .. mode
       end
-      args[#args + 1] = row.commit
+      args[#args + 1] = candidate_field(row, "commit")
       require("gin.command").finish(
         require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
         {},
@@ -266,7 +276,7 @@ function M.read(buf, name)
           if force then
             args[#args + 1] = "--force"
           end
-          vim.list_extend(args, { "--", name, row.commit })
+          vim.list_extend(args, { "--", name, candidate_field(row, "commit") })
           require("gin.command").finish(
             require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
             {},
@@ -291,7 +301,7 @@ function M.read(buf, name)
           if force then
             args[#args + 1] = "--force"
           end
-          vim.list_extend(args, { "--", name, row.commit })
+          vim.list_extend(args, { "--", name, candidate_field(row, "commit") })
           require("gin.command").execute({
             fargs = args,
             smods = {},
@@ -330,7 +340,7 @@ function M.read(buf, name)
         return
       end
       assert(#rows == 1, "Fixup requires exactly one commit")
-      local commit = rows[1].commit
+      local commit = candidate_field(rows[1], "commit")
       local git = require("gin.git")
       local result = git.run(
         { "commit", "--fixup=" .. commit },
@@ -351,7 +361,7 @@ function M.read(buf, name)
           return
         end
         assert(#rows == 1, "Fixup requires exactly one commit")
-        local commit = rows[1].commit
+        local commit = candidate_field(rows[1], "commit")
         local args = {
           "++worktree=" .. parsed.root,
           "commit",
@@ -377,7 +387,7 @@ function M.read(buf, name)
   action.define(buf, "yank:commit", function(target, range)
     local values = {}
     for _, row in ipairs(M.candidates(target, range)) do
-      values[#values + 1] = row.commit
+      values[#values + 1] = row.commit or ""
     end
     vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
   end)

@@ -4,7 +4,7 @@ T["generated JavaScript comparisons"] = function()
     assert(vim.env.GIN_REGEX_DIFFERENTIAL_FILE, "Generate the differential fixture first")
   local fixture = vim.json.decode(table.concat(vim.fn.readfile(path, "b"), "\n"))
   assert(#fixture.cases > 0, "Empty differential corpus")
-  local backend = require("tests.audit.lua_regex")
+  local backend = require("gin.regex")
   local failures = {}
   for _, case in ipairs(fixture.cases) do
     local compiled, regex = pcall(backend.compile, case.pattern)

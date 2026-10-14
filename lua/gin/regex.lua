@@ -1,6 +1,6 @@
--- Experimental no-flags ECMAScript candidate; not used by Gin actions.
+-- No-flags ECMAScript matching for custom candidate parsers.
 local M = {}
-local casefold = require("tests.audit.regex_casefold")
+local casefold = require("gin.regex_casefold")
 local equivalents = {}
 for cp, canonical in pairs(casefold) do
   equivalents[canonical] = equivalents[canonical] or { canonical }
@@ -15,7 +15,7 @@ end
 local function line_terminator(cp)
   return cp == 10 or cp == 13 or cp == 0x2028 or cp == 0x2029
 end
-local identifiers = require("tests.audit.unicode_identifiers")
+local identifiers = require("gin.regex_identifiers")
 local function identifier_char(cp, first)
   if cp == 36 or cp == 95 or not first and (cp == 0x200C or cp == 0x200D) then
     return true

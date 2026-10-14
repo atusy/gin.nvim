@@ -3,7 +3,7 @@ local cases =
   vim.json.decode(table.concat(vim.fn.readfile("tests/audit/regex-oracle.json", "b"), "\n"))
 for _, case in ipairs(cases) do
   T[case.name] = function()
-    local backend = require("tests.audit.lua_regex")
+    local backend = require("gin.regex")
     local ok, regex = pcall(backend.compile, case.pattern)
     local actual
     if not ok then
@@ -26,7 +26,7 @@ local long_cases = {
 for _, case in ipairs(long_cases) do
   T["long input: " .. case[1]] = function()
     local text = string.rep("a", 65536)
-    local regex = require("tests.audit.lua_regex").compile(case[2])
+    local regex = require("gin.regex").compile(case[2])
     -- Avoid depending on JIT trace history to conceal call-stack exhaustion.
     local enabled = jit.status()
     jit.off()
@@ -50,11 +50,11 @@ for _, case in ipairs(long_cases) do
   end
 end
 T["string captures preserve Unicode, NUL and unmatched groups"] = function()
-  local regex = require("tests.audit.lua_regex").compile("^(a)?(.+)(b*)$")
+  local regex = require("gin.regex").compile("^(a)?(.+)(b*)$")
   MiniTest.expect.equality(regex:match_strings("β😀\0"), { "β😀\0", vim.NIL, "β😀\0", "" })
 end
 T["string conversion rejects selected lone surrogates"] = function()
-  local regex = require("tests.audit.lua_regex").compile("^(.)(.)$")
+  local regex = require("gin.regex").compile("^(.)(.)$")
   MiniTest.expect.error(function()
     regex:match_strings("😀")
   end, "unpaired surrogate")
@@ -63,7 +63,7 @@ T["string conversion rejects selected lone surrogates"] = function()
   end, "unpaired surrogate")
 end
 T["string conversion can select only fields consumed by the parser"] = function()
-  local regex = require("tests.audit.lua_regex").compile("^(.)()")
+  local regex = require("gin.regex").compile("^(.)()")
   MiniTest.expect.equality(regex:match_strings("😀", { 3, 4 }), { "", vim.NIL })
 end
 T["string conversion preserves UTF-8 encoding boundaries"] = function()
@@ -73,12 +73,12 @@ T["string conversion preserves UTF-8 encoding boundaries"] = function()
   end
   local text = table.concat(parts)
   MiniTest.expect.equality(
-    require("tests.audit.lua_regex").compile("^([\\s\\S]*)$"):match_strings(text),
+    require("gin.regex").compile("^([\\s\\S]*)$"):match_strings(text),
     { text, text }
   )
 end
 T["string conversion preserves no-match and empty matches"] = function()
-  local regex = require("tests.audit.lua_regex").compile("^(a)?$")
+  local regex = require("gin.regex").compile("^(a)?$")
   MiniTest.expect.equality(regex:match_strings("b"), nil)
   MiniTest.expect.equality(regex:match_strings(""), { "", vim.NIL })
   MiniTest.expect.equality(regex:match_strings("a"), { "a", "a" })

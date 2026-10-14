@@ -27,17 +27,17 @@ scope, not proof of complete upstream parity.
 - [ ] Help, syntax, highlights, options and default mappings in Lua.
 - [ ] Full command/action audit against the pinned source and real Git-state integration tests.
 
-## Configuration audit: remaining parser overrides
+## Configuration audit: custom parser overrides
 
 The pinned command implementations expose four custom candidate parsers beyond
 the globals listed in doc/gin.txt:
 
 | Setting | Pinned source | Lua status |
 | --- | --- | --- |
-| `g:gin_log_parse_pattern` | `command/log/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidates are parsed from displayed commit headers. |
-| `g:gin_reflog_parse_pattern` | `command/reflog/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; shares the Lua log candidate parser. |
-| `g:gin_tag_parse_pattern` | `command/tag/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidate refs come from structured Git metadata. |
-| `g:gin_stash_parse_pattern` | `command/stash/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidate refs come from structured Git metadata. |
+| `g:gin_log_parse_pattern` | `command/log/edit.ts`, `gatherCandidates` | Custom matching implemented with the Lua ECMAScript matcher; capture 1 selects the commit. |
+| `g:gin_reflog_parse_pattern` | `command/reflog/edit.ts`, `gatherCandidates` | Custom matching implemented; capture 1 selects the commit. |
+| `g:gin_tag_parse_pattern` | `command/tag/edit.ts`, `gatherCandidates` | Custom matching implemented from display text; structured metadata remains the unset-setting path. |
+| `g:gin_stash_parse_pattern` | `command/stash/edit.ts`, `gatherCandidates` | Custom matching implemented from display text; structured metadata remains the unset-setting path. |
 
 Each upstream override is validated as a string and passed to JavaScript
 `new RegExp`. Supporting arbitrary display formats through structured metadata
@@ -49,8 +49,7 @@ branch custom parse-pattern settings are not an outstanding public setting.
 
 Recent file-action fixes apply persistent arguments through the command handlers
 used upstream. Diff jumps deliberately keep the internal executor route. These
-dispatch checks do not close the four parser overrides or the broader API/URI
-compatibility audit. The completion checklist above remains unchanged.
+dispatch checks do not close the broader API/URI compatibility audit. The completion checklist above remains unchanged.
 
 ## Execution-path audit
 
@@ -1538,3 +1537,18 @@ instead of replacing them. Unused captures need not be converted. Five tests
 cover this boundary; the pinned parser field mappings and nonempty-line/custom
 no-fallback behavior were rechecked. Actual custom action parsing is still
 unimplemented and backend adoption remains proposed.
+
+The four parser overrides are now connected to real actions through
+`gin.candidate` and the pure Lua `gin.regex` backend. Custom matching uses
+nonempty display lines, preserves duplicate candidates, and never falls back
+after errors or no-match. Selected capture conversion, stash decimal-prefix
+indices, missing-capture yank slots and explicit required-field checks follow
+the pinned parser/action boundaries. Real Git tests verify custom tag deletion
+and stash selection, plus unchanged refs/worktree after missing captures,
+invalid patterns or no-match. The backend and generated Unicode tables now ship
+under `lua/gin`; no Node, Deno or native extension is required at runtime.
+Regex resource/encoding extremes and full migration parity remain under audit.
+
+Non-numeric or overflowing custom stash indices use `vim.NIL` in the editor-
+facing candidate so echo produces JSON null, matching upstream JSON.stringify
+instead of failing on Lua NaN/Infinity.

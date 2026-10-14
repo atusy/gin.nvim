@@ -172,7 +172,7 @@ function M.command(opts)
   return url
 end
 
-function M.setup(buf, gather)
+function M.setup(buf, gather, target_field)
   for _, suffix in ipairs({
     "",
     ":yank",
@@ -204,7 +204,10 @@ function M.setup(buf, gather)
         if not row.path then
           args[#args + 1] = "++repository"
         end
-        args[#args + 1] = row.target or row.commit or "HEAD"
+        args[#args + 1] = target_field and require("gin.candidate").field(row, target_field)
+          or row.target
+          or row.commit
+          or "HEAD"
         if row.path then
           args[#args + 1] = root .. "/" .. row.path
         end

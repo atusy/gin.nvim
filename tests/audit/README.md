@@ -43,16 +43,16 @@ At jsregexp `aadbcc2045ac5bddad8b211c80cb17b002775c26`, on macOS arm64,
 - `surrogate-captures`: split surrogate captures differ from JavaScript.
 - `nul`: no match for an input containing NUL.
 
-No candidate is installed or selected by these tools. Actual log/reflog/tag/stash
-action integration and error propagation still require separate product tests.
+The optional C audit does not install a candidate. Runtime log/reflog/tag/stash
+actions use the Lua backend; their integration tests are in `tests/test_parser_options.lua`.
 
 The oracle must be read in binary mode: Vimscript `readfile()` in text mode
 removes U+FEFF bytes, including inside JSON strings. An earlier audit incorrectly
 reported a whitespace mismatch because of this input corruption.
 
-## Pure Lua candidate
+## Pure Lua backend
 
-`lua_regex.lua` is an experimental compiler and matcher, exercised by
+`lua/gin/regex.lua` is the runtime compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and explicit task/choice stacks for backtracking. The
 217-case corpus passes, including the initial cases that reject the C candidate
@@ -67,19 +67,19 @@ is an identity escape or requires a valid named reference, including inside
 classes and before the named group.
 Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 
-This is not an adopted runtime backend and no Gin action calls it. Its `match` output is
+Custom Gin candidate parsers now call this backend. Its `match` output is
 a list of UTF-16 capture arrays (full match first, unmatched groups null). The
 `match_strings` adapter returns UTF-8 strings for selected captures. Scoped `i`, `m` and `s` modifier groups
 are implemented for the exercised grammar. Grammar completeness, input encoding
 edge cases, large patterns/inputs, recursion limits, resource bounds and a
-broader differential corpus must still be audited before integration. Passing
+broader differential corpus remain under audit. Passing
 this corpus does not establish full ECMAScript compatibility.
 
 Capture names use checked-in Unicode 17.0 `ID_Start` / `ID_Continue` ranges
 generated from Node v26.8.2, plus ECMAScript's dollar/underscore/joiner rules.
 The candidate decodes literal code points, four-digit Unicode escapes, braced
 escapes and escaped surrogate pairs into a common name key. Names are not
-Unicode-normalized. These tables are test-only and add no runtime dependency.
+Unicode-normalized. These tables ship under `lua/gin` and require no external runtime.
 Regenerate or verify them separately:
 
 ```sh
@@ -104,7 +104,7 @@ Scoped modifiers preserve their enclosing settings on exit. Ignore-case matching
 uses a generated Unicode 17.0 table for ECMAScript's **non-Unicode** Canonicalize
 operation, shared by literals, class membership and backreferences. It excludes
 multi-unit uppercase expansions and non-ASCII-to-ASCII mappings; astral letters
-remain UTF-16 units. Regenerate or verify the test-only table with:
+remain UTF-16 units. Regenerate or verify the shipped table with:
 
 ```sh
 node scripts/regex-casefold.mjs --write
@@ -149,7 +149,7 @@ lookbehind. The expected capture lengths were also checked with Node.
 This removes call-stack growth proportional to ordinary input repetition.
 Lookaround evaluation still recurses with assertion nesting, and the compiler
 recurses with pattern nesting. Heap usage and pathological backtracking are not
-bounded by this change; production integration remains pending those audits.
+bounded by this change; these resource limits remain under audit.
 
 ## Candidate parser boundary
 
@@ -158,7 +158,7 @@ lines and consume capture 1; tags consume capture 1 (commit) and 2 (tag); stash
 consumes capture 1 (reference) and parses capture 2 as a decimal index. There is
 no default-pattern fallback after a custom match fails. This contract was
 rechecked against `.deps/vim-gin` at the locked revision. Production custom
-matching is still missing.
+matching now follows this contract through `gin.candidate`.
 
 `compiled:match_strings(text, indices)` now provides the string conversion
 needed at that boundary. Indices use Lua ordering: 1 is the full match, 2 the

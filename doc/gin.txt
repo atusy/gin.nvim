@@ -334,10 +334,22 @@ Git processes and output processors have no implicit time limit. Gin ++wait
 and synchronous buffer operations service proxy requests and progress while
 waiting; manual interactive editing during the wait remains unverified.
 
-The upstream g:gin_log_parse_pattern, g:gin_reflog_parse_pattern,
-g:gin_tag_parse_pattern and g:gin_stash_parse_pattern settings have type
-validation, but custom matching is not yet implemented. They accept JavaScript
-regular expressions upstream. Lua patterns are not a compatible substitute.
+The g:gin_log_parse_pattern, g:gin_reflog_parse_pattern,
+g:gin_tag_parse_pattern and g:gin_stash_parse_pattern settings accept JavaScript
+regular expression strings (constructed without flags). A pure Lua matcher is
+included; Node, Deno and native extensions are not needed at runtime. Unset or
+v:null uses the existing default parser. A custom pattern is applied directly
+to nonempty displayed lines; no-match does not fall back to default candidates.
+
+Log/reflog use capture 1 as the commit. Tags use capture 1 as the commit and
+capture 2 as the tag. Stash uses capture 1 as the reference and parses capture 2
+as a decimal index. Invalid patterns and missing captures required by an action
+raise errors. Optional captures are empty slots when yanked. Isolated UTF-16
+surrogates in selected captures cannot be converted to Neovim strings.
+
+Regex compatibility has curated, generated and long-input test coverage, but is
+not proven complete. Deep nesting, pathological backtracking and invalid input
+encodings remain under audit; matching currently has no implicit time limit.
 Custom indicator APIs, remaining display options, URI compatibility and legacy
 Vimscript APIs also remain under audit.
 

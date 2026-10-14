@@ -1,4 +1,5 @@
 local M = {}
+local candidate_field = require("gin.candidate").field
 local uri = require("gin.uri")
 local parse_flag = require("gin.flags").parse
 local format_flag = require("gin.flags").format
@@ -6,11 +7,10 @@ local git = require("gin.git")
 local action = require("gin.action")
 
 local function candidates(buf, range)
-  local pattern = vim.g.gin_tag_parse_pattern
-  assert(
-    pattern == nil or pattern == vim.NIL or type(pattern) == "string",
-    "g:gin_tag_parse_pattern must be string"
-  )
+  local custom = require("gin.candidate").custom(buf, range, "tag")
+  if custom then
+    return custom
+  end
   local rows, selected, seen = vim.b[buf].gin_tags or {}, {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
     if not seen[rows[i].tag] then
@@ -103,7 +103,7 @@ function M.read(buf, name)
   require("gin.buffer").replace_output(buf, text, parsed.root, "gin-tag", parsed.params)
   vim.bo[buf].buflisted, vim.bo[buf].modeline = false, false
   vim.b[buf].gin_tags = rows
-  action.setup(buf, candidates)
+  action.setup(buf, candidates, "commit")
   local function run(args)
     require("gin.command").finish(git.run(args, { cwd = parsed.root, progress = "both" }), {}, {})
   end
@@ -114,7 +114,7 @@ function M.read(buf, name)
     end
     local args = { "tag", "-d", "--" }
     for _, row in ipairs(selected) do
-      args[#args + 1] = row.tag
+      args[#args + 1] = candidate_field(row, "tag")
     end
     run(args)
   end)
@@ -126,7 +126,7 @@ function M.read(buf, name)
         if detach then
           args[#args + 1] = "--detach"
         end
-        vim.list_extend(args, { "--", row.tag })
+        vim.list_extend(args, { "--", candidate_field(row, "tag") })
         run(args)
       end
     end)
@@ -140,10 +140,10 @@ function M.read(buf, name)
           for _, row in ipairs(candidates(target, range)) do
             require("gin.buffer").open(
               uri.format("gin", parsed.root, {
-                diffjump = row.commit,
+                diffjump = candidate_field(row, "commit"),
                 difffold = "",
                 emojify = emojify and "" or nil,
-              }, uri.join({ "show", row.commit })),
+              }, uri.join({ "show", candidate_field(row, "commit") })),
               { opener = opener }
             )
           end
@@ -157,7 +157,7 @@ function M.read(buf, name)
     action.define(buf, "yank:" .. field, function(target, range)
       local values = {}
       for _, row in ipairs(candidates(target, range)) do
-        values[#values + 1] = row[field]
+        values[#values + 1] = row[field] or ""
       end
       vim.fn.setreg(vim.v.register, table.concat(values, "\n"))
     end)

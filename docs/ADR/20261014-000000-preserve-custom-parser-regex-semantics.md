@@ -2,18 +2,18 @@
 
 | | |
 | --- | --- |
-| Status | proposed |
+| Status | accepted |
 | Date | 2026-10-14 |
-| Decision-makers | maintainer; implementation proposal by Codex |
-| Consulted | maintainer asked whether a C-extension dependency is acceptable; unanswered at drafting |
+| Decision-makers | Codex, within the maintainer-authorized Lua migration |
+| Consulted | Native preference was unresolved at drafting; the chosen Lua backend needs no native dependency |
 
 ## Context
 
 The pinned vim-gin revision constructs `new RegExp(setting)` without flags for
 four candidate-parser settings. Captures select commits, tags and stashes for
 actions. A different regex language or automatically enabled flag can therefore
-change which object an action targets. Type validation is implemented, but
-custom matching remains missing.
+change which object an action targets. Custom matching was missing when this decision was proposed; the four settings
+are now connected to the Lua backend.
 
 ## Drivers
 
@@ -34,16 +34,23 @@ custom matching remains missing.
 4. A JavaScript subprocess. This offers a direct oracle but adds a runtime and
    process lifecycle to interactive actions. It remains useful for testing.
 
-## Proposed outcome
+## Decision
 
-Do not adopt an unmodified backend merely because it advertises ECMAScript
-support. Validate the exact no-flags constructor behavior and captures first.
-Keep backend selection open pending the native-dependency preference and a
-successful compatibility evaluation. No C dependency is added by this ADR.
+Use the pure Lua backend in `lua/gin/regex.lua`, with checked-in Unicode 17.0
+identifier and non-Unicode canonicalization tables. Preserve the no-flags
+JavaScript constructor semantics rather than translating patterns into Lua/Vim
+syntax. Node is a development oracle only; installation needs no JavaScript
+runtime, native build or extra package.
 
-The current `jsregexp` candidate cannot be used unchanged: its automatic `u`
-flag changes a demonstrated no-flags match. An adapter/fork must resolve that
-behavior before integration; otherwise continue evaluating a pure Lua matcher.
+The backend is now connected to all four custom parser settings. Compile once
+per candidate collection, select the upstream capture fields, and propagate
+compilation/conversion failures without falling back to default candidates.
+Keep the existing default paths when the setting is absent or null.
+
+This accepts a maintained Lua implementation, not a claim of complete ECMAScript
+compatibility. Input encoding extremes, deeply nested patterns/lookaround, heap
+usage and pathological backtracking remain known validation limits. Matching
+has no implicit timeout, as with the existing synchronous command behavior.
 
 ## Evidence
 
@@ -102,27 +109,22 @@ console.log(regex.unicode, '😀'.match(regex)); // false, null
 
 ## Consequences and confirmation
 
-The remaining feature stays visibly incomplete while its backend is evaluated.
-This avoids silently changing action targets, but delays custom matching and
-may require either native builds or a substantial Lua implementation.
+The plugin now owns a substantial regex implementation and Unicode table update
+process. This avoids native builds and JavaScript runtime dependencies, while
+requiring continued semantic and resource testing. Ordinary repetition uses
+explicit task/choice stacks; pattern parsing and nested lookaround still use
+recursion. Selected unpaired surrogate captures fail conversion explicitly.
 
-Before accepting a backend, compare capture results against the pinned
-no-flags constructor for alternation, greedy/lazy repetition, optional and
-unmatched captures, lookaround, backreferences, named groups, invalid patterns,
-empty matches, Unicode whitespace and non-BMP input. Then use mini.nvim tests to
-prove that custom captures control the four real action paths and that failed
-compilation/matching does not fall back to unrelated candidates. Validate the
-minimum supported Neovim and document installation on supported platforms.
+Validation includes 217 curated Node cases, six 65,536-byte tests with JIT
+disabled, five string-adapter tests, and 22,470 generated comparisons. Product
+tests exercise the four custom capture paths, actual custom tag deletion and
+stash drop selection, and errors/no-match without default-target fallback.
+Missing captures required by Git actions fail before argument construction;
+yank retains empty slots, matching the upstream join behavior. Minimum Neovim
+0.10 is included in validation. These tests prove their exercised cases, not
+full language compatibility or migration completion.
 
-## Pure Lua candidate progress
-
-A test-only compiler/matcher now lives in `tests/audit/lua_regex.lua`. It passes
-the initial 29-case Node oracle using UTF-16 units and per-match backtracking
-state. It is not connected to candidate actions. Legacy escape syntax, capture
-name rules, encoding/resource limits and broader differential validation remain
-open; see `tests/audit/README.md`. The ADR remains proposed and no native
-runtime dependency or production backend is selected by this experiment.
-
-The initial C audit's U+FEFF mismatch was a fixture-reader defect: binary JSON
-reading corrects it. The C candidate still fails six of the initial 29 cases,
-including the unmatched-capture SIGSEGV.
+The C candidate remains rejected unchanged: binary fixture reading corrected
+its original U+FEFF false mismatch, but it still fails six of the initial 29
+cases, including an unmatched-capture SIGSEGV. See `tests/audit/README.md` for
+reproduction, generated data commands and remaining validation limits.
