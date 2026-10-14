@@ -236,7 +236,6 @@ function M.mappings(buf)
       M.action(target, name, range)
     end)
   end
-  action.alias(buf, "reset", "unstage")
   require("gin.file_actions").setup(buf, M.candidates)
 end
 

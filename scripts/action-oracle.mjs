@@ -1,4 +1,4 @@
-// Execute pinned Branch action registration; never execute an action callback.
+// Execute pinned view action registration; never execute an action callback.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -9,7 +9,8 @@ const upstream = root + '.deps/vim-gin/';
 const lock = JSON.parse(readFileSync(root + 'deps-lock.json'));
 const head = execFileSync('git', ['-C', upstream, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (head !== lock['vim-gin'].commit) throw new Error('vim-gin checkout does not match deps-lock.json');
-execFileSync('git', ['-C', upstream, 'diff', '--exit-code', 'HEAD', '--', 'denops/gin/action', 'denops/gin/command/branch/edit.ts']);
+const kinds = ['branch', 'status', 'log', 'reflog', 'tag', 'stash'];
+execFileSync('git', ['-C', upstream, 'diff', '--exit-code', 'HEAD', '--', 'denops/gin/action', ...kinds.map(kind => `denops/gin/command/${kind}/edit.ts`)]);
 const mappings = new Map();
 const fail = () => { throw new Error('Unexpected editor or action execution during registration'); };
 const exports = {
@@ -24,6 +25,11 @@ const exports = {
   exec: async () => {}, // Buffer rendering is outside this registration oracle.
   formatFlags: () => [],
   filetype: { setLocal: async () => {} },
+  unnullish: (value, callback) => value == null ? value : callback(value),
+  modifiable: async (denops, _bufnr, callback) => callback(denops),
+  winsaveview: async () => ({}), winrestview: async () => {},
+  group: async (_denops, _name, callback) => callback({ remove() {}, define() {} }),
+  builtinOpts: [], validateOpts: fail, findWorktreeFromDenops: fail,
   parse: fail, parseOpts: fail, assert: fail, is: {}, revParse: fail,
   yank: fail, join: fail, dirname: fail,
 };
@@ -35,7 +41,7 @@ async function load(path) {
   if (modules.has(path)) return modules.get(path);
   // The pinned source predates explicit type-only imports for these erased types.
   const source = stripTypeScriptTypes(readFileSync(path, 'utf8')).replace(
-    /import \{([^}]+)\} from/g, (_match, names) => 'import {' + names.split(',').filter(name => !['GatherCandidates', 'Range', 'Branch', 'Flags'].includes(name.trim())).join(',') + '} from',
+    /import \{([^}]+)\} from/g, (_match, names) => 'import {' + names.split(',').filter(name => !['GatherCandidates', 'Range', 'Branch', 'Flags', 'Entry'].includes(name.trim())).join(',') + '} from',
   );
   const module = new SourceTextModule(source, { identifier: path });
   modules.set(path, module);
@@ -48,13 +54,22 @@ async function load(path) {
   });
   return module;
 }
-const branch = await load(upstream + 'denops/gin/command/branch/edit.ts');
-await branch.evaluate();
-await branch.namespace.exec({ dispatcher: {}, call: fail, cmd: fail, dispatch: fail }, 1, {});
-if (!mappings.size) throw new Error('No actions registered');
-const output = JSON.stringify({ commit: head, branch: Object.fromEntries([...mappings].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) }, null, 2) + '\n';
+const oracle = { commit: head };
+for (const kind of kinds) {
+  mappings.clear();
+  const module = await load(upstream + `denops/gin/command/${kind}/edit.ts`);
+  await module.evaluate();
+  const denops = {
+    dispatcher: {}, call: fail, dispatch: fail,
+    cmd: async command => { if (command !== 'silent! 2,$sort /.. /)') fail(); },
+  };
+  await module.namespace.exec(denops, 1, {});
+  if (!mappings.size) throw new Error(`No actions registered for ${kind}`);
+  oracle[kind] = Object.fromEntries([...mappings].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+}
+const output = JSON.stringify(oracle, null, 2) + '\n';
 const destination = root + 'tests/audit/action-oracle.json';
 if (process.argv[2] === '--write') writeFileSync(destination, output);
 else if (process.argv[2] !== '--check') throw new Error('usage: node --experimental-vm-modules scripts/action-oracle.mjs --write|--check');
 else if (readFileSync(destination, 'utf8') !== output) throw new Error('Pinned action oracle changed');
-console.log(`${mappings.size} Branch action registrations verified at ${head}`);
+console.log(kinds.map(kind => `${kind}: ${Object.keys(oracle[kind]).length}`).join(", ") + ` action registrations verified at ${head}`);

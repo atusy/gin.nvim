@@ -1933,3 +1933,11 @@ buffer. scripts/action-oracle.mjs executes the pinned Branch/action initializers
 with editor registration stubs; mini.nvim checks the resulting JSON against
 real buffer mappings. This closes the Branch name/alias inventory check only;
 callback semantics and other view inventories remain separate requirements.
+
+The registration oracle now covers Branch, Status, Log, Reflog, Tag and Stash
+(308 registrations). It exposed Status reset as an incorrect unstage alias.
+Reset now independently runs git reset --quiet on selected candidate paths,
+matching reset_file.ts. A staged-rename regression verifies that resetting
+the destination retains the staged source deletion and leaves the destination
+untracked with its content intact. Existing unstage tests continue to cover
+restoring both sides of a rename. All six name/alias inventories now match.

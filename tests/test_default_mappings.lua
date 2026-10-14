@@ -67,6 +67,24 @@ for _, command in ipairs({ "GinStatus", "GinLog", "GinReflog", "GinTag", "GinSta
     end
   end
 end
+for _, kind in ipairs({ "status", "log", "reflog", "tag", "stash" }) do
+  T[kind .. " action registrations match the pinned initialization oracle"] = function()
+    local oracle =
+      vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/tests/audit/action-oracle.json"), "\n"))
+    local lock = vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/deps-lock.json"), "\n"))
+    MiniTest.expect.equality(oracle.commit, lock["vim-gin"].commit)
+    vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
+    local mappings = {}
+    for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, "n")) do
+      local name = map.lhs:match("^<Plug>%(gin%-action%-(.*)%)$")
+      if name then
+        mappings[name] = (map.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$") or vim.NIL
+      end
+    end
+    MiniTest.expect.equality(mappings, oracle[kind])
+  end
+end
+
 local function default_maps(buf, prefix)
   prefix = prefix or "<Plug>(gin-action-"
   local result = {}

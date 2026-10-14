@@ -20,6 +20,7 @@ function M.setup(buf, gather)
       require("gin.command").finish(result, {}, {})
     end)
   end
+  define_git("reset", { "reset", "--quiet" })
   define_git("stash", { "stash", "push", "--all" })
   define_git("stash:keep-index", { "stash", "push", "--all", "--keep-index" })
   define_git("add", { "add", "--ignore-errors", "--force" })

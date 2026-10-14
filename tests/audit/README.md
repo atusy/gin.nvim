@@ -185,23 +185,25 @@ suite and checks that every candidate remains an object, even when all captures
 are missing. An actual echo-action test also verifies `[{}, {}]` formatting
 instead of the accidental `[[], []]` produced by untyped empty Lua tables.
 
-## Branch action registration oracle
+## View action registration oracle
 
 ```sh
 node --experimental-vm-modules scripts/action-oracle.mjs --check
 node --experimental-vm-modules scripts/action-oracle.mjs --write
 ```
 
-This optional Node script (verified with v26.8.2) executes the pinned Branch
-initializer and its action modules, capturing mapping names and alias targets.
+This optional Node script (verified with v26.8.2) executes the pinned Branch,
+Status, Log, Reflog, Tag and Stash initializers and their action modules, capturing mapping names and alias targets.
 It checks the upstream commit and rejects changes to the executed source tree.
 Type-only names from the older TypeScript imports are removed after stripping
 types. Batch/buffer callbacks run directly; buffer rendering, event binding,
-flag formatting and filetype setting are stubbed. No action callback is run.
+flag formatting, status sorting/view preservation and filetype setting are
+stubbed. Nullish option handling is reproduced for absent command options. No action callback is run.
 Unexpected editor calls fail. Node reports experimental API warnings for its
 VM modules and TypeScript stripping; these are tooling-only dependencies.
 
-The regular mini.nvim Branch suite compares the captured registrations with
-real Lua buffer mappings. This establishes the 44-name Branch action surface
-and aliases, not mapping attributes, execution semantics or other views.
-Those require their separate integration and mapping tests.
+The regular mini.nvim Branch and default-mapping suites compare the captured
+registrations with real Lua buffer mappings: Branch 44, Status 79, Log 62,
+Reflog 62, Tag 30 and Stash 31 (308 total). This establishes names and aliases,
+not mapping attributes, execution semantics or unlisted views. Those require
+their separate integration and mapping tests.
