@@ -136,11 +136,10 @@ function M.execute(opts)
   local root = require("gin.worktree").current(options.worktree)
   local completed, failure, cancelled, running
   local function report(message, result)
+    failure = message
     if opts.on_error then
       opts.on_error(message, result)
-    elseif options.wait then
-      failure = message
-    elseif not opts.smods.emsg_silent then
+    elseif not options.wait and not opts.smods.emsg_silent then
       vim.notify(message, vim.log.levels.ERROR)
     end
   end
@@ -238,7 +237,7 @@ function M.execute(opts)
       end
       error("Gin wait interrupted", 0)
     end
-    if failure then
+    if failure and not opts.on_error then
       error(failure, 0)
     end
     return completed

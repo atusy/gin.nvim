@@ -820,4 +820,63 @@ for _, modifier in ipairs({ "", "silent ", "silent! " }) do
     end
   end
 end
+T["waiting Gin returns after a processor cannot be started"] = function()
+  local wait, echo = vim.wait, vim.api.nvim_echo
+  local messages, completed = {}, nil
+  vim.wait = function(timeout, predicate, interval, fast_only)
+    local done = wait(math.min(timeout, 2000), predicate, interval, fast_only)
+    if timeout == 2147483647 then
+      completed = done
+    end
+    return done
+  end
+  vim.api.nvim_echo = function(chunks)
+    if chunks[1][2] == "ErrorMsg" then
+      messages[#messages + 1] = chunks[1][1]
+    end
+  end
+  local ok, err =
+    pcall(vim.cmd, "Gin ++wait ++processor=" .. vim.fn.tempname() .. "/missing-processor --version")
+  vim.wait, vim.api.nvim_echo = wait, echo
+  assert(ok, err)
+  MiniTest.expect.equality(completed, true)
+  MiniTest.expect.equality(#messages, 1)
+  assert(messages[1]:find("ENOENT", 1, true), vim.inspect(messages))
+  H.drain()
+  MiniTest.expect.equality(events, 0)
+end
+T["direct waiting processor spawn failures remain strict"] = function()
+  MiniTest.expect.error(function()
+    require("gin.command").execute({
+      fargs = { "++wait", "++processor=" .. vim.fn.tempname() .. "/missing-processor", "--version" },
+      smods = { silent = true },
+    })
+  end, "processor failed")
+  H.drain()
+  MiniTest.expect.equality(events, 0)
+end
+T["asynchronous processor spawn failures notify once without success"] = function()
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks)
+    if chunks[1][2] == "ErrorMsg" then
+      messages[#messages + 1] = chunks[1][1]
+    end
+  end
+  local ok, err = pcall(function()
+    vim.cmd("Gin ++processor=" .. vim.fn.tempname() .. "/missing-processor --version")
+    assert(
+      vim.wait(2000, function()
+        return #messages > 0
+      end),
+      "processor error was not reported"
+    )
+    H.drain()
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(#messages, 1)
+  assert(messages[1]:find("ENOENT", 1, true), vim.inspect(messages))
+  MiniTest.expect.equality(events, 0)
+  MiniTest.expect.equality(require("gin.command").post_pending(), false)
+end
 return T
