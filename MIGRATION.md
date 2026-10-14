@@ -2242,3 +2242,18 @@ The pinned relativeTime function also confirms the intentionally asymmetric
 threshold is reached. Changing the Lua minute threshold from `<` to `<=` makes
 the new test fail. These fixtures cover normal Git timestamps, not arbitrary
 invalid date values or all timezone transitions.
+
+## Blame history index compatibility
+
+Blame now stores `b:gin_blame_history_index` using the pinned implementation's
+zero-based convention, with `-1` and an empty history before the first selection.
+Both attribution and source panes receive the same state. Internal Lua list
+access remains one-based and converts at the buffer-variable boundary. Previously
+Lua saved one-based positions and left the initial variables absent.
+
+A real Git fixture checks initial state, two selections, older/newer navigation
+from the source pane, and the oldest-history boundary while comparing both panes'
+indices and history entries. Existing history tests still verify renamed paths,
+cursor restoration, forward-history truncation and failed-parent preservation;
+the latter now expects the upstream zero-based index. This addresses the history
+index contract without claiming all Blame buffer-variable shapes are identical.

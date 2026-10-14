@@ -264,6 +264,10 @@ function M.read(buf, name, output)
       end,
     })
     if target ~= detail then
+      if vim.b[target].gin_blame_history_index == nil then
+        vim.b[target].gin_blame_history = {}
+        vim.b[target].gin_blame_history_index = -1
+      end
       vim.b[target].gin_blame_file_fragment = path
       vim.b[target].gin_blame_detail_bufname = detailname
       if target == buf then
@@ -339,10 +343,11 @@ local function visit(current, parsed, revision, path, position, source_line)
   return physical
 end
 
+-- Lua indexes the list from one; the upstream buffer variable is zero-based.
 local function save_history(current, history, index)
   for _, buf in ipairs({ vim.b[current].gin_blame_file_bufnr, vim.b[current].gin_blame_nav_bufnr }) do
     vim.b[buf].gin_blame_history = history
-    vim.b[buf].gin_blame_history_index = index
+    vim.b[buf].gin_blame_history_index = index - 1
   end
 end
 
@@ -361,7 +366,7 @@ function M.switch_commit()
     path = previous and filename(previous) or parsed.fragment
   end
   local history = vim.b[current].gin_blame_history or {}
-  local index = vim.b[current].gin_blame_history_index or 1
+  local index = math.max(1, (vim.b[current].gin_blame_history_index or -1) + 1)
   history[index] = {
     commitish = parsed.params.commitish or "HEAD",
     filename = parsed.fragment,
@@ -379,7 +384,9 @@ function M.navigate_history(direction)
   assert(direction == "older" or direction == "newer", "Invalid blame history direction")
   local current = vim.api.nvim_get_current_buf()
   local history = vim.b[current].gin_blame_history or {}
-  local index = (vim.b[current].gin_blame_history_index or 1) + (direction == "older" and -1 or 1)
+  local index = (vim.b[current].gin_blame_history_index or -1)
+    + 1
+    + (direction == "older" and -1 or 1)
   if index < 1 or index > #history then
     vim.api.nvim_echo({
       {

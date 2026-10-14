@@ -664,6 +664,40 @@ T["divider selection and an unavailable parent preserve the blame view"] = funct
     { "", "one", "two", "three" }
   )
 end
+T["blame exposes zero-based history positions in both panes"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+  local function check(index, count)
+    for _, buf in ipairs({ nav, file }) do
+      MiniTest.expect.equality(vim.b[buf].gin_blame_history_index, index)
+      MiniTest.expect.equality(#vim.b[buf].gin_blame_history, count)
+    end
+    MiniTest.expect.equality(vim.b[nav].gin_blame_history, vim.b[file].gin_blame_history)
+  end
+  check(-1, 0)
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  require("gin.blame").switch_commit()
+  check(1, 2)
+  require("gin.blame").switch_commit()
+  check(2, 3)
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(file))
+  require("gin.blame").navigate_history("older")
+  check(1, 3)
+  require("gin.blame").navigate_history("older")
+  check(0, 3)
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(file)).params.commitish,
+    "HEAD"
+  )
+  require("gin.blame").navigate_history("older")
+  check(0, 3)
+  require("gin.blame").navigate_history("newer")
+  check(1, 3)
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(file)).params.commitish,
+    second
+  )
+end
 T["blame history restores filenames and positions in both directions"] = function()
   H.git(root, "mv", "sub/file.lua", "sub/renamed.lua")
   H.git(root, "commit", "-m", "rename")
@@ -709,7 +743,7 @@ T["new blame selections truncate forward history and failures preserve it"] = fu
     require("gin.blame").switch_commit()
   end, "git exited")
   MiniTest.expect.equality(vim.b.gin_blame_history, history)
-  MiniTest.expect.equality(vim.b.gin_blame_history_index, 3)
+  MiniTest.expect.equality(vim.b.gin_blame_history_index, 2)
   require("gin.blame").navigate_history("older")
   MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 2)
 end
