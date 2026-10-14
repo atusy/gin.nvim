@@ -3329,3 +3329,28 @@ Validation: all 17 stash cases pass on minimum Neovim 0.10.0.
 
 The integrated full suite passes all 1,282 cases in 48 groups; `make check`
 also passes.
+
+
+## History mainline action matrix
+
+Both GinLog and GinReflog now have real Git coverage for `cherry-pick:1`,
+`cherry-pick:2`, `revert:1` and `revert:2`. The fixture creates a non-fast-forward
+merge with distinct changes on each parent. Cherry-picking onto the selected
+parent must produce the merge tree; reverting from the merge must reproduce
+that parent's tree. Each result must have exactly the previous HEAD as its
+parent and a clean working tree/index, with no unresolved index entries.
+
+The action receives a two-row selection whose first row is the merge. This
+also checks the pinned `xs.at(0)` behavior: only that first selected commit is
+acted upon. The eight cases cover both history view consumers and both parent
+numbers, supplementing the existing ordinary pick/revert and parent-one revert
+cases.
+
+The pinned `action/revert.ts` has an inverted mainline condition: a nonempty
+mainline omits the flag, while the empty variant supplies an empty value. The
+Lua implementation already uses the intended mainline flag behavior, consistent
+with the action names and Git, rather than reproducing that defect. This audit
+adds evidence for the existing correction; it changes no production code.
+
+Validation: all eight new cases pass on minimum Neovim 0.10.0. `make check`
+and the integrated full suite pass (1,290 cases in 48 groups).

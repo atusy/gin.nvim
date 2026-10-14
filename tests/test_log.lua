@@ -373,6 +373,47 @@ T["revert mainline one removes the merged branch changes"] = function()
   MiniTest.expect.equality(vim.fn.filereadable(root .. "/side"), 0)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "second" })
 end
+for _, view in ipairs({ "GinLog", "GinReflog" }) do
+  for _, operation in ipairs({ "cherry-pick", "revert" }) do
+    for parent = 1, 2 do
+      T[view .. " " .. operation .. " mainline " .. parent .. " uses only the first selection"] = function()
+        H.git(root, "checkout", "-b", "side", first)
+        vim.fn.writefile({ "side" }, root .. "/side")
+        H.git(root, "add", "side")
+        H.git(root, "commit", "-m", "side change")
+        H.git(root, "checkout", "main")
+        H.git(root, "merge", "--no-ff", "--no-edit", "side")
+        local merge = vim.trim(H.git(root, "rev-parse", "HEAD"))
+        local base = vim.trim(H.git(root, "rev-parse", merge .. "^" .. parent))
+        if operation == "cherry-pick" then
+          H.git(root, "checkout", "-b", "target", base)
+        end
+        local previous = H.git(root, "rev-parse", "HEAD")
+        vim.cmd(view .. " --format=%H main")
+        MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, 1, false), { merge })
+        local process = require("gin.action").call(
+          vim.api.nvim_get_current_buf(),
+          operation .. ":" .. parent,
+          { 1, 2 }
+        )
+        MiniTest.expect.equality(
+          vim.wait(5000, function()
+            return process:is_closing()
+          end, 10),
+          true
+        )
+        MiniTest.expect.equality(process:wait(5000).code, 0)
+        MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^"), previous)
+        MiniTest.expect.equality(
+          H.git(root, "rev-parse", "HEAD^{tree}"),
+          H.git(root, "rev-parse", (operation == "cherry-pick" and merge or base) .. "^{tree}")
+        )
+        MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+        MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged"), "")
+      end
+    end
+  end
+end
 for _, spec in ipairs({
   { action = "reset", indexed = false, present = true },
   { action = "reset:soft", indexed = true, present = true },
