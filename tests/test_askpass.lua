@@ -92,6 +92,31 @@ for _, inherited in ipairs({ false, true }) do
     end
   end
 end
+T["proxy environment recovers after its RPC listener is stopped"] = function()
+  local previous = require("gin.editor").environment().GIN_EDITOR_ADDRESS
+  vim.fn.serverstop(previous)
+  MiniTest.expect.equality(vim.tbl_contains(vim.fn.serverlist(), previous), false)
+  local prompts = {}
+  vim.fn.inputsecret = function(prompt)
+    prompts[#prompts + 1] = prompt
+    return "restored"
+  end
+  local ok, result = pcall(require("gin.git").run, {
+    "-c",
+    'alias.proxyprobe=!"$GIT_ASKPASS" recovery',
+    "proxyprobe",
+  }, { cwd = root, progress = true })
+  if not ok then
+    vim.fn.serverstart(previous)
+  end
+  assert(ok, result)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality(result.stdout, "restored\n")
+  MiniTest.expect.equality(prompts, { "recovery" })
+  local current = require("gin.editor").environment().GIN_EDITOR_ADDRESS
+  MiniTest.expect.equality(vim.tbl_contains(vim.fn.serverlist(), current), true)
+  MiniTest.expect.equality(require("gin.editor").environment().GIN_EDITOR_ADDRESS, current)
+end
 T["interrupted askpass fails Git without returning a credential"] = function()
   vim.fn.inputsecret = function()
     error("interrupted")

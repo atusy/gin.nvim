@@ -30,7 +30,9 @@ function M.environment()
   if disable_editor and disable_askpass then
     return nil
   end
-  address = address or vim.fn.serverstart()
+  if not address or not vim.tbl_contains(vim.fn.serverlist(), address) then
+    address = vim.fn.serverstart()
+  end
   local command = {}
   for _, arg in ipairs({
     vim.v.progpath,

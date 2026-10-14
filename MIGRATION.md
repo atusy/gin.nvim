@@ -2485,3 +2485,19 @@ cases failed before the launcher change. Afterward the commit records the edited
 message and the credential command obtains both prompted values; the parent
 Neovim's environment value remains unchanged. This covers the existing POSIX
 shell launchers and does not establish additional platform support.
+
+## Proxy listener recovery
+
+`editor.environment()` now checks whether its cached RPC address is still in
+Neovim's live server list and starts a replacement listener if it has stopped.
+Previously the stopped address remained cached, making subsequent proxy clients
+fail with connection refused until the Lua module was reloaded. A healthy
+listener is still reused, and both-disabled proxy settings still return before
+creating a listener.
+
+A real Git alias invokes the askpass launcher after the test stops only Gin's
+own listener. It must receive the prompted value through the replacement server;
+the returned address must be live and stable on repeated environment reads.
+The fixture restores the old listener on failure so a failing regression does
+not contaminate later proxy tests. This verifies recovery before a new operation,
+not migration of an already-running client whose connection was interrupted.
