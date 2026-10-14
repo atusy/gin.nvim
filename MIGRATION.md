@@ -3455,3 +3455,23 @@ lifecycle operations.
 Validation: all 1,300 mini.test cases across 48 groups pass; `make check` and
 `git diff --check` pass. The 22-case GinBuffer suite and the subsequently added
 latest-output decoration case also pass on Neovim 0.10.0.
+
+## GinBuffer decoding failure and retry
+
+The saved display now also covers failures after successful Git execution,
+including decoding and replacement. Previously the executor-only error handler
+left an empty buffer when the strict Unicode decoder rejected an incomplete
+code unit. The regression test reads valid UTF-16LE output, replaces it with an
+odd byte count, checks the retained text and encoding plus immutable/unmodified
+state, then supplies valid new output and repeats the failure. This proves that
+a failed decode neither poisons the snapshot nor prevents a later refresh.
+
+This fixture exercises the Lua decoder's existing strict-error contract, not
+byte-for-byte malformed-input parity with upstream's TextDecoder. Upstream's
+`buffer.concrete` restore route follows its friendly error handler regardless
+of which read stage throws. Arbitrary malformed-encoding parity and the wider
+GinBuffer lifecycle/API audit remain separate outstanding work.
+
+Validation: all 1,301 mini.test cases in 48 groups pass, including all 24
+GinBuffer cases. Those 24 cases also pass on Neovim 0.10.0. `make check` and
+`git diff --check` pass.

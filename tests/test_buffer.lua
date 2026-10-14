@@ -304,6 +304,33 @@ T["failed reload restores the latest output and its decorations"] = function()
   end
   MiniTest.expect.equality(after, before)
 end
+T["failed output decoding preserves the display and allows a later reload"] = function()
+  local function output(bytes)
+    local file = assert(io.open(root .. "/file", "wb"))
+    file:write(bytes)
+    file:close()
+  end
+  H.git(root, "config", "alias.binary-output", "!cat file")
+  output("o\0l\0d\0\n\0")
+  vim.cmd("GinBuffer ++enc=utf-16le binary-output")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "old" })
+  for _, expected in ipairs({ "old", "new" }) do
+    output("x")
+    local ok, err = pcall(vim.cmd.edit)
+    MiniTest.expect.equality(ok, false)
+    MiniTest.expect.equality(
+      tostring(err):find("Incomplete Unicode code unit", 1, true) ~= nil,
+      true
+    )
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { expected })
+    MiniTest.expect.equality(vim.bo.fileencoding, "utf-16le")
+    MiniTest.expect.equality(vim.bo.modifiable, false)
+    MiniTest.expect.equality(vim.bo.modified, false)
+    output("n\0e\0w\0\n\0")
+    vim.cmd.edit()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "new" })
+  end
+end
 T["GinBuffer renders Git colors as highlights and monochrome omits them"] = function()
   vim.fn.writefile({ "hello" }, root .. "/file")
   vim.cmd("GinBuffer status --short")
