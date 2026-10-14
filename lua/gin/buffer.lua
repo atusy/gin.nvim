@@ -88,6 +88,7 @@ function M.replace_output(buf, output, root, filetype, options)
   end
   vim.bo[buf].modifiable = false
   vim.bo[buf].modified = false
+  return { lines = plain, marks = marks, options = decoded }
 end
 
 local function arguments(parsed)
@@ -107,12 +108,31 @@ function M.read(buf, name)
     end
   end
   vim.list_extend(args, arguments(uri))
-  local result = require("gin.git").run(args, {
+  local ok, result = pcall(require("gin.git").run, args, {
     cwd = uri.root,
     processor = uri.params.processor,
     progress = true,
   })
-  M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
+  if not ok then
+    -- :edit clears the buffer before BufReadCmd. Upstream's buffer.concrete
+    -- restores its last successful output when the executor fails.
+    local saved = vim.b[buf].gin_buffer_snapshot
+    if saved then
+      M.replace(buf, saved.lines, uri.root, saved.filetype)
+      require("gin.ansi").apply(buf, saved.marks)
+      vim.bo[buf].modifiable = true
+      for key, value in pairs(saved.options) do
+        vim.bo[buf][key] = value
+      end
+      vim.bo[buf].modifiable = false
+      vim.bo[buf].modified = false
+    end
+    error(result, 0)
+  end
+  local snapshot =
+    M.replace_output(buf, result.stdout, uri.root, uri.params.filetype or "gin-buffer", uri.params)
+  snapshot.filetype = vim.bo[buf].filetype
+  vim.b[buf].gin_buffer_snapshot = snapshot
   if uri.params.diffjump then
     require("gin.diffjump").setup(buf)
   end

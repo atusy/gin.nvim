@@ -230,6 +230,80 @@ T["GinBuffer processor survives reload and addressed reads"] = function()
   vim.cmd("read " .. vim.fn.fnameescape(name))
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "?? FILE" })
 end
+for _, operation in ipairs({ "reload", "read" }) do
+  for _, failure in ipairs({ "processor", "Git" }) do
+    T["failed " .. failure .. " " .. operation .. " preserves previously displayed content"] = function()
+      vim.fn.writefile({ "valid output" }, root .. "/file")
+      H.git(root, "add", "file")
+      local script = root .. "/processor.sh"
+      vim.fn.writefile({ "cat" }, script)
+      local uri = require("gin.uri")
+      local name = uri.format("gin", vim.uv.fs_realpath(root), {
+        processor = uri.join({ "sh", script }),
+      }, "show :file")
+      require("gin.buffer").open(name, {})
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "valid output" })
+      if operation == "read" then
+        vim.cmd.enew()
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+        vim.bo.filetype = "lua"
+      end
+      local before = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+      local events = 0
+      local id = vim.api.nvim_create_autocmd("FileReadPost", {
+        pattern = "gin://*",
+        callback = function()
+          events = events + 1
+        end,
+      })
+      local message = "processor exited 7"
+      if failure == "processor" then
+        vim.fn.writefile({ "cat >/dev/null", "printf 'partial output\\n'", "exit 7" }, script)
+      else
+        H.git(root, "rm", "--cached", "file")
+        message = "file"
+      end
+      local ok, err = pcall(function()
+        if operation == "reload" then
+          vim.cmd.edit()
+        else
+          vim.cmd("1read " .. vim.fn.fnameescape(name))
+        end
+      end)
+      vim.api.nvim_del_autocmd(id)
+      MiniTest.expect.equality(ok, false)
+      MiniTest.expect.equality(tostring(err):find(message, 1, true) ~= nil, true)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), before)
+      MiniTest.expect.equality(vim.bo.filetype, operation == "read" and "lua" or "gin-buffer")
+      MiniTest.expect.equality(vim.bo.modifiable, operation == "read")
+      MiniTest.expect.equality(events, 0)
+    end
+  end
+end
+T["failed reload restores the latest output and its decorations"] = function()
+  H.git(root, "config", "alias.snapshot", "!printf 'old\\n'")
+  vim.cmd("GinBuffer ++filetype=text snapshot")
+  H.git(root, "config", "alias.snapshot", "!printf '\\033[31mnew\\033[0m\\r\\n'")
+  vim.cmd.edit()
+  local namespace = vim.api.nvim_get_namespaces().gin_ansi
+  local before = vim.api.nvim_buf_get_extmarks(0, namespace, 0, -1, { details = true })
+  MiniTest.expect.equality(#before > 0, true)
+  MiniTest.expect.equality(vim.bo.fileformat, "dos")
+  H.git(root, "config", "alias.snapshot", "!exit 7")
+  MiniTest.expect.equality(pcall(vim.cmd.edit), false)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "new" })
+  MiniTest.expect.equality(vim.bo.filetype, "text")
+  MiniTest.expect.equality(vim.bo.fileformat, "dos")
+  MiniTest.expect.equality(vim.bo.modified, false)
+  local after = vim.api.nvim_buf_get_extmarks(0, namespace, 0, -1, { details = true })
+  -- Extmark IDs are allocated again when the cached decoration is restored.
+  for _, marks in ipairs({ before, after }) do
+    for _, mark in ipairs(marks) do
+      mark[1] = 0
+    end
+  end
+  MiniTest.expect.equality(after, before)
+end
 T["GinBuffer renders Git colors as highlights and monochrome omits them"] = function()
   vim.fn.writefile({ "hello" }, root .. "/file")
   vim.cmd("GinBuffer status --short")

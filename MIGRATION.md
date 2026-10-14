@@ -3427,3 +3427,31 @@ Validation: all 38 blame cases pass on minimum Neovim 0.10.0.
 
 The integrated full suite passes all 1,295 cases in 48 groups; `make check`
 also passes.
+
+## GinBuffer failed-reload output retention
+
+The pinned `command/buffer/edit.ts` calls Denops `buffer.concrete` after a
+successful replacement. Its buffer-local restore autocmd retains the previous
+successful content when a later Git command or processor fails. A direct
+headless upstream probe confirmed that an initial `valid output` survives
+`:edit` after the processor changes to consume stdin and exit 7. Upstream's
+friendly error wrapper reports the error without throwing from `:edit`.
+
+Lua previously propagated the error after Neovim had already cleared the
+buffer, leaving an empty display. GinBuffer now retains the latest successful
+lines, ANSI decorations, decoding options and filetype in buffer-local state,
+restores that display when execution fails, and still propagates the execution
+error to the caller. The snapshot belongs to the buffer and is discarded on
+wipeout. Failed addressed reads leave the destination untouched and emit no
+`FileReadPost`.
+
+`tests/test_buffer.lua` covers Git and processor failures for both reload and
+addressed read, plus a successful refresh followed by failure to prove that the
+latest content, color spans, DOS line format and custom filetype are retained.
+This closes the execution-failure retention gap; it does not finish the wider
+GinBuffer/API audit or establish parity for decoding failures and all buffer
+lifecycle operations.
+
+Validation: all 1,300 mini.test cases across 48 groups pass; `make check` and
+`git diff --check` pass. The 22-case GinBuffer suite and the subsequently added
+latest-output decoration case also pass on Neovim 0.10.0.
