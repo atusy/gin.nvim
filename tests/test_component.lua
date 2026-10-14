@@ -58,6 +58,76 @@ T["components asynchronously publish branch traffic and worktree values"] = func
   MiniTest.expect.equality(worktree.name(), vim.fs.basename(root))
   vim.api.nvim_del_autocmd(autocmd)
 end
+T["component events expose changed values and skip unchanged refreshes"] = function()
+  local component = require("gin.component")
+  local branch = require("gin.component.branch")
+  local traffic = require("gin.component.traffic")
+  local worktree = require("gin.component.worktree")
+  local events = {}
+  local autocmd = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinComponentPost",
+    callback = function()
+      events[#events + 1] = { branch.ascii(), traffic.ascii(), worktree.full() }
+    end,
+  })
+  local ok, err = pcall(function()
+    worktree.full()
+    component.refresh()
+    local canonical = vim.uv.fs_realpath(root)
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return #events > 0 and events[#events][3] == canonical
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(events[#events], { "main -> origin/main", "^1v1", canonical })
+    events = {}
+    local git, completed = require("gin.git"), false
+    original_start = git.start
+    git.start = function(args, opts, callback)
+      return original_start(args, opts, function(result)
+        callback(result)
+        if args[1] == "rev-list" then
+          vim.schedule(function()
+            completed = true
+          end)
+        end
+      end)
+    end
+    component.refresh()
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return completed
+      end, 10),
+      true
+    )
+    -- Start the observation barrier after the final Git callback has been handled.
+    local observed = false
+    vim.defer_fn(function()
+      observed = true
+    end, 150)
+    MiniTest.expect.equality(
+      vim.wait(1000, function()
+        return observed
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(events, {})
+    git.start = original_start
+    original_start = nil
+    H.git(root, "commit", "--allow-empty", "-m", "another local commit")
+    vim.api.nvim_exec_autocmds("User", { pattern = "GinCommandPost" })
+    MiniTest.expect.equality(
+      vim.wait(3000, function()
+        return #events > 0
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(events, { { "main -> origin/main", "^2v1", canonical } })
+  end)
+  vim.api.nvim_del_autocmd(autocmd)
+  assert(ok, err)
+end
 for _, case in ipairs({
   { name = "synchronized", local_ref = "HEAD", upstream_ref = "HEAD", ascii = "", unicode = "" },
   { name = "ahead", local_ref = "HEAD", upstream_ref = "HEAD^", ascii = "^1", unicode = "↑1" },

@@ -2059,3 +2059,13 @@ A fallback branch without usable tracking information still clears traffic, as
 covered by existing tests. Exact cache/notification timing remains different or
 unverified. Denops startup events do not apply to the Lua runtime; no Denops
 dependency is introduced by the legacy getters.
+
+Component event validation now observes the values read inside GinComponentPost.
+An unchanged real-Git refresh completes its final query before the test starts
+an observation barrier beyond the 100 ms notification delay, and emits no event.
+A subsequent real commit followed by GinCommandPost produces a component event
+whose handler sees the updated ahead count, branch and worktree together.
+Removing the unchanged-value guard makes this new regression fail, with the
+other component cases still passing. This verifies change-only notification and
+publication before callbacks; it does not establish upstream TTL-cache parity
+or behavior of overlapping notification timers under every scheduling order.
