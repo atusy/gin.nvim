@@ -14,6 +14,36 @@ local T = MiniTest.new_set({
     end,
   },
 })
+for _, setting in ipairs({ "gin_proxy_disable_editor", "gin_proxy_disable_askpass" }) do
+  for _, value in ipairs({ "0", {}, vim.empty_dict() }) do
+    T[setting .. " rejects " .. vim.inspect(value) .. " before Git starts"] = function()
+      vim.g.gin_proxy_disable_editor = true
+      vim.g.gin_proxy_disable_askpass = true
+      vim.g[setting] = value
+      MiniTest.expect.error(function()
+        require("gin.command").execute({
+          fargs = {
+            "++wait",
+            "++worktree=" .. root,
+            "-c",
+            "alias.proxyprobe=!printf started > proxy-started",
+            "proxyprobe",
+          },
+          smods = { silent = true },
+        })
+      end, "g:" .. setting .. " must be a boolean or number")
+      MiniTest.expect.equality(vim.fn.filereadable(root .. "/proxy-started"), 0)
+    end
+  end
+end
+T["boolean proxy flags enable and disable both overrides"] = function()
+  vim.g.gin_proxy_disable_editor, vim.g.gin_proxy_disable_askpass = false, false
+  local env = require("gin.editor").environment()
+  MiniTest.expect.equality(type(env.GIT_EDITOR), "string")
+  MiniTest.expect.equality(vim.fn.executable(env.GIT_ASKPASS), 1)
+  vim.g.gin_proxy_disable_editor, vim.g.gin_proxy_disable_askpass = true, true
+  MiniTest.expect.equality(require("gin.editor").environment(), nil)
+end
 T["Git obtains credentials through masked Neovim prompts"] = function()
   local prompts = {}
   vim.fn.inputsecret = function(prompt)

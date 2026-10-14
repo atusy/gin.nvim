@@ -19,6 +19,10 @@ end
 function M.environment()
   local function disabled(name)
     local value = vim.g[name]
+    assert(
+      value == nil or value == vim.NIL or type(value) == "boolean" or type(value) == "number",
+      "g:" .. name .. " must be a boolean or number"
+    )
     return value and value ~= vim.NIL and value ~= 0
   end
   local disable_editor = disabled("gin_proxy_disable_editor")

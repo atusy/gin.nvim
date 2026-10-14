@@ -270,6 +270,10 @@ asks whether to apply. Git credential prompts use masked Neovim input.
     g:gin_proxy_disable_askpass          Set to 1 to retain Git's askpass.
     g:gin_proxy_apply_without_confirm    Set to 1 to apply on quit directly.
 
+The gin_proxy_disable_editor and gin_proxy_disable_askpass flags accept booleans
+or numbers. Unset, v:null, false and zero keep the corresponding proxy enabled;
+strings, lists and dictionaries are rejected before starting Git.
+
 With filetype plugins enabled, gitcommit/gitrebase buffers get :Accept (:wq)
 and :Cancel (:cq) aliases unless already defined. Disable them with
 g:gin_proxy_disable_accept_and_cancel_aliases = 1. Proxy buffers retain their

@@ -2418,3 +2418,23 @@ Thirty cases failed before this change, all for false-valued strings. Existing
 reload and user-mapping preservation tests continue to exercise the installation
 lifecycle. Denops-validated Patch/Chaperon flags retain their separately documented
 boolean/numeric contract and are not passed through Vimscript coercion.
+
+## Editor and askpass opt-out validation
+
+`gin_proxy_disable_editor` and `gin_proxy_disable_askpass` now reject strings,
+lists and dictionaries before starting Git. Both settings are checked before
+creating the RPC server or askpass launcher. Previously these truthy Lua values
+silently disabled the proxy. Null and unset settings retain the enabled default.
+
+The pinned Denops source validates booleans, while its help documents numeric
+zero defaults. Lua deliberately retains the existing boolean/numeric contract
+(including the documented 0/1 settings), as with the previously documented
+Patch/Chaperon mapping flags. This is distinct from native Vimscript conversion
+used by confirmation and alias flags; string `"0"` is not accepted here.
+
+Six real-command tests supply invalid values with the other proxy already
+disabled, require the named setting error, and verify a Git alias never writes
+its spawn marker. They failed before validation was added. Boolean enable/disable
+coverage complements the existing independent numeric opt-outs and null-default
+tests, while the credential and editor integration tests still exercise the
+actual proxy launchers.
