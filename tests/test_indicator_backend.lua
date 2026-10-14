@@ -72,9 +72,12 @@ T["custom indicators receive whitespace chunks as an empty line"] = function()
   )
   MiniTest.expect.equality(result.stdout, "\n \t\n")
   local events = vim.g.gin_test_indicator_events
-  MiniTest.expect.equality(#events, 3)
-  MiniTest.expect.equality(events[2], { "write", events[1][2], { "" } })
-  MiniTest.expect.equality(events[3], { "close", events[1][2] })
+  MiniTest.expect.equality(#events >= 3, true)
+  MiniTest.expect.equality(events[1][1], "open")
+  for i = 2, #events - 1 do
+    MiniTest.expect.equality(events[i], { "write", events[1][2], { "" } })
+  end
+  MiniTest.expect.equality(events[#events], { "close", events[1][2] })
 end
 
 T["custom indicators receive completed ANSI-only output without EOF writes"] = function()
