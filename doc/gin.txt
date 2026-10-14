@@ -191,6 +191,20 @@ For output views, GinEdit and either Blame pane, :edit ++enc={encoding}
 ++ff={format} overrides the URI decoding settings for that read. Ordinary
 reload uses the URI defaults.
 
+Read encodings use the pinned upstream's TextDecoder labels. Explicit encoding
+selection replaces malformed byte sequences with U+FFFD and rejects unknown
+labels. For example, latin1 and ascii select Windows-1252, and utf-16 and ucs-2
+select UTF-16LE; use utf-16be for big-endian input. Native-only names such as
+ucs-2le, ucs-4, utf-32, cp932 and cp936 are not accepted as read labels. Use sjis
+or gbk for the corresponding legacy Japanese or Chinese input.
+
+Without an explicit encoding, buffer reads try 'fileencodings' in order using
+strict decoding. Invalid or unsupported candidates are skipped. If none works,
+the bytes are decoded as UTF-8 with replacement and 'fileencoding' is empty.
+The ordinary :Gin command defaults to UTF-8 instead of using 'fileencodings'.
+The raw Git output is preserved; decoding affects its display. These read rules
+do not define which encodings the index writer accepts.
+
 :read {URI} inserts output for gin://, ginedit://, gindiff://, gintag://,
 ginlog://, ginreflog:// and ginstash:// buffers. Obtain the URI from an existing
 Gin buffer's name. Reads support line addresses and decoding without changing
