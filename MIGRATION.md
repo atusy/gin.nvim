@@ -3657,3 +3657,23 @@ Validation: the integrated run passes all 1,326 mini.test cases across 50 groups
 0.10.0. `make check` and `git diff --check` pass. Re-running the original probe
 now selects Mac format and splits the CR-only lines correctly; its Latin-1
 encoding mismatch remains the next separate fix.
+
+## Stateless encoding preparation
+
+Added a strict TextDecoder-style decoding library for Unicode and single-byte
+encoding candidates, with immutable generated alias/mapping tables. It preserves
+candidate order and original option labels, reports a stripped Unicode BOM, and
+falls back to replacement-decoded UTF-8 when no candidate succeeds. UTF-8 decoding
+reuses the stream decoder's complete-input path without ANSI removal or trimming;
+UTF-16BE has an explicit fixed-endian route.
+
+This library is not yet wired into GinBuffer/GinEdit. Seven multibyte decoder
+families still need implementation before automatic `fileencodings` selection
+can be considered addressed. Explicit encoding behavior and malformed-input
+compatibility also remain under audit. See `tests/audit/README.md` for provenance
+and the bounded scope of the checked-in Deno reference corpus.
+
+The 70 encoding tests pass on Neovim 0.10.0. The 134 encoding/edit/indicator cases,
+reference regeneration check, `make check` and `git diff --check` pass. The full
+integrated suite passes all 1,396 cases across 51 groups
+(`/tmp/gin-encoding-full.log`).

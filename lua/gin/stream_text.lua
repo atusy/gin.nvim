@@ -90,6 +90,12 @@ local function utf8(text, final)
   return table.concat(output), ""
 end
 
+-- Decode a complete byte string without stripping ANSI or trimming whitespace.
+function M.utf8(text)
+  local decoded = utf8(text, true)
+  return decoded
+end
+
 function M.decoder()
   local pending, ansi = "", ""
   return function(data)

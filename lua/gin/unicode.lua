@@ -3,6 +3,7 @@ local M = {}
 local formats = {
   ["utf-16"] = { width = 2 },
   ["utf-16le"] = { width = 2, little = true },
+  ["utf-16be"] = { width = 2 },
   ["ucs-2"] = { width = 2, ucs2 = true },
   ["ucs-2le"] = { width = 2, little = true, ucs2 = true },
   ["ucs-4"] = { width = 4 },

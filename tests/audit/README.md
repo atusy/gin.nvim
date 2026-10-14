@@ -212,3 +212,25 @@ that these actions are absent from Insert, Command-line, Terminal and Lang-Arg
 modes. The mode/default interpretation follows denops std 7's mapping helper.
 This does not establish execution semantics or unlisted views, which require
 separate integration and mapping tests.
+
+## Text decoding oracle
+
+`deno run --allow-read --allow-write --allow-run --allow-env scripts/encoding-oracle.mjs --check`
+verifies the checked-in alias table, single-byte mappings and decoding fixture;
+use `--write` to regenerate them. Deno is development-only. The generator checks
+vim-gin's locked HEAD and records the SHA256 of the vendored WHATWG
+`encodings.json` label registry. Generated Lua headers record the Deno version.
+
+The normal `tests/test_encoding.lua` suite compares strict decoding with actual
+Deno TextDecoder results for 32 Unicode/single-byte families. Each single-byte
+family includes all 256 byte values; Unicode fixtures include BOMs, opposite
+byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
+include ASCII case and whitespace normalization. Separate cases cover ordered
+candidate selection, fallback UTF-8 replacement and BOM metadata.
+
+This is preparatory library coverage, not complete encoding parity. The seven
+multibyte families (GBK, gb18030, Big5, EUC-JP, ISO-2022-JP, Shift_JIS and EUC-KR)
+are registered but have no decoder yet. The library is not connected to buffer
+encoding selection until those implementations are available. The Unicode corpus
+is finite; single-byte expected values and production mappings share the Deno
+oracle, so exhaustive byte tests verify the Lua lookup path, not Deno itself.
