@@ -18,6 +18,7 @@ local T = MiniTest.new_set({
     post_case = function()
       vim.cmd("silent! tabonly!")
       vim.cmd("silent! only!")
+      vim.wo.previewwindow = false
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(old_cwd)
       H.cleanup(root)
@@ -299,6 +300,23 @@ for _, opener in ipairs({ "split", "vsplit" }) do
     vim.cmd("botright GinPatch ++opener=" .. opener .. " ++no-head ++no-worktree file")
     MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
     MiniTest.expect.equality(vim.api.nvim_get_current_buf(), index)
+    MiniTest.expect.equality(vim.api.nvim_get_current_win() ~= original, true)
+    MiniTest.expect.equality(vim.wo[original].diff, false)
+    MiniTest.expect.equality(vim.wo.diff, true)
+  end
+end
+for _, existing in ipairs({ false, true }) do
+  T["preview opener selects the index preview, existing=" .. tostring(existing)] = function()
+    vim.cmd("GinEdit sub/file")
+    local original = vim.api.nvim_get_current_win()
+    local index = vim.api.nvim_get_current_buf()
+    if existing then
+      vim.cmd("pedit file")
+    end
+    vim.cmd("GinPatch ++opener=pedit ++no-head ++no-worktree file")
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), index)
+    MiniTest.expect.equality(vim.wo.previewwindow, true)
     MiniTest.expect.equality(vim.api.nvim_get_current_win() ~= original, true)
     MiniTest.expect.equality(vim.wo[original].diff, false)
     MiniTest.expect.equality(vim.wo.diff, true)

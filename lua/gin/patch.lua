@@ -6,9 +6,7 @@ function M.open(root, path, options)
   local disabled = mapping.disabled("patch")
   local edit = require("gin.edit")
   path = edit.path(root, path)
-  local index = edit.open(root, path, options)
-  local index_win = vim.api.nvim_get_current_buf() == index and vim.api.nvim_get_current_win()
-    or vim.fn.bufwinid(index)
+  local index, index_win = edit.open(root, path, options)
   local windows = { index_win }
   local head, worktree
   if not options["no-head"] then

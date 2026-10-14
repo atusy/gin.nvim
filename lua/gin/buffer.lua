@@ -28,7 +28,16 @@ function M.open(name, opts)
       {}
     )
   end
-  return vim.fn.bufnr(name)
+  local buf, win = vim.fn.bufnr(name), vim.api.nvim_get_current_win()
+  if opener == "pedit" then
+    for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.wo[candidate].previewwindow and vim.api.nvim_win_get_buf(candidate) == buf then
+        win = candidate
+        break
+      end
+    end
+  end
+  return buf, win
 end
 
 function M.replace(buf, lines, root, filetype)

@@ -2900,3 +2900,13 @@ using the buffer lookup only when the opened buffer is not current. Regression
 cases for horizontal and vertical splits verify that the new window is focused
 and diff-enabled while the original window remains outside diff mode. Both
 side panes are omitted in these fixtures to isolate the opener's window choice.
+
+The follow-up preview case requires retaining opener results directly: pedit
+leaves the current window unchanged, so current-window preference alone still
+selects the old index display. The shared Lua buffer opener now returns the
+opened window as a second result alongside its existing buffer result. For
+pedit it locates the current tab's preview window containing that buffer;
+ordinary openers return the window they entered. Patch uses that result instead
+of reconstructing it from the buffer. Tests cover both creation and reuse of a
+preview window while a normal window already displays the same index, preserving
+the original window's non-diff state. Existing split/vsplit tests remain in place.
