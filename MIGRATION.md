@@ -4253,3 +4253,35 @@ output. This matches the source distinction between upstream :echo and Lua's
 nvim_echo history=true. History behavior remains to be fixed independently.
 Probe: `/tmp/gin-command-history.lua`, with results in
 `/tmp/gin-command-history-{upstream,lua}.json`.
+
+
+### Bare Gin output history
+
+Changed command.finish to echo without adding message history, matching the
+pinned Denops helper's :echo. A real :messages regression first showed the
+command result appended to a prior message; it now leaves that history intact.
+Updated display tests to observe final text instead of using the incorrect
+history flag as a proxy for completion. The twelve modifier/wait/error cases
+identify final output by its retained newline and assert history=false.
+
+All 80 command tests pass on current Neovim and 0.10.0. The fresh six-case live
+probe matches upstream output, history, return behavior and events. Formatting
+and diff checks pass. The full suite passes 4,589 cases across 59 groups
+(`/tmp/gin-command-history-full.log`).
+
+
+### Remaining view-command error boundary
+
+A fresh probe passes ++unknown=value to all thirteen view commands under normal,
+silent and silent! modifiers. All 39 upstream calls return normally; Lua raises
+in the 26 normal/silent cases. Its 13 silent! cases suppress the exception at
+Ex level but redirection still captures Lua traceback text. No success event
+is emitted in either implementation. The reference dispatchers all use
+friendlyCall; twelve also use ensureSilent. Browse omits ensureSilent and its
+friendly notification remains visible even under silent!, confirmed live.
+
+This is a user-command entrypoint gap, distinct from direct Lua API exceptions
+and BufReadCmd/BufWriteCmd failure propagation. Any fix must retain those
+boundaries and update tests that currently expect a user-command exception to
+observe notifications and unchanged state instead. Evidence:
+`/tmp/gin-all-view-errors.lua`, `/tmp/gin-all-view-errors-{upstream,lua}.json`.

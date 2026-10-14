@@ -250,7 +250,7 @@ function M.finish(result, options, mods)
     output = vim.fn.string(output)
   end
   if output ~= "" and not mods.silent then
-    vim.api.nvim_echo({ { output, "None" } }, true, {})
+    vim.api.nvim_echo({ { output, "None" } }, false, {})
   end
   if not options.eventignore_all then
     M.post()

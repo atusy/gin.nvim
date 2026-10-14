@@ -253,10 +253,8 @@ T["Unicode command display removes only the leading byte order mark"] = function
     assert(vim.uv.fs_close(fd))
     H.git(root, "add", "file")
     local echo, displayed = vim.api.nvim_echo, nil
-    vim.api.nvim_echo = function(chunks, history)
-      if history then
-        displayed = chunks[1][1]
-      end
+    vim.api.nvim_echo = function(chunks)
+      displayed = chunks[1][1]
     end
     local args = { "++wait", "show", ":file" }
     if encoding ~= "" then
@@ -427,7 +425,7 @@ T["Gin displays progress before exit and retains final output"] = function()
     MiniTest.expect.equality(result.stderr, "warning\n")
     MiniTest.expect.equality(
       output[#output],
-      { text = "early\nfinished\nwarning\n", history = true }
+      { text = "early\nfinished\nwarning\n", history = false }
     )
     MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
   end)
@@ -566,6 +564,16 @@ T["Gin processors receive no implicit process deadline"] = function()
   MiniTest.expect.equality(deadline, false)
   H.drain()
   MiniTest.expect.equality(events, 1)
+end
+T["successful command output leaves message history unchanged"] = function()
+  vim.api.nvim_echo({ { "prior message", "None" } }, true, {})
+  local before = vim.api.nvim_exec2("messages", { output = true }).output
+  require("gin.command").finish(
+    { code = 0, stdout = "command result\n", stderr = "" },
+    { eventignore_all = true },
+    {}
+  )
+  MiniTest.expect.equality(vim.api.nvim_exec2("messages", { output = true }).output, before)
 end
 T["command display preserves the final newline"] = function()
   local echo, displayed = vim.api.nvim_echo, nil
@@ -756,7 +764,8 @@ for _, modifier in ipairs({ "", "silent ", "silent! " }) do
           if chunks[1][2] == "ErrorMsg" then
             errors = errors + 1
             assert(chunks[1][1]:find("[gin]: progress", 1, true))
-          elseif history then
+          elseif chunks[1][1] == "progress\n" then
+            MiniTest.expect.equality(history, false)
             final = final + 1
           else
             progress = progress + 1

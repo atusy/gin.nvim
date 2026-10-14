@@ -33,7 +33,8 @@ COMMANDS                                                        *gin-commands*
     while servicing proxy requests and displaying progress. Failures display a
     friendly message without throwing from the user command. Successful commands
     emit |GinCommandPost|. ++processor={command} transforms stdout; processor
-    failure prevents the success event.
+    failure prevents the success event. Final output preserves trailing newlines
+    and is displayed without adding an entry to :messages.
 
 :GinBuffer [++opener={opener}] {git-arguments}                    *:GinBuffer*
     Display Git output in a buffer. :edit reloads it. ANSI Git colors become
