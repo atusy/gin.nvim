@@ -3118,3 +3118,27 @@ The broad command/options/API compatibility checklist remains open.
 
 Validation: all 41 GinEdit cases pass on minimum Neovim 0.10.0. `make check`
 and the integrated full suite pass (1,257 cases in 48 groups).
+
+
+## Diff default-prefix reset
+
+Git accepts `--default-prefix` to restore `a/` and `b/` after `--no-prefix`
+or explicit source/destination prefixes. GinDiff already preserved the flag
+when executing Git, but its shared jump/fold path decoder did not apply that
+reset. For a real repository path `a/file`, `--no-prefix --default-prefix`
+therefore displayed a spurious rename from `a/a/file` to `b/a/file` and could
+open the wrong working path.
+
+The decoder now restores the default prefixes in saved flag order before
+applying reverse-diff swapping. Real Git fixtures cover reset after no-prefix,
+reset before no-prefix, reset before/after custom prefixes and reverse diffs.
+They assert the fold label and the actual opened working file and content.
+The original implementation fails the reset-after-no-prefix fold assertion.
+
+The pinned diffjump parser recognizes ordinary `@@` hunks only; its
+`parser.ts` range regex does not accept combined `@@@` hunks. Combined-diff
+navigation is consequently not established as an upstream-supported feature
+by this source audit. The broader GinDiff functional checklist remains open.
+
+Validation: `make check` and all 1,262 full-suite cases pass. All 61 GinDiff
+cases also pass on minimum Neovim 0.10.0.

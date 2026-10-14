@@ -468,6 +468,11 @@ T["jump preserves literal backslashes before octal digits and escape letters"] =
 end
 
 for _, flags in ipairs({
+  "--no-prefix --default-prefix",
+  "--default-prefix --no-prefix",
+  "--src-prefix=old.+/ --dst-prefix=new.+/ --default-prefix",
+  "--default-prefix --src-prefix=old.+/ --dst-prefix=new.+/",
+  "-R --no-prefix --default-prefix",
   "--no-prefix",
   "--no-prefix --src-prefix=old.+/ --dst-prefix=new.+/",
   "--src-prefix=old.+/ --dst-prefix=new.+/ --no-prefix",

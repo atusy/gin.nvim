@@ -2,7 +2,7 @@ local M = {}
 
 function M.prefixes(params, order)
   local prefixes = { old = "a/", new = "b/" }
-  for _, key in ipairs(order or { "src-prefix", "dst-prefix", "no-prefix" }) do
+  for _, key in ipairs(order or { "src-prefix", "dst-prefix", "no-prefix", "default-prefix" }) do
     local value = params[key]
     if type(value) == "table" then
       value = value[#value]
@@ -10,6 +10,8 @@ function M.prefixes(params, order)
     if value ~= nil then
       if key == "no-prefix" then
         prefixes.old, prefixes.new = "", ""
+      elseif key == "default-prefix" then
+        prefixes.old, prefixes.new = "a/", "b/"
       elseif key == "src-prefix" then
         prefixes.old = value
       elseif key == "dst-prefix" then
