@@ -1892,3 +1892,10 @@ non-string values are rejected before dispatch with a buffer-variable type
 error. Tests verify that numeric zero cannot dispatch the action named "0",
 while the string "0" remains a valid repeat target, and cover boolean/list
 validation as well as null handling.
+
+Branch move validation now covers an existing destination with a different
+commit: ordinary move must fail without changing either ref, while move:force
+replaces the destination with the selected source commit and removes the old
+source ref. The test also checks the current branch, working file and index
+remain unchanged. Temporarily omitting --force caused this new case alone to
+fail; the original implementation was restored before the full suite.
