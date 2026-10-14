@@ -2385,3 +2385,21 @@ command preservation, repeat sourcing and cleanup. Before these fixes, the null
 confirmation case committed successfully and all six null alias cases failed.
 This closes these null-value differences without claiming arbitrary Vimscript
 coercion semantics for other setting types.
+
+## Vimscript coercion for editor confirmation and aliases
+
+The two flags implemented in pinned Vimscript (`gin_proxy_apply_without_confirm`
+and `gin_proxy_disable_accept_and_cancel_aliases`) now use Neovim's native
+Vimscript condition conversion through `gin.util.vimscript_flag`. The setting
+name is quoted with `string()` and supplied to `get(g:, ..., 0)`; setting values
+are never interpolated as code. This avoids duplicating Vimscript's numeric
+string conversion and its errors for unsupported condition types in Lua.
+Denops-validated editor/askpass flags are not routed through this helper.
+
+Real Git cancellation cases now include string zero, empty string and a
+nonnumeric string (`"true"`): all must prompt and reject on `no`, rather than
+silently commit. The alias matrix adds string zero/one, nonnumeric and empty
+strings for both filetypes and all existing-command cases. Before the change,
+three confirmation cases and eighteen alias cases failed. Existing numeric-one
+application and alias-disable cases still verify the true branch. This extends
+the preceding null fix to the actual native conversion rule for these two flags.

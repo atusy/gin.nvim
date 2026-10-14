@@ -1,5 +1,10 @@
 local M = {}
 
+---Read a flag whose upstream contract uses a Vimscript condition.
+function M.vimscript_flag(name)
+  return vim.fn.eval("!!get(g:, " .. vim.fn.string(name) .. ", 0)") ~= 0
+end
+
 ---Reload a buffer asynchronously, or once it is entered if hidden.
 function M.reload(bufnr)
   bufnr = bufnr or 0

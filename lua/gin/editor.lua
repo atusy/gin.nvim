@@ -4,11 +4,7 @@ local address, askpass_launcher
 local script = vim.fs.dirname(debug.getinfo(1, "S").source:sub(2)) .. "/editor_client.lua"
 
 function M.aliases()
-  if
-    vim.g.gin_proxy_disable_accept_and_cancel_aliases
-    and vim.g.gin_proxy_disable_accept_and_cancel_aliases ~= vim.NIL
-    and vim.g.gin_proxy_disable_accept_and_cancel_aliases ~= 0
-  then
+  if require("gin.util").vimscript_flag("gin_proxy_disable_accept_and_cancel_aliases") then
     return
   end
   for name, command in pairs({ Accept = "wq", Cancel = "cq" }) do
@@ -115,11 +111,7 @@ function M.request(path)
         buffer = buf,
         nested = true,
         callback = function()
-          if
-            vim.g.gin_proxy_apply_without_confirm
-            and vim.g.gin_proxy_apply_without_confirm ~= vim.NIL
-            and vim.g.gin_proxy_apply_without_confirm ~= 0
-          then
+          if require("gin.util").vimscript_flag("gin_proxy_apply_without_confirm") then
             finish(true, true)
           else
             local answer =

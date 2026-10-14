@@ -205,7 +205,15 @@ T["quit applies a Git editor when confirmation is disabled"] = function()
   MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "applied on quit\n")
 end
-for _, case in ipairs({ { "unset" }, { "false", false }, { "zero", 0 }, { "null", vim.NIL } }) do
+for _, case in ipairs({
+  { "unset" },
+  { "false", false },
+  { "zero", 0 },
+  { "null", vim.NIL },
+  { "string zero", "0" },
+  { "empty string", "" },
+  { "nonnumeric string", "true" },
+}) do
   T["declining quit confirmation with " .. case[1] .. " cancels Git and preserves staged content"] = function()
     vim.g.gin_proxy_apply_without_confirm = case[2]
     local prompts = {}
