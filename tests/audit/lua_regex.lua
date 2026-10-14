@@ -516,112 +516,144 @@ function M.compile(pattern)
   return {
     match = function(_, text)
       local input = units(text)
-      local evaluate
-      local function accept(position, captures)
-        return { position = position, captures = captures }
+      local function prepend(node, tasks)
+        return { node = node, next = tasks }
       end
-      function evaluate(node, position, captures, direction, continuation)
-        local kind = node.kind
-        if kind == "sequence" then
-          local function next_child(index, pos, caps)
-            if not node.children[index] then
-              return continuation(pos, caps)
-            end
-            return evaluate(node.children[index], pos, caps, direction, function(p, c)
-              return next_child(index + direction, p, c)
-            end)
+      local evaluate
+      function evaluate(root, position, captures, direction)
+        local tasks, choices = prepend(root), {}
+        while true do
+          if not tasks then
+            return { position = position, captures = captures }
           end
-          return next_child(direction == 1 and 1 or #node.children, position, captures)
-        elseif kind == "alternation" then
-          for _, child in ipairs(node.children) do
-            local result = evaluate(child, position, captures, direction, continuation)
-            if result then
-              return result
+          local node = tasks.node
+          tasks = tasks.next
+          local kind, failed = node.kind, false
+          if kind == "sequence" then
+            local first = direction == 1 and #node.children or 1
+            local last = direction == 1 and 1 or #node.children
+            for index = first, last, -direction do
+              tasks = prepend(node.children[index], tasks)
             end
-          end
-        elseif kind == "group" then
-          return evaluate(node.child, position, captures, direction, continuation)
-        elseif kind == "capture" then
-          return evaluate(node.child, position, captures, direction, function(pos, caps)
-            caps = copy(caps)
-            caps[node.number] = { math.min(position, pos), math.max(position, pos) }
-            return continuation(pos, caps)
-          end)
-        elseif kind == "look" then
-          local result = evaluate(node.child, position, captures, node.direction, accept)
-          if (result ~= nil) == node.positive then
-            return continuation(position, result and result.captures or captures)
-          end
-        elseif kind == "repeat" then
-          local function repeat_match(iteration, pos, caps)
-            if node.lazy and iteration >= node.minimum then
-              local result = continuation(pos, caps)
-              if result then
-                return result
-              end
+          elseif kind == "alternation" then
+            for index = #node.children, 2, -1 do
+              choices[#choices + 1] = {
+                tasks = prepend(node.children[index], tasks),
+                position = position,
+                captures = captures,
+              }
             end
-            if iteration < node.maximum then
-              local cleared = copy(caps)
-              for index = node.first_capture, node.last_capture do
+            tasks = prepend(node.children[1], tasks)
+          elseif kind == "group" then
+            tasks = prepend(node.child, tasks)
+          elseif kind == "capture" then
+            tasks = prepend({ kind = "capture_end", number = node.number, start = position }, tasks)
+            tasks = prepend(node.child, tasks)
+          elseif kind == "capture_end" then
+            captures = copy(captures)
+            captures[node.number] =
+              { math.min(node.start, position), math.max(node.start, position) }
+          elseif kind == "look" then
+            -- Lookaround is atomic; its local choices must not escape this call.
+            local result = evaluate(node.child, position, captures, node.direction)
+            failed = (result ~= nil) ~= node.positive
+            if not failed and result then
+              captures = result.captures
+            end
+          elseif kind == "repeat" then
+            tasks = prepend({ kind = "repeat_step", repeated = node, iteration = 0 }, tasks)
+          elseif kind == "repeat_after" then
+            failed = position == node.start and node.iteration >= node.repeated.minimum
+            if not failed then
+              tasks = prepend({
+                kind = "repeat_step",
+                repeated = node.repeated,
+                iteration = node.iteration + 1,
+              }, tasks)
+            end
+          elseif kind == "repeat_step" then
+            local repeated = node.repeated
+            local can_stop = node.iteration >= repeated.minimum
+            local can_continue = node.iteration < repeated.maximum
+            local following, cleared
+            if can_continue then
+              cleared = copy(captures)
+              for index = repeated.first_capture, repeated.last_capture do
                 cleared[index] = nil
               end
-              local result = evaluate(node.child, pos, cleared, direction, function(p, c)
-                if p == pos and iteration >= node.minimum then
-                  return nil
-                end
-                return repeat_match(iteration + 1, p, c)
-              end)
-              if result then
-                return result
+              following = prepend({
+                kind = "repeat_after",
+                repeated = repeated,
+                iteration = node.iteration,
+                start = position,
+              }, tasks)
+              following = prepend(repeated.child, following)
+            end
+            if repeated.lazy and can_stop then
+              if can_continue then
+                choices[#choices + 1] =
+                  { tasks = following, position = position, captures = cleared }
+              end
+            elseif can_continue then
+              if can_stop then
+                choices[#choices + 1] = { tasks = tasks, position = position, captures = captures }
+              end
+              tasks, captures = following, cleared
+            else
+              failed = not can_stop
+            end
+          elseif kind == "start" or kind == "finish" or kind == "boundary" then
+            local matched = kind == "start"
+                and (position == 1 or node.flags.m and line_terminator(input[position - 1]))
+              or kind == "finish"
+                and (position == #input + 1 or node.flags.m and line_terminator(input[position]))
+            if kind == "boundary" then
+              matched = word(input[position - 1]) ~= word(input[position])
+              if node.negated then
+                matched = not matched
               end
             end
-            if not node.lazy and iteration >= node.minimum then
-              return continuation(pos, caps)
+            failed = not matched
+          elseif kind == "reference" then
+            local capture
+            for _, number in ipairs(node.numbers) do
+              if captures[number] then
+                capture = captures[number]
+                break
+              end
+            end
+            local length = capture and capture[2] - capture[1] or 0
+            local start = direction == 1 and position or position - length
+            for offset = 0, length - 1 do
+              if not same_char(input[start + offset], input[capture[1] + offset], node.flags.i) then
+                failed = true
+                break
+              end
+            end
+            if not failed then
+              position = position + length * direction
+            end
+          else
+            local cp = input[direction == 1 and position or position - 1]
+            local matched = kind == "literal" and same_char(cp, node.value, node.flags.i)
+              or kind == "class" and class_matches(node, cp)
+              or kind == "dot" and cp ~= nil and (node.flags.s or not line_terminator(cp))
+            failed = not matched
+            if matched then
+              position = position + direction
             end
           end
-          return repeat_match(0, position, captures)
-        elseif kind == "start" or kind == "finish" or kind == "boundary" then
-          local matched = kind == "start"
-              and (position == 1 or node.flags.m and line_terminator(input[position - 1]))
-            or kind == "finish"
-              and (position == #input + 1 or node.flags.m and line_terminator(input[position]))
-          if kind == "boundary" then
-            matched = word(input[position - 1]) ~= word(input[position])
-            if node.negated then
-              matched = not matched
-            end
-          end
-          if matched then
-            return continuation(position, captures)
-          end
-        elseif kind == "reference" then
-          local capture
-          for _, number in ipairs(node.numbers) do
-            if captures[number] then
-              capture = captures[number]
-              break
-            end
-          end
-          local length = capture and capture[2] - capture[1] or 0
-          local start = direction == 1 and position or position - length
-          for offset = 0, length - 1 do
-            if not same_char(input[start + offset], input[capture[1] + offset], node.flags.i) then
+          if failed then
+            local choice = table.remove(choices)
+            if not choice then
               return nil
             end
-          end
-          return continuation(position + length * direction, captures)
-        else
-          local cp = input[direction == 1 and position or position - 1]
-          local matched = kind == "literal" and same_char(cp, node.value, node.flags.i)
-            or kind == "class" and class_matches(node, cp)
-            or kind == "dot" and cp ~= nil and (node.flags.s or not line_terminator(cp))
-          if matched then
-            return continuation(position + direction, captures)
+            tasks, position, captures = choice.tasks, choice.position, choice.captures
           end
         end
       end
       for start = 1, #input + 1 do
-        local result = evaluate(tree, start, {}, 1, accept)
+        local result = evaluate(tree, start, {}, 1)
         if result then
           result.captures[0] = { start, result.position }
           local captures = {}

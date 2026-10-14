@@ -54,7 +54,7 @@ reported a whitespace mismatch because of this input corruption.
 
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
-code units, per-match capture state and continuation-based backtracking. The
+code units, per-match capture state and explicit task/choice stacks for backtracking. The
 217-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
@@ -135,3 +135,18 @@ The initial audit exposed three accepted orphan-quantifier patterns (`{1}`,
 normal regression corpus alongside literal-brace controls. All generated
 comparisons now pass. This finite grammar and short-input audit does not measure
 large-input behavior, resource bounds or full ECMAScript compatibility.
+
+## Long input checks
+
+The initial continuation-based matcher overflowed the Lua call stack on a long
+`a+` input; whether it failed depended on JIT trace history. Matching now uses
+explicit task and choice stacks for sequences, captures, alternatives and
+repetitions. Six normal-suite tests compare full capture arrays for 65,536-byte
+inputs with JIT temporarily disabled and its prior enabled state restored. They
+cover greedy/lazy matching, backtracking, repeated captures, alternatives and
+lookbehind. The expected capture lengths were also checked with Node.
+
+This removes call-stack growth proportional to ordinary input repetition.
+Lookaround evaluation still recurses with assertion nesting, and the compiler
+recurses with pattern nesting. Heap usage and pathological backtracking are not
+bounded by this change; production integration remains pending those audits.

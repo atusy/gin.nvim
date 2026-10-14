@@ -1522,3 +1522,11 @@ braces as literals. Eleven permanent oracle cases bring the normal corpus to
 217, and all generated comparisons pass. The audit checks process termination
 and a complete result report; it does not establish resource limits or full
 compatibility, and no production parser uses the candidate yet.
+
+Long-input testing reproduced a Lua call-stack overflow in the regex candidate
+whose threshold depended on JIT history. Its matcher now uses explicit task and
+choice stacks for ordinary traversal and repetition. Six 65,536-byte tests pass
+with JIT disabled, covering greedy/lazy repetition, backtracking, capture
+clearing, alternatives and lookbehind, and all 22,470 generated comparisons still
+match Node. Pattern/lookaround nesting, heap usage and exponential backtracking
+remain separate resource concerns before production adoption.
