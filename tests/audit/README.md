@@ -329,3 +329,10 @@ inputs in both modes. Invalid pairs reprocess an ASCII trailing byte, while
 non-ASCII trails are consumed with the failed lead. Invalid standalone leads
 consume only themselves. The explicit-read suite covers both views and addressed
 reads, including retained ASCII delimiters, incomplete leads and 0x80 differences.
+
+EUC-JP replacement fixtures cover every byte pair and every 0x8F-prefixed triple
+alongside the strict matrices. Common fixtures include all single bytes and
+mixed longer sequences. Explicit-read tests cover incomplete supplementary
+characters, ASCII recovery at the second and third bytes, non-ASCII failures,
+kana recovery and normal JIS0208 characters after an error, through both views
+and addressed reads. Automatic detection still uses strict decoding.

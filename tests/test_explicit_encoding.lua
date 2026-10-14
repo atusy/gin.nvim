@@ -199,4 +199,48 @@ for _, encoding in ipairs({ "sjis", "big5", "euc-kr" }) do
     end
   end
 end
+T["GinEdit retains ASCII after malformed EUC-JP triple"] = function()
+  stage(string.char(143, 162, 32))
+  vim.cmd("GinEdit ++enc=euc-jp file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "� " })
+end
+for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+  for _, case in ipairs({
+    { "truncated triple", { 143, 162 }, "�" },
+    { "ASCII second byte", { 143, 34 }, '�"' },
+    { "non-ASCII second byte", { 143, 255, 65 }, "�A" },
+    { "ASCII third byte", { 143, 162, 34 }, '�"' },
+    { "non-ASCII third byte", { 143, 162, 255, 65 }, "�A" },
+    { "kana ASCII trail", { 142, 34 }, '�"' },
+    { "invalid lead", { 128, 65 }, "�A" },
+    { "state after error", { 143, 162, 32, 198, 252 }, "� 日" },
+  }) do
+    T[command .. " EUC-JP replacement " .. case[1]] = function()
+      local bytes = string.char(unpack(case[2]))
+      stage(bytes)
+      local suffix = command == "GinBuffer" and " show :file" or " file"
+      vim.cmd(command .. " ++enc=euc-jp" .. suffix)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] })
+      MiniTest.expect.equality(
+        require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+        bytes
+      )
+    end
+  end
+end
+for _, scheme in ipairs({ "gin", "ginedit" }) do
+  T[scheme .. " addressed EUC-JP read recovers after malformed triple"] = function()
+    stage(string.char(143, 162, 34) .. "\n")
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.bo.fileencoding = "utf-8"
+    local fragment = scheme == "gin" and "show :file" or "file"
+    local name = require("gin.uri").format(scheme, root, {}, fragment)
+    vim.cmd("1read ++enc=euc-jp " .. vim.fn.fnameescape(name))
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", '�"', "after" }
+    )
+    MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+  end
+end
 return T

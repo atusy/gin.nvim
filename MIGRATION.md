@@ -3914,3 +3914,24 @@ Generation, formatting and diff checks pass. The full suite passes 4,434 cases
 across 59 groups (`/tmp/gin-nonfatal-pairs-full.log`).
 EUC-JP, ISO-2022-JP and GBK/gb18030 replacement decoding remain, together with the
 broader metadata, write-encoding and API compatibility audits.
+
+## Explicit EUC-JP replacement
+
+The EUC-JP decoder now supports replacement decoding for explicitly selected
+encodings while retaining strict automatic selection. Invalid pending sequences
+consume their non-ASCII trail but retry an ASCII trail, and truncated JIS0212
+prefixes produce one replacement. State resets after errors so subsequent JIS0208
+characters decode normally. The initial real-view regression produced `???? `
+instead of the upstream replacement character followed by a space.
+
+The Deno fixtures now cover strict and replacement results for every byte pair
+and every 0x8F-prefixed triple, plus single bytes and mixed longer inputs. An
+independent 141,328-case corpus passes against the integrated implementation.
+Both views and addressed reads exercise malformed sequences and ASCII recovery;
+source bytes and destination encoding remain intact. The pinned-upstream GinEdit
+probe for `8F A2 20` now agrees on text bytes and fileencoding; the previously
+documented endofline metadata difference remains. All 840 related tests pass
+on Neovim 0.10.0. Oracle regeneration and formatting checks pass. The full suite
+passes 4,454 cases across 59 groups (`/tmp/gin-eucjp-replacement-full.log`).
+ISO-2022-JP and GBK/gb18030 replacement and broader
+metadata, write-encoding and API compatibility audits remain incomplete.

@@ -72,14 +72,16 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     records.push({encoding:canonical,aliases:encoding.labels,cases});
   } else if (canonical === 'euc-jp') {
     const cases=Array.from({length:256},(_,byte)=>({bytes:[byte],...decode(canonical,[byte])}));
-    const rows=[],triples=[],valid=[];
+    const rows=[],triples=[],replacementRows=[],replacementTriples=[],valid=[];
     let jis0208=header+'return {\n',jis0212=header+'return {\n';
     for(let first=0;first<256;first++) {
-      const row=[],tripleRow=[];
+      const row=[],tripleRow=[],replacementRow=[],replacementTriple=[];
       for(let second=0;second<256;second++) {
         const pair=decode(canonical,[first,second]);
         const triple=decode(canonical,[143,first,second]);
         row.push(pair.error?false:pair.text);
+        replacementRow.push(decode(canonical,[first,second],false).text);
+        replacementTriple.push(decode(canonical,[143,first,second],false).text);
         tripleRow.push(triple.error?false:triple.text);
         if(first>=161&&second>=161&&first<=254&&second<=254) {
           const pointer=(first-161)*94+second-161;
@@ -96,6 +98,7 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
         }
       }
       rows.push(row);triples.push(tripleRow);
+      replacementRows.push(replacementRow);replacementTriples.push(replacementTriple);
     }
     let seed=0x12345678;
     const randomByte=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed>>>24;};
@@ -109,8 +112,8 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     for(const bytes of [[],[143],[143,162],[143,162,175],[142,166],[198,252,203,220,184,236],[143,162,175,0,142,166]])cases.push({bytes,...decode(canonical,bytes)});
     additionalOutputs['lua/gin/encoding/jis0208_map.lua']=lua(jis0208+'}\n');
     additionalOutputs['lua/gin/encoding/jis0212_map.lua']=lua(jis0212+'}\n');
-    additionalOutputs['tests/audit/euc-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"triples":[\n'+triples.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
-    records.push({encoding:canonical,aliases:encoding.labels,cases});
+    additionalOutputs['tests/audit/euc-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"triples":[\n'+triples.map(row=>JSON.stringify(row)).join(',\n')+'],"replacement_rows":[\n'+replacementRows.map(row=>JSON.stringify(row)).join(',\n')+'],"replacement_triples":[\n'+replacementTriples.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
+    records.push({encoding:canonical,aliases:encoding.labels,cases,replacement_cases:cases.map(item=>({bytes:item.bytes,...decode(canonical,item.bytes,false)}))});
   } else if (canonical === 'big5' || canonical === 'euc-kr') {
     const cases = Array.from({length:256}, (_, byte) => ({bytes:[byte], ...decode(canonical, [byte])}));
     const rows = [], replacementRows = [], validPairs = [];

@@ -14,6 +14,10 @@ for _, kind in ipairs({ "rows", "triples" }) do
           ok == (expected ~= false),
           string.format("acceptance mismatch at %02x %02x", first - 1, second - 1)
         )
+        MiniTest.expect.equality(
+          require("gin.encoding").decode(bytes, "euc-jp", { fatal = false }),
+          oracle["replacement_" .. kind][first][second]
+        )
         if ok then
           MiniTest.expect.equality(text, expected)
         end

@@ -1,31 +1,50 @@
 local jis0208 = require("gin.encoding.jis0208_map")
 local jis0212 = require("gin.encoding.jis0212_map")
-return function(data)
-  local output, pos = {}, 1
+return function(data, fatal)
+  fatal = fatal ~= false
+  local output, lead, extended = {}, nil, false
+  local pos = 1
   while pos <= #data do
-    local lead = data:byte(pos)
-    if lead < 128 then
-      output[#output + 1] = string.char(lead)
-    else
-      local tail = assert(data:byte(pos + 1), "Incomplete EUC-JP sequence")
-      local code
-      if lead == 142 then
-        assert(tail >= 161 and tail <= 223, "Invalid EUC-JP kana")
-        code = 0xff61 + tail - 161
+    local byte = data:byte(pos)
+    local code
+    if lead then
+      if lead == 142 and byte >= 161 and byte <= 223 then
+        code = 0xff61 + byte - 161
+        lead = nil
+      elseif lead == 143 and byte >= 161 and byte <= 254 then
+        lead = byte
+        extended = true
       else
-        local map = jis0208
-        if lead == 143 then
-          map, lead = jis0212, tail
-          tail = assert(data:byte(pos + 2), "Incomplete EUC-JP triple")
-          pos = pos + 1
+        if lead >= 161 and lead <= 254 and byte >= 161 and byte <= 254 then
+          local map = extended and jis0212 or jis0208
+          code = map[(lead - 161) * 94 + byte - 161]
         end
-        assert(lead >= 161 and lead <= 254 and tail >= 161 and tail <= 254, "Invalid EUC-JP pair")
-        code = assert(map[(lead - 161) * 94 + tail - 161], "Unmapped EUC-JP pair")
+        lead = nil
+        extended = false
+        if not code then
+          assert(not fatal, "Invalid EUC-JP sequence")
+          code = 0xfffd
+          if byte < 128 then
+            pos = pos - 1
+          end
+        end
       end
-      output[#output + 1] = vim.fn.nr2char(code)
-      pos = pos + 1
+    elseif byte < 128 then
+      code = byte
+    elseif byte == 142 or byte == 143 or byte >= 161 and byte <= 254 then
+      lead = byte
+    else
+      assert(not fatal, "Invalid EUC-JP byte")
+      code = 0xfffd
+    end
+    if code then
+      output[#output + 1] = code == 0 and "\0" or vim.fn.nr2char(code)
     end
     pos = pos + 1
+  end
+  if lead then
+    assert(not fatal, "Incomplete EUC-JP sequence")
+    output[#output + 1] = "�"
   end
   return table.concat(output)
 end
