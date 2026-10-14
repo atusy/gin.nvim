@@ -17,6 +17,7 @@ local T = MiniTest.new_set({
     end,
     post_case = function()
       vim.g.gin_proxy_apply_without_confirm = nil
+      vim.g.gin_proxy_editor_opener = nil
       vim.fn.input = input
       vim.cmd("silent! tabonly!")
       vim.cmd.enew({ bang = true })
@@ -25,6 +26,36 @@ local T = MiniTest.new_set({
     end,
   },
 })
+for _, value in ipairs({ false, 0, vim.NIL, {}, "unsupported" }) do
+  T["invalid editor opener " .. vim.inspect(value) .. " releases Git without opening a window"] = function()
+    vim.g.gin_proxy_editor_opener = value
+    local windows, tabs = vim.api.nvim_list_wins(), vim.api.nvim_list_tabpages()
+    local process = require("gin.command").execute({
+      fargs = { "commit" },
+      smods = { silent = true, emsg_silent = true },
+    })
+    local finished = vim.wait(3000, function()
+      return process:is_closing()
+    end, 10)
+    -- Release an incorrectly opened editor before asserting the failure.
+    if not finished and vim.b.gin_editor_request then
+      vim.cmd.Cancel()
+      assert(vim.wait(3000, function()
+        return process:is_closing()
+      end, 10))
+    end
+    MiniTest.expect.equality(finished, true)
+    local result = process:wait(3000)
+    MiniTest.expect.equality(result.code ~= 0, true)
+    local message = type(value) == "string" and "Unsupported Gin opener"
+      or "g:gin_proxy_editor_opener must be a string"
+    MiniTest.expect.equality(result.stderr:find(message, 1, true) ~= nil, true)
+    MiniTest.expect.equality(vim.api.nvim_list_wins(), windows)
+    MiniTest.expect.equality(vim.api.nvim_list_tabpages(), tabs)
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+    MiniTest.expect.equality(H.git(root, "diff", "--name-only", "--cached"), "file\n")
+  end
+end
 T["opening an editor request suppresses file-read messages"] = function()
   local path = root .. "/message"
   vim.fn.writefile({ "draft" }, path)

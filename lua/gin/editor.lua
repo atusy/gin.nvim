@@ -74,8 +74,13 @@ function M.request(path)
   requests[id] = { done = false }
   vim.schedule(function()
     local ok, err = pcall(function()
+      local opener = vim.g.gin_proxy_editor_opener
+      if opener == nil then
+        opener = "tabedit"
+      end
+      assert(type(opener) == "string", "g:gin_proxy_editor_opener must be a string")
       local buf = require("gin.buffer").open(path, {
-        opener = vim.g.gin_proxy_editor_opener or "tabedit",
+        opener = opener,
         smods = { silent = true },
       })
       assert(not vim.b[buf].gin_editor_request, "File already has a pending Git editor request")

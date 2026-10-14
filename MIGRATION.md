@@ -2438,3 +2438,18 @@ its spawn marker. They failed before validation was added. Boolean enable/disabl
 coverage complements the existing independent numeric opt-outs and null-default
 tests, while the credential and editor integration tests still exercise the
 actual proxy launchers.
+
+## Editor opener failure handling
+
+An explicitly false `gin_proxy_editor_opener` no longer falls back to `tabedit`.
+Only an unset value gets the default; non-string values produce a named setting
+error inside the request handler, which returns failure to the Git editor client.
+Unsupported opener strings continue to use the existing opener validation.
+
+Five real Git commit cases cover false, zero, null, a list and an unsupported
+string. Each must finish with a nonzero Git status, expose the opener error on
+stderr, leave all windows/tabs intact and preserve the staged content. Before
+the fix false opened an editor and left Git waiting; the other invalid types
+already failed but lacked the named type diagnostic. Test cleanup cancels an
+unexpectedly opened editor before reporting failure. Existing keyboard-driven
+fixtures still cover every supported opener and successful apply/cancel flows.
