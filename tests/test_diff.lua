@@ -518,6 +518,92 @@ T["custom slash prefixes preserve deleted-file markers"] = function()
   MiniTest.expect.equality(vim.bo.buftype, "acwrite")
   MiniTest.expect.equality(vim.api.nvim_get_current_line(), "index")
 end
+T["custom fold prefixes match pinned output for all file statuses"] = function()
+  H.git(root, "reset", "--hard", "HEAD")
+  local original = {}
+  for i = 1, 10 do
+    original[i] = "line " .. i
+  end
+  vim.fn.writefile(original, root .. "/sub/old")
+  vim.fn.writefile({ "deleted" }, root .. "/sub/deleted")
+  H.git(root, "add", "sub")
+  H.git(root, "commit", "-m", "fold fixtures")
+  H.git(root, "mv", "sub/old", "sub/new")
+  original[1] = "renamed and modified"
+  vim.fn.writefile(original, root .. "/sub/new")
+  H.git(root, "rm", "sub/deleted")
+  vim.fn.writefile({ "added one", "added two" }, root .. "/sub/added")
+  H.git(root, "add", "sub/added")
+  vim.fn.writefile({ "modified" }, root .. "/sub/file")
+  vim.cmd("GinDiff HEAD --find-renames -- sub")
+  vim.cmd("normal! zM")
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local ranges = {}
+  for line, text in ipairs(lines) do
+    if text:match("^%-%-%- ") then
+      ranges[#ranges + 1] = { line, vim.fn.foldclosedend(line) }
+    end
+  end
+  MiniTest.expect.equality(#ranges, 4)
+  local previous = vim.g.gin_difffold_prefixes
+  local ok, err = pcall(function()
+    for _, prefixes in ipairs({
+      { added = "ADD", renamed = "REN" },
+      require("gin.difffold").presets.nerdfont,
+      { added = "", deleted = 0, modified = "M", renamed = "R" },
+    }) do
+      vim.g.gin_difffold_prefixes = prefixes
+      local payload = vim.json.encode({ lines = lines, ranges = ranges, prefixes = prefixes })
+      local script = ([=[
+        local ok, err = pcall(function()
+          local data = vim.json.decode(%q)
+          vim.cmd.source(%q)
+          vim.g.gin_difffold_prefixes = data.prefixes
+          vim.api.nvim_buf_set_lines(0, 0, -1, false, data.lines)
+          vim.wo.foldmethod = 'manual'
+          vim.wo.foldtext = 'gin#difffold#foldtext()'
+          local result = {}
+          for _, range in ipairs(data.ranges) do
+            vim.api.nvim_cmd({cmd = 'fold', range = range}, {})
+            result[#result + 1] = vim.fn.foldtextresult(range[1])
+          end
+          io.stdout:write(vim.json.encode(result))
+        end)
+        if not ok then io.stderr:write(tostring(err)); vim.cmd('cquit 1') end
+      ]=]):format(payload, old_cwd .. "/.deps/vim-gin/autoload/gin/difffold.vim")
+      local reference = vim
+        .system({
+          vim.v.progpath,
+          "--headless",
+          "--clean",
+          "-u",
+          "NONE",
+          "-i",
+          "NONE",
+          "-c",
+          "lua " .. script,
+          "-c",
+          "qa!",
+        }, { text = true })
+        :wait(10000)
+      assert(reference.code == 0, reference.stderr)
+      local actual = {}
+      for _, range in ipairs(ranges) do
+        actual[#actual + 1] = vim.fn.foldtextresult(range[1])
+      end
+      MiniTest.expect.equality(actual, vim.json.decode(reference.stdout))
+      MiniTest.expect.equality(actual, {
+        (prefixes.added or "[+]") .. " sub/added (+2)",
+        (prefixes.deleted or "[-]") .. " sub/deleted (-1)",
+        (prefixes.modified or "[.]") .. " sub/file (+1 -1)",
+        (prefixes.renamed or "[/]") .. " sub/old -> sub/new (+1 -1)",
+      })
+      MiniTest.expect.equality(vim.g.gin_difffold_prefixes, prefixes)
+    end
+  end)
+  vim.g.gin_difffold_prefixes = previous
+  assert(ok, err)
+end
 for name, expected in pairs({
   ascii = { added = "[+]", deleted = "[-]", modified = "[.]", renamed = "[/]" },
   nerdfont = { added = " ", deleted = " ", modified = " ", renamed = " " },

@@ -2166,3 +2166,15 @@ the shared edit defaults and persistent settings. Destination-command tests
 cover configured edit/diff/log/patch/chaperon/browse actions. This audit verifies
 all setting-name bindings and validation entry paths; it does not establish
 every command-specific interaction between valid persistent arguments and flags.
+
+## Fold prefix configuration audit
+
+A real Git fixture now produces added, deleted, modified and renamed-with-edits
+files in one diff. For each fold, `test_diff.lua` compares the Lua fold text with
+the pinned `autoload/gin/difffold.vim` function executed in a separate Neovim
+process, and also checks explicit expected paths and added/deleted line counts.
+The configurations cover partial overrides with ASCII fallback, the Nerd Font
+preset, an empty-string prefix and numeric zero. The configured dictionary must
+remain unchanged. Child errors, timeouts and malformed output fail the test.
+This verifies fold text for these configurations and real diff statuses, without
+claiming complete folding-layout or arbitrary configuration-value parity.
