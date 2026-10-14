@@ -124,4 +124,52 @@ for _, case in ipairs({
     MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
   end
 end
+T["keyboard input rewords consecutive commits through repeated editor requests"] = function()
+  H.git(root, "commit", "-m", "base")
+  local base = H.git(root, "rev-parse", "HEAD")
+  vim.fn.writefile({ "second" }, root .. "/file")
+  H.git(root, "commit", "-am", "second")
+  local second = H.git(root, "rev-parse", "HEAD")
+  vim.fn.writefile({ "third" }, root .. "/file")
+  H.git(root, "commit", "-am", "third")
+  local third = H.git(root, "rev-parse", "HEAD")
+  child.type_keys(":silent Gin rebase -i HEAD~2<CR>")
+  local function wait_for_editor(name, previous)
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("vim.b.gin_editor_request ~= nil")
+          and child.fn.fnamemodify(child.api.nvim_buf_get_name(0), ":t") == name
+          and child.b.gin_editor_request ~= previous
+      end, 10),
+      true
+    )
+  end
+  wait_for_editor("git-rebase-todo")
+  MiniTest.expect.equality(child.bo.filetype, "gitrebase")
+  local first_request = child.b.gin_editor_request
+  child.type_keys("gg0cw", "reword", "<Esc>j0cw", "reword", "<Esc>", ":Apply<CR>")
+  wait_for_editor("COMMIT_EDITMSG")
+  MiniTest.expect.equality(child.bo.filetype, "gitcommit")
+  MiniTest.expect.equality(child.b.gin_editor_request ~= first_request, true)
+  local message_request = child.b.gin_editor_request
+  child.type_keys("gg0cc", "rewritten second", "<Esc>", ":Apply<CR>")
+  wait_for_editor("COMMIT_EDITMSG", message_request)
+  child.type_keys("gg0cc", "rewritten third", "<Esc>", ":Apply<CR>")
+  MiniTest.expect.equality(
+    vim.wait(5000, function()
+      return child.lua_get("_G.gin_test_completed")
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(
+    H.git(root, "log", "--format=%s"),
+    "rewritten third\nrewritten second\nbase\n"
+  )
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD~2"), base)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD^") ~= second, true)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD") ~= third, true)
+  MiniTest.expect.equality(H.git(root, "show", "HEAD^:file"), "second\n")
+  MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "third\n")
+  MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-merge"), 0)
+end
 return T

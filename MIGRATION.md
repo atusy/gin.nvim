@@ -1827,3 +1827,11 @@ flag before typing and applying the commit message. Preview focus is entered
 with `<C-w>P`; no RPC buffer edits replace keyboard editing. Each case verifies
 the resulting Git commit and file contents. This closes the supported-opener
 workflow check without changing the remaining synchronous-input limitation.
+
+A keyboard-driven interactive rebase test now changes two todo entries from
+`pick` to `reword`, applies the todo, and edits both successive COMMIT_EDITMSG
+requests through normal input. It verifies separate request IDs, gitrebase and
+gitcommit filetypes, both rewritten messages and commit IDs, the unchanged base
+ancestor and file contents at each rewritten commit, and removal of rebase state.
+This covers repeated editor requests for the same message path during one
+asynchronous Git operation; it does not close synchronous keyboard handling.
