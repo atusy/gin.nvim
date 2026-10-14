@@ -542,7 +542,7 @@ for _, wait in ipairs({ true, false }) do
     end
     vim.notify = notify
     MiniTest.expect.equality(ok, not wait)
-    MiniTest.expect.equality(wait and result or message, "git exited 7: broken")
+    MiniTest.expect.equality(wait and result or message, "git exited 7: broken\n")
     MiniTest.expect.equality(events, 0)
   end
 end

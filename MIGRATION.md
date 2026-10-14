@@ -4377,3 +4377,42 @@ Throwing behavior and status reporting must remain tested. The pinned executor
 throws decoded, ANSI-stripped stderr, while its separate captured-query process
 helper prefixes the exit status. Those paths must not be conflated when aligning
 friendly diagnostics. No runtime changes for this follow-up are applied yet.
+
+
+### Preserve whitespace in internal Git error strings
+
+Removed vim.trim from git.error_message so leading spaces, trailing spaces and
+final newlines survive from stderr into the thrown error. The existing source
+and exit-code prefix remains; direct APIs continue throwing strings. Color
+escapes are still removed, and unchecked process results retain raw stderr.
+
+A real Git alias first reproduced loss of two leading spaces, one trailing
+space and two newlines. Four cases now cover Git/processor failures with and
+without progress, checking status, raw output and exact thrown text. Existing
+command/color-error assertions now expect the preserved newline; the real
+GinEdit callback test also checks it survives the Neovim error wrapper.
+All 152 Git/command/boundary tests pass on current Neovim and 0.10.0.
+
+A fresh live probe compares 15 final Git diagnostic payloads to upstream after
+excluding the still-known Lua exit-code prefix; all match including trailing
+newlines. This is payload agreement, not complete notification parity.
+The full suite passes 4,650 cases across 60 groups
+(`/tmp/gin-error-whitespace-full.log`).
+
+
+### Remaining empty-output display behavior
+
+A fresh live bare-command probe runs a successful Git alias with empty stdout
+and stderr under normal/silent/silent!. The pinned normal command emits an empty
+echo (redirection captures a newline), whereas Lua emits nothing. Both suppress
+the final display under silent/silent! and emit one success event in all cases.
+The source confirms this difference: upstream always calls helper.echo after
+joining decoded output, while command.finish guards on output ~= "". The empty
+success path should clear the previous display rather than skip the echo.
+Evidence: `/tmp/gin-empty-output.lua`, `/tmp/gin-empty-output-{upstream,lua}.json`.
+
+The remaining diagnostic prefix cannot be stripped uniformly: upstream's
+captured-query helper includes a status prefix and Browse's external URL helper
+also produces custom messages. Further alignment must identify the execution
+path instead of assuming every string with a Git exit prefix is raw executor
+stderr. This does not affect the whitespace-preservation change under test.

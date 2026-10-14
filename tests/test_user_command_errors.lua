@@ -76,7 +76,7 @@ T["GinEdit reports Git failure without nested callback context"] = function()
   assert(ok, err)
   MiniTest.expect.equality(
     message,
-    "[gin]: git exited " .. expected.code .. ": " .. vim.trim(expected.stderr)
+    "[gin]: git exited " .. expected.code .. ": " .. expected.stderr
   )
 end
 local literal = "first\nstack traceback:\n\tuser.lua:42: diagnostic text"

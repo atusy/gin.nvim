@@ -16,6 +16,26 @@ T["runs argv literally without expanding pathspec magic"] = function()
   require("gin.git").run({ "add", "--", "[file].txt" }, { cwd = root })
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "[file].txt\n")
 end
+for _, source in ipairs({ "git", "processor" }) do
+  for _, progress in ipairs({ false, true }) do
+    T[source .. " errors retain stderr whitespace with progress=" .. tostring(progress)] = function()
+      local git = require("gin.git")
+      local script = [[printf '\033[31m  failure \033[m\n\n' >&2; exit 7]]
+      local args = source == "git" and { "-c", "alias.fail=!" .. script, "fail" } or { "--version" }
+      local opts = {
+        cwd = root,
+        progress = progress,
+        processor = source == "processor" and { "sh", "-c", script } or nil,
+      }
+      local result = git.run(args, vim.tbl_extend("force", opts, { check = false }))
+      MiniTest.expect.equality(result.code, 7)
+      MiniTest.expect.equality(result.stderr, "\27[31m  failure \27[m\n\n")
+      local ok, err = pcall(git.run, args, opts)
+      MiniTest.expect.equality(ok, false)
+      MiniTest.expect.equality(err, source .. " exited 7:   failure \n\n")
+    end
+  end
+end
 T["failed commands retain status and stderr"] = function()
   local git = require("gin.git")
   local result = git.run({ "not-a-git-command" }, { cwd = root, check = false })
@@ -40,7 +60,7 @@ for _, source in ipairs({ "git", "processor" }) do
     end
     local ok, err = pcall(require("gin.git").run, args, opts)
     MiniTest.expect.equality(ok, false)
-    MiniTest.expect.equality(err, source .. " exited 7: broken")
+    MiniTest.expect.equality(err, source .. " exited 7: broken\n")
     opts.check = false
     local result = require("gin.git").run(args, opts)
     MiniTest.expect.equality(result.code, 7)

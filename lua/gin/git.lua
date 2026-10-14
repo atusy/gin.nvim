@@ -90,7 +90,7 @@ end
 
 function M.error_message(result, source)
   local message = require("gin.csi").strip(result.stderr or "")
-  return ("%s exited %d: %s"):format(source, result.code, vim.trim(message))
+  return ("%s exited %d: %s"):format(source, result.code, message)
 end
 
 function M.run(args, opts)
