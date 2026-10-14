@@ -1595,3 +1595,10 @@ GinBrowse's zero address now follows the pinned wrapper's `<count>` check:
 repository test checks the yanked URL through the Ex command; the existing
 positive-range test continues to exercise line fragments. The command uses the
 last address to distinguish a zero range, matching the upstream wrapper.
+
+GinCd, GinLcd and GinTcd now match the pinned wrapper's failure behavior: errors
+from repository resolution or the directory command display `[gin] no git
+repository found` with WarningMsg rather than escaping as Lua callback errors.
+A repository-free integration case invokes all three commands and verifies the
+warning, unchanged directory and unchanged directory scope. Existing success
+coverage verifies buffer-based repository selection and window-local scope.

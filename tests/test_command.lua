@@ -102,6 +102,28 @@ T["directory commands use buffer repository and honor local scope"] = function()
   MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root))
   MiniTest.expect.equality(vim.fn.haslocaldir(), 1)
 end
+T["directory commands warn without changing scope outside a repository"] = function()
+  vim.cmd.enew()
+  vim.fn.delete(root .. "/.git", "rf")
+  local directory, scope = vim.fn.getcwd(), vim.fn.haslocaldir()
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks)
+    messages[#messages + 1] = chunks
+  end
+  local ok, err = pcall(function()
+    for _, command in ipairs({ "GinCd", "GinLcd", "GinTcd" }) do
+      vim.cmd[command]()
+      MiniTest.expect.equality({ vim.fn.getcwd(), vim.fn.haslocaldir() }, { directory, scope })
+    end
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(messages, {
+    { { "[gin] no git repository found", "WarningMsg" } },
+    { { "[gin] no git repository found", "WarningMsg" } },
+    { { "[gin] no git repository found", "WarningMsg" } },
+  })
+end
 T["Gin wait returns processed output and rejects processor failures"] = function()
   vim.fn.writefile({ "text" }, root .. "/file")
   local result = require("gin.command").execute({
