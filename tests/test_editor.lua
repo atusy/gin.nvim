@@ -25,6 +25,30 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["opening an editor request suppresses file-read messages"] = function()
+  local path = root .. "/message"
+  vim.fn.writefile({ "draft" }, path)
+  local script = string.format(
+    [[
+    vim.opt.rtp:prepend(%s)
+    vim.opt.shortmess:remove("F")
+    local editor = require("gin.editor")
+    local id = editor.request(%s)
+    assert(vim.wait(1000, function() return vim.b.gin_editor_request == id end, 10))
+    vim.cmd.Cancel()
+    assert(editor.poll(id).accepted == false)
+    vim.cmd.qa({ bang = true })
+  ]],
+    vim.inspect(cwd),
+    vim.inspect(path)
+  )
+  local script_path = root .. "/probe.lua"
+  vim.fn.writefile(vim.split(script, "\n", { plain = true }), script_path)
+  local result =
+    vim.system({ vim.v.progpath, "--headless", "--clean", "-l", script_path }):wait(5000)
+  MiniTest.expect.equality(result.code, 0)
+  MiniTest.expect.equality({ result.stdout, result.stderr }, { "", "" })
+end
 T["Gin commit waits for Apply and records the edited message"] = function()
   local completed = false
   local event = vim.api.nvim_create_autocmd("User", {

@@ -1835,3 +1835,11 @@ gitcommit filetypes, both rewritten messages and commit IDs, the unchanged base
 ancestor and file contents at each rewritten commit, and removal of rebase state.
 This covers repeated editor requests for the same message path during one
 asynchronous Git operation; it does not close synchronous keyboard handling.
+
+Proxy editor buffers now open with `silent`, matching the pinned proxy's
+`buffer.open(..., { mods: "silent" })`. A regression test removes the `F`
+shortmess flag and captures stdout/stderr from an isolated headless Neovim as
+the scheduled editor request opens: the file-read notice appeared before the
+fix and is suppressed afterward. The
+request still initializes and can be cancelled. This concerns emitted messages;
+Neovim may still update `v:statusmsg` during a silent read.

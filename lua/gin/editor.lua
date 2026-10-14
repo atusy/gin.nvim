@@ -73,8 +73,10 @@ function M.request(path)
   requests[id] = { done = false }
   vim.schedule(function()
     local ok, err = pcall(function()
-      local buf =
-        require("gin.buffer").open(path, { opener = vim.g.gin_proxy_editor_opener or "tabedit" })
+      local buf = require("gin.buffer").open(path, {
+        opener = vim.g.gin_proxy_editor_opener or "tabedit",
+        smods = { silent = true },
+      })
       assert(not vim.b[buf].gin_editor_request, "File already has a pending Git editor request")
       vim.b[buf].gin_editor_request = id
       vim.bo[buf].bufhidden, vim.bo[buf].swapfile = "hide", false
