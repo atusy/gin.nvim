@@ -106,6 +106,26 @@ T["file URI expansion preserves literal environment variable names"] = function(
   vim.env[variable] = previous
   assert(ok, err)
 end
+T["file URI normalization keeps literal tilde roots and POSIX backslashes"] = function()
+  if vim.fn.has("win32") == 1 then
+    return
+  end
+  for _, root in ipairs({ "~", "~literal", "~/repo" }) do
+    local path = "sub/./temporary/../file\\name.lua"
+    for _, scheme in ipairs({ "ginedit", "gindiff", "ginlog" }) do
+      local fragment = scheme == "ginedit" and path
+        or vim.json.encode(scheme == "ginlog" and { "--", path } or { path })
+      for _, name in ipairs({
+        require("gin.uri").format(scheme, root, {}, fragment),
+        scheme .. "://" .. root .. ";commitish=HEAD#" .. vim.json.encode({ path }),
+      }) do
+        with_name(name, function()
+          MiniTest.expect.equality(vim.fn["gin#util#expand"]("%"), root .. "/sub/file\\name.lua")
+        end)
+      end
+    end
+  end
+end
 T["expand leaves views without file paths unchanged"] = function()
   for _, case in ipairs({
     { "ginstatus", nil },

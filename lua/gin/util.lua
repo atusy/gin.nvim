@@ -125,10 +125,12 @@ function M.expand(expr)
     end
     if type(path) == "string" and path ~= "" then
       local absolute = not parsed.legacy and (path:match("^/") or path:match("^%a:[/\\]"))
-      return vim.fs.normalize(
-        absolute and path or (parsed.root .. "/" .. path),
-        { expand_env = false }
-      )
+      local joined = absolute and path or (parsed.root .. "/" .. path)
+      -- Older supported Neovim versions cannot disable home expansion directly.
+      if joined:sub(1, 1) == "~" then
+        joined = "./" .. joined
+      end
+      return vim.fs.normalize(joined, { expand_env = false })
     end
     return name
   end)

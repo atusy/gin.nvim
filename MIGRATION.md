@@ -1699,3 +1699,10 @@ remain literal, as in upstream's path join. A controlled environment-variable
 regression covers GinEdit/GinDiff/GinLog in both native and legacy forms through
 the public Vimscript API, and restores the environment after the test. Ordinary
 filename-expression expansion still happens before URI interpretation.
+
+URI path normalization also protects leading literal tilde roots from home
+expansion. A removable `./` prefix allows the existing normalizer to simplify
+dot segments without interpreting the URI root as a home-directory expression,
+including on Neovim 0.10. Eighteen POSIX cases cover three root forms, all three
+file schemes and native/legacy URI forms, retaining literal backslashes in the
+filename. Windows backslash semantics are intentionally outside this POSIX test.
