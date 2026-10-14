@@ -42,6 +42,15 @@ function M.url(root, revision, options)
     assert(type(host) == "string" and type(provider) == "string", message)
   end
   revision = revision or "HEAD"
+  local hash
+  if not options.home then
+    local commit = git.run(
+      { "rev-parse", "--verify", revision .. "^{commit}" },
+      { cwd = root, check = false }
+    )
+    assert(commit.code == 0, "No commit found for " .. revision)
+    hash = vim.trim(commit.stdout)
+  end
   local remote = options.remote
     or containing_remote(root, options.home and "HEAD" or revision)
     or "origin"
@@ -71,8 +80,6 @@ function M.url(root, revision, options)
   if options.home then
     return base
   end
-  local hash =
-    vim.trim(git.run({ "rev-parse", "--verify", revision .. "^{commit}" }, { cwd = root }).stdout)
   if options.pr then
     assert(provider ~= "bitbucket.org", "Hosting service has no pull request URL: " .. provider)
     local function request_id(message)

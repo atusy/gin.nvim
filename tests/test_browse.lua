@@ -54,6 +54,34 @@ for _, value in ipairs({
     assert(ok, err)
   end
 end
+T["browse validates revisions before looking for a remote"] = function()
+  H.git(root, "remote", "remove", "origin")
+  MiniTest.expect.error(function()
+    require("gin.browse").url(root, "missing-gin-revision")
+  end, "No commit found for missing%-gin%-revision")
+end
+for _, mode in ipairs({ "object", "commit", "pr", "permalink" }) do
+  T["browse rejects missing revisions before an explicit missing remote " .. mode] = function()
+    local options = { remote = "missing-remote" }
+    options[mode] = true
+    MiniTest.expect.error(function()
+      require("gin.browse").url(root, "missing-gin-revision", options)
+    end, "No commit found for missing%-gin%-revision")
+  end
+end
+T["browse home ignores an invalid revision"] = function()
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "missing-gin-revision", { home = true }),
+    "https://github.com/owner/repo"
+  )
+end
+T["GinBrowse reports an unborn HEAD before a missing remote"] = function()
+  H.git(root, "checkout", "--orphan", "unborn")
+  H.git(root, "remote", "remove", "origin")
+  H.command_error(function()
+    vim.cmd("GinBrowse --no-browser")
+  end, "No commit found for HEAD")
+end
 T["browse accepts an explicit empty alias dictionary"] = function()
   vim.g.gin_browse_aliases = vim.empty_dict()
   MiniTest.expect.equality(
