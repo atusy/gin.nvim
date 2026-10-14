@@ -250,6 +250,8 @@ gin#difffold#foldtext()                              *gin#difffold#foldtext()*
 
 Set g:gin_chaperon_supplement_disable = 1 to hide supporting commit logs.
 g:gin_chaperon_supplement_height controls their height (default 10).
+Both supplement settings require numbers. Invalid types are rejected before
+opening panes or changing the conflict buffer.
 g:gin_browse_aliases configures hosting aliases for browse URLs.
 
 ==============================================================================

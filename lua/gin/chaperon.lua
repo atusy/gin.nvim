@@ -25,7 +25,7 @@ local function in_progress_head(root)
   end
 end
 
-local function supplement(root, win, args, filetype)
+local function supplement(root, win, args, filetype, height)
   vim.api.nvim_set_current_win(win)
   local uri = require("gin.uri")
   require("gin.buffer").open(uri.format("gin", root, { filetype = filetype }, uri.join(args)), {
@@ -33,12 +33,22 @@ local function supplement(root, win, args, filetype)
     smods = { split = "belowright" },
   })
   vim.wo.diff = false
-  vim.api.nvim_win_set_height(0, vim.g.gin_chaperon_supplement_height or 10)
+  vim.api.nvim_win_set_height(0, height)
   vim.wo.winfixheight = true
 end
 
 function M.open(root, path, options)
   options = options or {}
+  local no_supplements = vim.g.gin_chaperon_supplement_disable
+  if no_supplements == nil then
+    no_supplements = 0
+  end
+  assert(type(no_supplements) == "number", "g:gin_chaperon_supplement_disable must be a number")
+  local supplement_height = vim.g.gin_chaperon_supplement_height
+  if supplement_height == nil then
+    supplement_height = 10
+  end
+  assert(type(supplement_height) == "number", "g:gin_chaperon_supplement_height must be a number")
   local edit = require("gin.edit")
   path = edit.path(root, path)
   local worktree = require("gin.buffer").open(root .. "/" .. path, options)
@@ -86,22 +96,34 @@ function M.open(root, path, options)
     mapping.bind(worktree, "diffget-r", "diffget", ours, "dor", disabled)
     mapping.alias(worktree, "diffget-r", disabled)
   end
-  local no_supplements = vim.g.gin_chaperon_supplement_disable
-  if no_supplements == nil or no_supplements == false or no_supplements == 0 then
+  if no_supplements == 0 then
     local head = in_progress_head(root)
     if theirs and head then
-      supplement(root, vim.fn.bufwinid(theirs), { "log", "-1", head, "-p" }, "git")
+      supplement(
+        root,
+        vim.fn.bufwinid(theirs),
+        { "log", "-1", head, "-p" },
+        "git",
+        supplement_height
+      )
     end
     if head then
       supplement(
         root,
         worktree_win,
         { "log", "--oneline", "--left-right", head .. "...HEAD" },
-        "diff"
+        "diff",
+        supplement_height
       )
     end
     if ours then
-      supplement(root, vim.fn.bufwinid(ours), { "log", "-1", "HEAD", "-p" }, "git")
+      supplement(
+        root,
+        vim.fn.bufwinid(ours),
+        { "log", "-1", "HEAD", "-p" },
+        "git",
+        supplement_height
+      )
     end
   end
   for _, win in ipairs(windows) do

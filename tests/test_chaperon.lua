@@ -54,6 +54,29 @@ T["GinChaperon resolves a conflict from the ours pane"] = function()
   MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged"), "")
   MiniTest.expect.equality(H.git(root, "show", ":sub/file"), "before\nours\nafter\n")
 end
+for _, name in ipairs({ "gin_chaperon_supplement_disable", "gin_chaperon_supplement_height" }) do
+  for _, value in ipairs({ "4", false, vim.NIL, {} }) do
+    T[name .. " rejects " .. vim.inspect(value) .. " before changing the editor"] = function()
+      vim.cmd.edit("file")
+      local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local index = H.git(root, "ls-files", "--stage")
+      local windows = vim.api.nvim_tabpage_list_wins(0)
+      vim.g[name] = value
+      MiniTest.expect.error(function()
+        vim.cmd("GinChaperon file")
+      end, "g:" .. name .. " must be a number")
+      MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win(), win)
+      MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), lines)
+      MiniTest.expect.equality(vim.bo[buf].modified, false)
+      MiniTest.expect.equality(vim.wo[win].diff, false)
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), lines)
+      MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+    end
+  end
+end
 T["default supplements show both commits and their comparison"] = function()
   vim.g.gin_chaperon_supplement_disable = nil
   vim.g.gin_chaperon_supplement_height = 4

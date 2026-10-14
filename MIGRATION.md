@@ -2100,3 +2100,18 @@ excluded from this public API inventory.
 All 13 declarations have a Lua-backed entrypoint and behavioral coverage in the
 listed scopes. This inventory does not close the broader command, configuration,
 URI or exact asynchronous cache compatibility audits.
+
+## Chaperon supplement configuration validation
+
+Pinned `command/chaperon/command.ts` validates
+`g:gin_chaperon_supplement_disable` and `g:gin_chaperon_supplement_height` as
+numbers before resolving or opening the conflict layout. Lua now performs the
+same type checks at entry to `chaperon.open`, with defaults 0 and 10. Values are
+captured once and the validated height is passed to every supplement window.
+Eight real-conflict regressions reject strings, booleans, null and tables for
+both settings before changing the current buffer/window, window list, buffer
+contents, modified/diff flags, working file or index stages. Height is validated
+even when supplements are disabled, as in the pinned code. Existing supplement
+fixtures verify the normal three supporting views and a configured height.
+This does not establish complete configuration parity: mapping-disable setting
+types and the other command-specific options still require their own audit.
