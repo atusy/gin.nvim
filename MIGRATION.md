@@ -2852,3 +2852,20 @@ in the working pane and failed this check. Writing an edited working pane is
 verified against raw file bytes while the index remains unchanged. A filename
 containing spaces and a bar also checks escaping through the Ex route. Existing
 revision/index and command-buffer decoding tests remain part of validation.
+
+## Patch transfers and reused panes
+
+Real Git tests now cover HEAD-to-index and worktree-to-index diffput, plus
+index-to-worktree diffput and worktree diffget. Each case changes only the first
+hunk in the destination buffer, leaves disk and index unchanged until writing,
+then checks the selected destination's persisted content and the other storage
+location's unchanged content.
+
+Reopening Patch while its index buffer remained visible previously reused stale
+content after an external git add. The pinned patch/command.ts runs a non-forced
+silent edit for each pane during initialization. Lua now also rereads each pane
+before diffthis, preserving explicit encoding/fileformat options on that read.
+A regression verifies that the reused index buffer shows the new staged content;
+a separate case verifies that unsaved index edits survive a refused non-forced
+reload and do not alter Git's index. The existing forced-decoding test guards
+against losing ++enc/++ff during this initialization refresh.

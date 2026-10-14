@@ -192,4 +192,67 @@ for _, side in ipairs({ "head", "worktree" }) do
     MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[10], "changed last")
   end
 end
+for _, case in ipairs({
+  { source = "head", keys = "dp", target = "index", staged = true },
+  { source = "worktree", keys = "dp", target = "index" },
+  { source = "index", keys = "dp", target = "worktree" },
+  { source = "worktree", keys = "do", target = "worktree" },
+}) do
+  T[case.source .. " " .. case.keys .. " updates only the target patch hunk"] = function()
+    if case.staged then
+      H.git(root, "add", "sub/file")
+    end
+    local before_index = H.git(root, "show", ":sub/file")
+    local before_working = vim.fn.readfile(root .. "/sub/file")
+    local panes = require("gin.patch").command({ fargs = { "file" }, smods = {} })
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(panes[case.source]))
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_feedkeys(case.keys, "mx", false)
+    local target = panes[case.target]
+    local lines = vim.api.nvim_buf_get_lines(target, 0, -1, false)
+    local staging = case.source == "worktree" and case.keys == "dp"
+    MiniTest.expect.equality(lines[1], staging and "changed first" or "first")
+    MiniTest.expect.equality(
+      lines[10],
+      (case.target == "worktree" or case.staged) and "changed last" or "last"
+    )
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"), before_index)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), before_working)
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(target))
+    vim.cmd.write()
+    if case.target == "index" then
+      MiniTest.expect.equality(H.git(root, "show", ":sub/file"), table.concat(lines, "\n") .. "\n")
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), before_working)
+    else
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), lines)
+      MiniTest.expect.equality(H.git(root, "show", ":sub/file"), before_index)
+    end
+  end
+end
+T["reopening patch refreshes an index already visible in another window"] = function()
+  local panes = require("gin.patch").command({ fargs = { "file" }, smods = {} })
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(panes.worktree))
+  H.git(root, "add", "sub/file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(panes.index, 0, 1, false), { "first" })
+  local reopened = require("gin.patch").command({ fargs = { "file" }, smods = {} })
+  MiniTest.expect.equality(reopened.index, panes.index)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(reopened.index, 0, 1, false),
+    { "changed first" }
+  )
+end
+T["reopening patch retains unsaved index edits"] = function()
+  local panes = require("gin.patch").command({ fargs = { "file" }, smods = {} })
+  vim.api.nvim_buf_set_lines(panes.index, 0, 1, false, { "unsaved index" })
+  local before = H.git(root, "show", ":sub/file")
+  vim.api.nvim_set_current_win(vim.fn.bufwinid(panes.worktree))
+  local reopened = require("gin.patch").command({ fargs = { "file" }, smods = {} })
+  MiniTest.expect.equality(reopened.index, panes.index)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(reopened.index, 0, 1, false),
+    { "unsaved index" }
+  )
+  MiniTest.expect.equality(vim.bo[reopened.index].modified, true)
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file"), before)
+end
 return T

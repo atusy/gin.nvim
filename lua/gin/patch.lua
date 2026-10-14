@@ -49,6 +49,13 @@ function M.open(root, path, options)
   end
   for _, win in ipairs(windows) do
     vim.api.nvim_win_call(win, function()
+      -- Opening an already visible buffer does not reread its current contents.
+      -- Like upstream, keep modified buffers when a non-forced edit is refused.
+      pcall(require("gin.buffer").open, vim.api.nvim_buf_get_name(0), {
+        enc = options.enc,
+        ff = options.ff,
+        smods = { silent = true, emsg_silent = true },
+      })
       vim.cmd.diffthis()
     end)
   end
