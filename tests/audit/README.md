@@ -222,15 +222,24 @@ vim-gin's locked HEAD and records the SHA256 of the vendored WHATWG
 `encodings.json` label registry. Generated Lua headers record the Deno version.
 
 The normal `tests/test_encoding.lua` suite compares strict decoding with actual
-Deno TextDecoder results for 32 Unicode/single-byte families. Each single-byte
+Deno TextDecoder results for 33 Unicode/single-byte/Shift_JIS families. Each single-byte
 family includes all 256 byte values; Unicode fixtures include BOMs, opposite
 byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
 include ASCII case and whitespace normalization. Separate cases cover ordered
 candidate selection, fallback UTF-8 replacement and BOM metadata.
 
-This is preparatory library coverage, not complete encoding parity. The seven
-multibyte families (GBK, gb18030, Big5, EUC-JP, ISO-2022-JP, Shift_JIS and EUC-KR)
+This is preparatory library coverage, not complete encoding parity. The six remaining
+multibyte families (GBK, gb18030, Big5, EUC-JP, ISO-2022-JP and EUC-KR)
 are registered but have no decoder yet. The library is not connected to buffer
 encoding selection until those implementations are available. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
 oracle, so exhaustive byte tests verify the Lua lookup path, not Deno itself.
+
+Shift_JIS additionally has a checked-in 256-by-256 oracle matrix for every
+2-byte input, exercised by `tests/test_shift_jis.lua`. False entries mean fatal
+decoding errors; strings are exact output (including embedded NUL). The ordinary
+encoding fixture also covers every single byte, alias normalization, Japanese
+text, halfwidth kana, private-use mappings, truncation and 200 deterministic
+longer inputs. Candidate tests check successful selection and fallback after an
+incomplete lead byte. The production mapping contains 9,604 valid lead/trail
+pairs and is loaded only when Shift_JIS is requested. Runtime requires only Lua.

@@ -3677,3 +3677,23 @@ The 70 encoding tests pass on Neovim 0.10.0. The 134 encoding/edit/indicator cas
 reference regeneration check, `make check` and `git diff --check` pass. The full
 integrated suite passes all 1,396 cases across 51 groups
 (`/tmp/gin-encoding-full.log`).
+
+## Strict Shift_JIS candidates
+
+The encoding library now decodes Shift_JIS (including its registered aliases),
+using a lazily loaded table of 9,604 valid byte pairs generated from Deno's fatal
+TextDecoder. ASCII/NUL, U+0080 and halfwidth kana use direct rules. Invalid
+standalone bytes, unknown pairs and incomplete leads fail the candidate so the
+next `fileencodings` entry can be tried. Japanese text and halfwidth kana first
+failed with the expected missing-decoder error before implementation.
+
+The normal mini.nvim suite compares every single byte and all 65,536 two-byte
+inputs with checked-in Deno results, plus aliases, representative strings and
+200 deterministic longer inputs. The 331 encoding tests pass on Neovim 0.10.0.
+A separate temporary differential probe also compared 76,792 single/pair/long
+inputs against the integrated decoder successfully. These corpora establish
+bounded decoder evidence, not completion of automatic buffer encoding selection.
+Six multibyte families remain, and the new library is still not wired into views.
+Full-suite validation passes all 1,657 mini.test cases across 52 groups
+(`/tmp/gin-shift-jis-full.log`). The oracle regeneration check, `make check`
+and `git diff --check` also pass.

@@ -60,4 +60,10 @@ T["UTF-16 BOM is stripped only in the selected byte order"] = function()
     { "￾", false }
   )
 end
+T["Shift_JIS decodes Japanese text and halfwidth kana"] = function()
+  MiniTest.expect.equality(
+    require("gin.encoding").decode("\147\250\150\123\140\234\166", "sjis"),
+    "日本語ｦ"
+  )
+end
 return T

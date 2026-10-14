@@ -18,6 +18,9 @@ function M.decode(data, label)
   elseif encoding == "utf-16le" or encoding == "utf-16be" then
     return remove_bom(require("gin.unicode").decode(data, encoding))
   end
+  if encoding == "shift_jis" then
+    return require("gin.encoding.shift_jis")(data), false
+  end
   local map = assert(
     require("gin.encoding.single_byte")[encoding],
     "Encoding decoder not implemented: " .. encoding
