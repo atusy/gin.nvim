@@ -6,22 +6,14 @@ local format_flag = require("gin.flags").format
 local action = require("gin.action")
 
 function M.candidates(buf, range)
+  buf = buf == 0 and vim.api.nvim_get_current_buf() or buf
   local result = {}
   local reflog = vim.api.nvim_buf_get_name(buf):match("^ginreflog://") ~= nil
   local custom = require("gin.candidate").custom(buf, range, reflog and "reflog" or "log")
   if custom then
     return custom
   end
-  for _, line in
-    ipairs(
-      vim.api.nvim_buf_get_lines(
-        buf,
-        math.max(0, range[1] - 1),
-        math.min(vim.api.nvim_buf_line_count(buf), range[2]),
-        false
-      )
-    )
-  do
+  for _, line in ipairs(vim.fn.getbufline(buf, math.max(1, range[1]), math.max(1, range[2]))) do
     local text = line
     if not reflog then
       text = text:gsub("^[ *|\\/+%=<>%-]*", "")

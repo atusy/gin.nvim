@@ -2567,3 +2567,16 @@ Git status afterward. The expected six records were independently verified using
 the pinned TypeScript parser and its gatherer's absolute-path conversion. The
 Lua path handling continues to preserve literal filename bytes; this test does
 not establish equivalence with upstream's quoted-path parser for control bytes.
+
+## Log and reflog candidate range boundaries
+
+The standard history parser now uses the pinned gatherer's `getbufline` range
+rules: independently clamp both endpoints to line one, return an empty selection
+for reversed/out-of-buffer ranges, and preserve inclusive endpoints. Previously
+`{0, 0}` returned no candidate and negative end lines used Neovim API indexing
+instead of the pinned lower-bound rule. Buffer zero is resolved to the current
+buffer before invoking Vim functions, including the custom-parser path.
+
+Real log/reflog views check six boundary ranges with both standard and custom
+patterns, using both explicit buffer numbers and zero. The original implementation
+failed the zero-endpoint case.

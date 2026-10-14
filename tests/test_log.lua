@@ -28,6 +28,32 @@ local T = MiniTest.new_set({
     end,
   },
 })
+for _, command in ipairs({ "GinLog", "GinReflog" }) do
+  T[command .. " candidate ranges follow pinned line boundaries"] = function()
+    vim.cmd(command .. " --format=%H")
+    local buf = vim.api.nvim_get_current_buf()
+    local setting = command == "GinLog" and "gin_log_parse_pattern" or "gin_reflog_parse_pattern"
+    local saved = vim.g[setting]
+    local ok, err = pcall(function()
+      for _, custom in ipairs({ false, true }) do
+        vim.g[setting] = custom and "^([a-fA-F0-9]+)" or nil
+        for _, case in ipairs({
+          { { 0, 0 }, { { commit = second } } },
+          { { -2, -1 }, { { commit = second } } },
+          { { 1, -1 }, { { commit = second } } },
+          { { -1, 2 }, { { commit = second }, { commit = first } } },
+          { { 2, 1 }, {} },
+          { { 99, 100 }, {} },
+        }) do
+          MiniTest.expect.equality(require("gin.log").candidates(buf, case[1]), case[2])
+          MiniTest.expect.equality(require("gin.log").candidates(0, case[1]), case[2])
+        end
+      end
+    end)
+    vim.g[setting] = saved
+    assert(ok, err)
+  end
+end
 T["log preserves history order and yanks selected commits"] = function()
   vim.cmd("GinLog --oneline")
   local entries = require("gin.log").candidates(vim.api.nvim_get_current_buf(), { 1, 2 })
