@@ -765,6 +765,43 @@ T["selecting attribution follows a renamed file to its source commit"] = functio
   MiniTest.expect.equality(vim.api.nvim_get_current_buf(), file)
   MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], 3)
 end
+T["blame follows original line numbers after insertion and rename"] = function()
+  vim.fn.writefile(
+    { "new 1", "new 2", "new 3", "one", "changed", "three" },
+    root .. "/sub/file.lua"
+  )
+  H.git(root, "commit", "-am", "insert before attribution")
+  H.git(root, "mv", "sub/file.lua", "sub/renamed.lua")
+  H.git(root, "commit", "-m", "rename after insertion")
+  local head = H.git(root, "rev-parse", "HEAD")
+  vim.cmd("GinBlame renamed.lua")
+  local nav, file = vim.api.nvim_get_current_buf(), vim.b.gin_blame_file_bufnr
+  local row = vim.b[file].gin_blame_file_line_to_physical["5"]
+  local original = vim.api.nvim_buf_get_lines(file, 0, -1, false)
+  vim.api.nvim_win_set_cursor(0, { row, 0 })
+  require("gin.blame").switch_commit()
+  local parsed = require("gin.uri").parse(vim.api.nvim_buf_get_name(nav))
+  MiniTest.expect.equality({ parsed.params.commitish, parsed.fragment }, { second, "sub/file.lua" })
+  local selected = vim.b[file].gin_blame_file_line_to_physical["2"]
+  for _, buf in ipairs({ file, nav }) do
+    MiniTest.expect.equality(vim.api.nvim_win_get_cursor(vim.fn.bufwinid(buf))[1], selected)
+  end
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, selected - 1, selected, false),
+    { "changed" }
+  )
+  require("gin.blame").navigate_history("older")
+  MiniTest.expect.equality(
+    require("gin.uri").parse(vim.api.nvim_buf_get_name(nav)).fragment,
+    "sub/renamed.lua"
+  )
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), original)
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], row)
+  require("gin.blame").navigate_history("newer")
+  MiniTest.expect.equality(vim.api.nvim_win_get_cursor(0)[1], selected)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), head)
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+end
 T["commit selection decodes quoted historical filenames"] = function()
   local path = 'sub/日本語\t"file\\name.lua' .. string.char(92) .. "123"
   H.git(root, "mv", "sub/file.lua", path)

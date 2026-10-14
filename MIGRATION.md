@@ -19,7 +19,7 @@ scope, not proof of complete upstream parity.
 - [x] GinDiff: revision selection, read and unified-diff navigation/folding (functional scope audited below).
 - [x] GinPatch: staging/unstaging partial changes (functional scope audited below).
 - [x] GinChaperon: conflict panes and resolution (functional scope audited below).
-- [ ] GinBlame: blame navigation, history and detail.
+- [x] GinBlame: blame navigation, history and detail (functional scope audited below).
 - [x] GinBrowse: remote URL generation and opening (functional scope audited below).
 - [x] GinCd, GinLcd, GinTcd and worktree context.
 - [x] Shared actions: choice, repeat, help, range handling and Plug mappings (functional scope audited below).
@@ -246,7 +246,8 @@ colorscheme changes. A dedicated sign group preserves unrelated plugin signs.
 Encoding/fileformat options now persist in blame URIs through reload and history.
 A Latin-1/CRLF fixture verifies decoded source content while preserving UTF-8 Git
 author metadata. Multibyte encodings, BOMs, Mac line endings and raw URI cmdargs
-still need auditing. Emoji options and broader parser/UI parity checks remain. Source/attribution reload now
+still need auditing. Emoji options and raw read overrides have dedicated
+regressions below; broader parser/UI parity remains open. Source/attribution reload now
 refreshes existing panes; unloading a pane removes its companions after the
 operation settles so reload does not trigger cleanup. Tests cover all three
 close paths and retention of an unrelated file buffer. Restoring missing panes
@@ -3393,4 +3394,36 @@ strengthening the detach fixtures with a newer HEAD, both changed cases were
 rerun there successfully.
 
 The integrated full suite passes all 1,294 cases in 48 groups; `make check`
+also passes.
+
+
+## Blame functional completion audit
+
+Pinned `command/blame/{main,command,edit,history,detail,parser,buffer_utils}.ts`
+provide the command, synchronized panes, commit selection, history and details.
+The Lua equivalents are `lua/gin/blame.lua` and its plugin/ftplugin/syntax
+integration. `tests/test_blame.lua` supplies the following functional evidence.
+
+| Functional scope | Evidence |
+| --- | --- |
+| Layout and source | Subdirectory invocation opens attribution/content/detail panes, uses committed content despite a dirty working file, synchronizes cursors/scrolling, and retains structured commit and physical/source-line maps for populated and empty files. |
+| Attribution/detail | Group continuations, relative-time boundaries, cursor-driven detail changes, divider retention, missing-commit detail clearing and stderr-only progress have direct assertions. |
+| Commit navigation | Historical rename and quoted filename cases select source commits and parents. The new insertion-plus-rename fixture distinguishes current source line 5 from original line 2 and checks both synchronized cursors. |
+| History | Back/forward restores revision, filename and physical positions; new selections truncate forward entries. Divider/no-parent actions and failed navigation retain usable views/history. |
+| Reload/lifecycle | Either pane reloads the existing windows. Hidden/missing paired-file restoration, legacy names and stored context, missing-context errors and companion cleanup preserve unrelated buffers. |
+| Integration/options | Filetype changes undo mappings/window pinning, disabled ftplugins are respected, remapped navigation survives reload, and encoding/fileformat/emojify settings survive history. Raw decoding overrides, literal source versus emojified metadata, divider signs and colors are covered. |
+
+For the new regression, replacing `originalLineNumber` with the current
+`lineNumber` made navigation land on physical row 1 instead of row 4. That
+mutation was restored before the full run. The normal case also verifies that
+back/forward navigation changes neither HEAD nor working/index state.
+
+The checked scope is functional navigation/history/detail. Exhaustive blame
+encoding behavior (including multibyte/BOM/Mac input), parser/UI parity and all
+command/options/API compatibility remain on the broader checklist. These tests
+do not imply that all such combinations are supported identically to Denops.
+
+Validation: all 38 blame cases pass on minimum Neovim 0.10.0.
+
+The integrated full suite passes all 1,295 cases in 48 groups; `make check`
 also passes.
