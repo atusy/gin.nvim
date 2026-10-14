@@ -13,9 +13,9 @@ local T = MiniTest.new_set({
 })
 
 for _, filetype in ipairs({ "gitcommit", "gitrebase" }) do
-  for _, disabled in ipairs({ 0, 1 }) do
+  for _, disabled in ipairs({ 0, 1, vim.NIL }) do
     for _, existing in ipairs({ "none", "global Accept", "buffer Cancel" }) do
-      T[filetype .. " aliases disabled=" .. disabled .. " with " .. existing] = function()
+      T[filetype .. " aliases disabled=" .. tostring(disabled) .. " with " .. existing] = function()
         vim.g.gin_proxy_disable_accept_and_cancel_aliases = disabled
         if existing == "global Accept" then
           vim.api.nvim_create_user_command("Accept", "echo 'user accept'", {})
@@ -40,10 +40,10 @@ for _, filetype in ipairs({ "gitcommit", "gitrebase" }) do
             end
           end
         end
-        check(disabled == 0)
+        check(disabled ~= 1)
         -- Re-sourcing must preserve the commands already installed by either owner.
         vim.cmd.runtime("ftplugin/" .. filetype .. "/gin.lua")
-        check(disabled == 0)
+        check(disabled ~= 1)
         vim.bo.filetype = "text"
         check(false)
       end

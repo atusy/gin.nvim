@@ -2368,3 +2368,20 @@ All ten failed before the change and pass afterward. Existing tests continue to
 cover disabled defaults and user mapping preservation. This change addresses
 null specifically and does not claim complete Vimscript coercion compatibility
 for arbitrary strings, lists or dictionaries passed as flag values.
+
+## Null editor-proxy flags
+
+The editor's `gin_proxy_apply_without_confirm` check now treats `vim.NIL` as
+false, matching the pinned Vimscript condition. Previously a null setting skipped
+confirmation and applied the edited commit message. The real Git cancellation
+test now covers unset, false, zero and null settings: each prompts once, rejects
+the commit on `no`, clears the editor message and preserves the staged content.
+The existing numeric-one test continues to cover intentional automatic applying.
+
+`gin_proxy_disable_accept_and_cancel_aliases` likewise treats null as false.
+The alias lifecycle matrix adds null for gitcommit/gitrebase with no preexisting
+command, a global Accept or a buffer-local Cancel, checking installation, user
+command preservation, repeat sourcing and cleanup. Before these fixes, the null
+confirmation case committed successfully and all six null alias cases failed.
+This closes these null-value differences without claiming arbitrary Vimscript
+coercion semantics for other setting types.

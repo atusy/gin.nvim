@@ -205,35 +205,38 @@ T["quit applies a Git editor when confirmation is disabled"] = function()
   MiniTest.expect.equality(process:wait(5000).code, 0)
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "applied on quit\n")
 end
-T["declining quit confirmation cancels Git and preserves staged content"] = function()
-  local prompts = {}
-  vim.fn.input = function(options)
-    prompts[#prompts + 1] = options
-    return "no"
+for _, case in ipairs({ { "unset" }, { "false", false }, { "zero", 0 }, { "null", vim.NIL } }) do
+  T["declining quit confirmation with " .. case[1] .. " cancels Git and preserves staged content"] = function()
+    vim.g.gin_proxy_apply_without_confirm = case[2]
+    local prompts = {}
+    vim.fn.input = function(options)
+      prompts[#prompts + 1] = options
+      return "no"
+    end
+    local process = require("gin.command").execute({
+      fargs = { "commit" },
+      smods = { silent = true, emsg_silent = true },
+    })
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return vim.b.gin_editor_request ~= nil
+      end, 10),
+      true
+    )
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "declined" })
+    vim.cmd.quit()
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return process:is_closing()
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
+    MiniTest.expect.equality(#prompts, 1)
+    MiniTest.expect.equality(prompts[1].cancelreturn, "no")
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/.git/COMMIT_EDITMSG"), {})
   end
-  local process = require("gin.command").execute({
-    fargs = { "commit" },
-    smods = { silent = true, emsg_silent = true },
-  })
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return vim.b.gin_editor_request ~= nil
-    end, 10),
-    true
-  )
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "declined" })
-  vim.cmd.quit()
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return process:is_closing()
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(process:wait(5000).code ~= 0, true)
-  MiniTest.expect.equality(#prompts, 1)
-  MiniTest.expect.equality(prompts[1].cancelreturn, "no")
-  MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
-  MiniTest.expect.equality(vim.fn.readfile(root .. "/.git/COMMIT_EDITMSG"), {})
 end
 T["accepting the default quit answer writes and commits the message"] = function()
   local prompted = false
