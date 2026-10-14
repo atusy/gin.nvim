@@ -54,7 +54,19 @@ function M.url(root, revision, options)
   local remote = options.remote
     or containing_remote(root, options.home and "HEAD" or revision)
     or "origin"
-  local fetch = vim.trim(git.run({ "remote", "get-url", remote }, { cwd = root }).stdout)
+  local fetched = git.run({ "remote", "get-url", remote }, { cwd = root, check = false })
+  if fetched.code == 2 then
+    error(
+      "No remote '"
+        .. remote
+        .. "' found"
+        .. (options.home and " or failed to get fetch URL." or ""),
+      0
+    )
+  elseif fetched.code ~= 0 then
+    error(git.error_message(fetched, "git"), 0)
+  end
+  local fetch = vim.trim(fetched.stdout)
   local scheme, authority, repository = fetch:match("^([%a][%w+.-]*)://([^/]+)/(.+)$")
   local host
   if scheme then

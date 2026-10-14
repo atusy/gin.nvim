@@ -82,6 +82,30 @@ T["GinBrowse reports an unborn HEAD before a missing remote"] = function()
     vim.cmd("GinBrowse --no-browser")
   end, "No commit found for HEAD")
 end
+T["browse distinguishes a missing remote from a Git execution failure"] = function()
+  MiniTest.expect.error(function()
+    require("gin.browse").url(root, "HEAD", { remote = "missing-remote" })
+  end, "No remote 'missing%-remote' found")
+end
+for _, mode in ipairs({ "object", "commit", "pr", "permalink", "home" }) do
+  T["browse reports a missing default remote for " .. mode] = function()
+    H.git(root, "remote", "remove", "origin")
+    local options = {}
+    options[mode] = true
+    local ok, err = pcall(require("gin.browse").url, root, "HEAD", options)
+    MiniTest.expect.equality(ok, false)
+    MiniTest.expect.equality(
+      err,
+      "No remote 'origin' found" .. (mode == "home" and " or failed to get fetch URL." or "")
+    )
+  end
+end
+T["browse preserves other remote lookup failures"] = function()
+  -- A leading option produces Git's usage failure, not the missing-remote code.
+  MiniTest.expect.error(function()
+    require("gin.browse").url(root, "HEAD", { remote = "--invalid-gin-audit-flag" })
+  end, "git exited 129:")
+end
 T["browse accepts an explicit empty alias dictionary"] = function()
   vim.g.gin_browse_aliases = vim.empty_dict()
   MiniTest.expect.equality(
