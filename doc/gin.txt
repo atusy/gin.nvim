@@ -269,7 +269,11 @@ dictionary from Lua, use vim.empty_dict().
 ==============================================================================
 EDITOR AND PROMPTS                                                 *gin-proxy*
 
-Asynchronous Gin commands open Git editor requests in a new tab. Buffer-local
+Plugin startup exports GIT_EDITOR and GIT_ASKPASS for terminal jobs as well as
+Gin commands. Set the disable flags below before loading the plugin to preserve
+the corresponding inherited environment variables.
+
+Gin commands open Git editor requests in a new tab. Buffer-local
 :Apply writes the file and continues Git; :Cancel rejects the request. Quitting
 asks whether to apply. Git credential prompts use masked Neovim input.
 

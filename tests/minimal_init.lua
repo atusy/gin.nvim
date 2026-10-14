@@ -1,3 +1,6 @@
+-- Keep process-wide proxy startup isolated to test_proxy_startup's child editors.
+-- Other suites exercise explicit per-process environments and inherited overrides.
+vim.g.loaded_gin_proxy = 1
 vim.env.GIT_CONFIG_NOSYSTEM = "1"
 vim.env.GIT_CONFIG_GLOBAL = "/dev/null"
 for _, name in ipairs({ "GIT_EDITOR", "GIT_SEQUENCE_EDITOR", "GIT_ASKPASS", "SSH_ASKPASS" }) do

@@ -3530,3 +3530,31 @@ test coverage, and must be addressed before completing the proxy audit.
 Validation: all 1,306 mini.test cases in 48 groups pass. All 21 keyboard-driven
 editor interaction cases also pass on Neovim 0.10.0. `make check` and
 `git diff --check` pass.
+
+## Terminal proxy inheritance
+
+`plugin/gin-proxy.lua` now exports the existing Lua editor/askpass launchers and
+RPC address into Neovim's environment at plugin startup. This closes the terminal
+inheritance gap recorded above and follows pinned `proxy/server.ts`, which also
+sets these environment variables globally. The separate startup file keeps
+proxy availability independent of the main Gin command's loaded marker. Its
+own `loaded_gin_proxy` guard prevents repeat initialization.
+
+`test_proxy_startup.lua` uses independent child Neovim instances and real
+terminal jobs without invoking Gin commands. A terminal `git commit` opens the
+proxy, accepts keyboard input through `:Apply`, and records the expected commit
+and tree. A terminal `git credential fill` obtains both fields through the RPC
+askpass with terminal prompting disabled. Four startup configurations verify
+independent editor/askpass opt-outs, retaining inherited values for disabled
+proxies, and idempotent sourcing. The flags must be configured before plugin
+loading to prevent process-wide overrides, as documented in the help and README.
+
+The general mini.test harness disables this startup file so existing suites can
+control inherited/per-process environments independently; the startup behavior
+itself is tested in the isolated children without that marker. The existing
+launcher cleanup and RPC listener implementation are reused. This change does
+not add dynamic process-wide reconfiguration when flags change after startup,
+or claim the remaining proxy/API audit is complete.
+
+Validation: all 1,312 mini.test cases in 49 groups pass. All six isolated proxy
+startup cases also pass on Neovim 0.10.0. `make check` and `git diff --check` pass.

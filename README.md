@@ -172,15 +172,18 @@ authors, message bodies, and literal source text.
 GinDiff, GinLog and GinReflog also render Git colors by default; use `--no-color`
 for plain output.
 
-Asynchronous `:Gin commit` opens Git's editor file in a new tab. Use buffer-local
+`:Gin commit` opens Git's editor file in a new tab. Use buffer-local
 `:Apply` to write it and continue Git, or `:Cancel` to reject it. Set
 `g:gin_proxy_editor_opener` to choose another supported opener or
 `g:gin_proxy_disable_editor = 1` to retain Git's configured editor. Quitting asks
 whether to apply; `g:gin_proxy_apply_without_confirm = 1` applies without asking.
-Asynchronous Gin commands also route Git credential prompts through masked
+Gin commands also route Git credential prompts through masked
 Neovim input; `g:gin_proxy_disable_askpass = 1` retains the configured askpass.
-Terminal inheritance, synchronous integration, and remaining action compatibility
-are still being audited.
+Plugin startup exports both proxies to Neovim's environment, so Git commands
+in `:terminal` use them too. Set either disable flag before plugin loading to
+preserve the corresponding inherited environment variable.
+`++wait` and synchronous buffer commands also service proxy requests.
+The wider action/API compatibility audit remains in progress.
 
 With filetype plugins enabled, gitcommit/gitrebase buffers receive `:Accept`
 (`:wq`) and `:Cancel` (`:cq`) aliases unless those commands already exist.
