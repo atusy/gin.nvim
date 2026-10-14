@@ -1392,3 +1392,11 @@ their spaces immediately before command separators become part of `:nunmap`
 keys in Neovim and prevent removal. The Lua-generated cleanup omits those
 spaces. This is a corrected lifecycle behavior, not exact reproduction of that
 upstream defect.
+
+Status/log/reflog/tag/stash Enter mappings now append the pinned `zv` suffix,
+so the destination line is exposed when it lies inside a closed fold. Ten
+mini.nvim cases open real Git-backed lists, substitute a controlled action
+which moves into a closed fold, and send normal/Visual Enter through the actual
+mapping chain. They verify that the fold opens after dispatch. This isolates
+the mapping suffix behavior; it is not additional coverage of every underlying
+edit/show action or of all mapping modes and flags.

@@ -269,7 +269,7 @@ function M.mappings(buf)
       vim.keymap.set(
         { "n", "x" },
         lhs,
-        "<Plug>(gin-action-" .. action .. ")",
+        "<Plug>(gin-action-" .. action .. ")" .. (lhs == "<CR>" and "zv" or ""),
         { buffer = buf, remap = true, nowait = true }
       )
     end

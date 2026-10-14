@@ -411,7 +411,7 @@ function M.read(buf, name)
       vim.keymap.set(
         (key == "a" or key == "." or key == "<CR>") and { "n", "x" } or "n",
         key,
-        "<Plug>(gin-action-" .. name .. ")",
+        "<Plug>(gin-action-" .. name .. ")" .. (key == "<CR>" and "zv" or ""),
         { buffer = buf, remap = true, nowait = true }
       )
     end
