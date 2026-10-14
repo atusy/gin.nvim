@@ -89,6 +89,33 @@ for _, case in ipairs({
     )
   end
 end
+for _, remote in ipairs({
+  "https://github.com/own%65r/repo%2Dname.git",
+  "ssh://git@github.com/own%65r/repo%2Dname.git",
+  "git@github.com:own%65r/repo%2Dname.git",
+}) do
+  T["browse preserves existing remote percent escapes " .. remote] = function()
+    H.git(root, "remote", "set-url", "origin", remote)
+    local base = "https://github.com/own%65r/repo%2Dname"
+    MiniTest.expect.equality(require("gin.browse").url(root, "HEAD", { home = true }), base)
+    MiniTest.expect.equality(
+      require("gin.browse").url(root, "HEAD", { path = "sub/space # file.md", permalink = true }),
+      base .. "/blob/" .. hash .. "/sub/space%20%23%20file.md"
+    )
+    MiniTest.expect.equality(H.git(root, "remote", "get-url", "origin"), remote .. "\n")
+  end
+end
+T["browse still escapes literal percent bytes in Git filenames"] = function()
+  local path = "sub/file%20name.md"
+  vim.fn.writefile({ "percent filename" }, root .. "/" .. path)
+  H.git(root, "add", "--", path)
+  H.git(root, "commit", "-m", "percent filename")
+  H.git(root, "remote", "set-url", "origin", "https://github.com/owner/repo%2520name.git")
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { path = path }),
+    "https://github.com/owner/repo%2520name/blob/main/sub/file%2520name.md"
+  )
+end
 T["browse builds encoded file ranges and immutable permalinks"] = function()
   local url = require("gin.browse").url(
     root,

@@ -62,7 +62,9 @@ function M.url(root, revision, options)
     vim.tbl_contains({ "github.com", "gitlab.com", "bitbucket.org" }, provider),
     "Unsupported hosting service: " .. provider
   )
-  local base = "https://" .. host .. "/" .. encode(repository)
+  -- The remote path is already URL-encoded; file paths below are still literal.
+  local encoded_repository = encode(repository):gsub("%%25(%x%x)", "%%%1")
+  local base = "https://" .. host .. "/" .. encoded_repository
   if options.home then
     return base
   end

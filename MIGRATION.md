@@ -2655,3 +2655,18 @@ The reference is deno-git-browse v1.0.1
 and the pinned command's `formatPath`. Real repository cases cover all three
 providers, single and paired lines, equal endpoints, leading zeroes, single zero,
 and directory ranges. Existing Ex-range and permalink tests remain in the suite.
+
+## Browse encoded remote repository paths
+
+Remote repository paths now preserve existing percent escapes instead of encoding
+the percent sign a second time. This matches URL.pathname handling in the
+upstream URL base formatter. The change is limited to remote paths: literal Git
+filenames continue to be encoded when constructing a file URL.
+
+Three real-repository cases cover HTTPS, SSH and scp-style remotes, checking both
+home and file permalink output and the unchanged configured fetch URL. A fourth
+case commits a filename containing literal `%20` and checks its `%2520` URL while
+also preserving a double-encoded remote repository name. The downloaded v1.0.1
+URL base formatter was executed separately and confirmed both remote escape
+expectations. Malformed escape sequences and other URL canonicalization details
+remain outside this check.
