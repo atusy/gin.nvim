@@ -12,14 +12,21 @@ if (head !== lock['vim-gin'].commit) throw new Error('vim-gin checkout does not 
 const kinds = ['branch', 'status', 'log', 'reflog', 'tag', 'stash'];
 execFileSync('git', ['-C', upstream, 'diff', '--exit-code', 'HEAD', '--', 'denops/gin/action', ...kinds.map(kind => `denops/gin/command/${kind}/edit.ts`)]);
 const mappings = new Map();
+const mappingOptions = {};
 const fail = () => { throw new Error('Unexpected editor or action execution during registration'); };
 const exports = {
   batch: async (denops, callback) => callback(denops),
   ensure: async (denops, _bufnr, callback) => callback(denops),
-  map: async (_denops, lhs, rhs) => {
+  map: async (_denops, lhs, rhs, options = {}) => {
     const name = lhs.match(/^<Plug>\(gin-action-(.*)\)$/)?.[1];
     if (name === undefined) throw new Error('Unexpected mapping: ' + lhs);
-    mappings.set(name, rhs.match(/^<Plug>\(gin-action-(.*)\)$/)?.[1] ?? null);
+    const alias = rhs.match(/^<Plug>\(gin-action-(.*)\)$/)?.[1] ?? null;
+    const category = alias === null ? 'action' : 'alias';
+    if (mappingOptions[category] && JSON.stringify(mappingOptions[category]) !== JSON.stringify(options)) {
+      throw new Error(`Nonuniform mapping options for ${category}: ${name}`);
+    }
+    mappingOptions[category] = options;
+    mappings.set(name, alias);
   },
   bind: async () => {},
   exec: async () => {}, // Buffer rendering is outside this registration oracle.
@@ -54,7 +61,7 @@ async function load(path) {
   });
   return module;
 }
-const oracle = { commit: head };
+const oracle = { commit: head, mapping_options: mappingOptions };
 for (const kind of kinds) {
   mappings.clear();
   const module = await load(upstream + `denops/gin/command/${kind}/edit.ts`);

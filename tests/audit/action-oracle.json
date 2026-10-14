@@ -1,5 +1,15 @@
 {
   "commit": "24cce091cfa32c013bc53cf4ff8f721d6690cf24",
+  "mapping_options": {
+    "action": {
+      "buffer": true,
+      "silent": true,
+      "noremap": true
+    },
+    "alias": {
+      "buffer": true
+    }
+  },
   "branch": {
     "browse": null,
     "browse:commit": null,

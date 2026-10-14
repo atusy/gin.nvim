@@ -1941,3 +1941,11 @@ matching reset_file.ts. A staged-rename regression verifies that resetting
 the destination retains the staged source deletion and leaves the destination
 untracked with its content intact. Existing unstage tests continue to cover
 restoring both sides of a rename. All six name/alias inventories now match.
+
+The six-view registration audit now also captures mapping options and checks
+all 308 actions/aliases in Normal, Visual, Select and Operator-pending modes.
+Buffer locality and noremap/silent/expr/nowait/script attributes match; no
+action mappings appear in Insert, Command-line, Terminal or Lang-Arg modes.
+Making aliases silent temporarily caused all six view checks to fail, proving
+the attribute comparison detects that regression. The implementation was
+restored before full validation; this step changes only audit tooling/tests.

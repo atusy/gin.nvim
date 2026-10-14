@@ -193,7 +193,7 @@ node --experimental-vm-modules scripts/action-oracle.mjs --write
 ```
 
 This optional Node script (verified with v26.8.2) executes the pinned Branch,
-Status, Log, Reflog, Tag and Stash initializers and their action modules, capturing mapping names and alias targets.
+Status, Log, Reflog, Tag and Stash initializers and their action modules, capturing mapping names, alias targets and mapping options.
 It checks the upstream commit and rejects changes to the executed source tree.
 Type-only names from the older TypeScript imports are removed after stripping
 types. Batch/buffer callbacks run directly; buffer rendering, event binding,
@@ -204,6 +204,11 @@ VM modules and TypeScript stripping; these are tooling-only dependencies.
 
 The regular mini.nvim Branch and default-mapping suites compare the captured
 registrations with real Lua buffer mappings: Branch 44, Status 79, Log 62,
-Reflog 62, Tag 30 and Stash 31 (308 total). This establishes names and aliases,
-not mapping attributes, execution semantics or unlisted views. Those require
-their separate integration and mapping tests.
+Reflog 62, Tag 30 and Stash 31 (308 total). The options captured for direct actions and aliases are checked for uniformity;
+regeneration fails if a registration needs per-action option handling. The
+mapping suite compares names, aliases and buffer/noremap/silent/expr/nowait/script
+attributes in Normal, Visual, Select and Operator-pending modes. It also checks
+that these actions are absent from Insert, Command-line, Terminal and Lang-Arg
+modes. The mode/default interpretation follows denops std 7's mapping helper.
+This does not establish execution semantics or unlisted views, which require
+separate integration and mapping tests.

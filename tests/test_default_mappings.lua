@@ -67,21 +67,41 @@ for _, command in ipairs({ "GinStatus", "GinLog", "GinReflog", "GinTag", "GinSta
     end
   end
 end
-for _, kind in ipairs({ "status", "log", "reflog", "tag", "stash" }) do
+for _, kind in ipairs({ "branch", "status", "log", "reflog", "tag", "stash" }) do
   T[kind .. " action registrations match the pinned initialization oracle"] = function()
     local oracle =
       vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/tests/audit/action-oracle.json"), "\n"))
     local lock = vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/deps-lock.json"), "\n"))
     MiniTest.expect.equality(oracle.commit, lock["vim-gin"].commit)
     vim.cmd("Gin" .. kind:sub(1, 1):upper() .. kind:sub(2))
-    local mappings = {}
-    for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, "n")) do
-      local name = map.lhs:match("^<Plug>%(gin%-action%-(.*)%)$")
-      if name then
-        mappings[name] = (map.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$") or vim.NIL
+    local expected = {}
+    local attributes = { "buffer", "noremap", "silent", "expr", "nowait", "script" }
+    for name, alias in pairs(oracle[kind]) do
+      local options = oracle.mapping_options[alias == vim.NIL and "action" or "alias"]
+      MiniTest.expect.equality(options.mode, nil)
+      expected[name] = { alias = alias }
+      for _, attribute in ipairs(attributes) do
+        expected[name][attribute] = options[attribute] and 1 or 0
       end
+      expected[name].buffer = options.buffer and vim.api.nvim_get_current_buf() or 0
     end
-    MiniTest.expect.equality(mappings, oracle[kind])
+    for _, mode in ipairs({ "n", "x", "s", "o", "i", "c", "t", "l" }) do
+      local mappings = {}
+      for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, mode)) do
+        local name = map.lhs:match("^<Plug>%(gin%-action%-(.*)%)$")
+        if name then
+          mappings[name] =
+            { alias = (map.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$") or vim.NIL }
+          for _, attribute in ipairs(attributes) do
+            mappings[name][attribute] = map[attribute]
+          end
+        end
+      end
+      MiniTest.expect.equality(
+        mappings,
+        vim.tbl_contains({ "n", "x", "s", "o" }, mode) and expected or {}
+      )
+    end
   end
 end
 
