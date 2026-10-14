@@ -64,6 +64,29 @@ function M.worktree(path)
   return require("gin.worktree").current(path)
 end
 
+-- The pinned expander calls JSON.parse(fragment).at(0), falling back to the
+-- entire fragment if indexing or joining fails.
+local function legacy_path(fragment)
+  local decoded, value = pcall(vim.json.decode, fragment)
+  if not decoded then
+    return fragment
+  end
+  local path
+  if type(value) == "table" and vim.islist(value) then
+    path = value[1]
+  elseif type(value) == "string" then
+    path = vim.fn.strcharpart(value, 0, 1)
+    -- String.at selects a UTF-16 unit; an isolated surrogate cannot be sent to Neovim.
+    assert(vim.fn.char2nr(path) <= 0xffff, "Unpaired surrogate in expanded path")
+  else
+    return fragment
+  end
+  if path == nil or path == vim.NIL or path == false or path == 0 or path == "" then
+    return nil
+  end
+  return type(path) == "string" and path or fragment
+end
+
 ---Expand a Vim filename expression, resolving file-bearing Gin views.
 function M.expand(expr)
   local name = vim.fn.expand(expr)
@@ -73,7 +96,13 @@ function M.expand(expr)
   local ok, expanded = pcall(function()
     local parsed = require("gin.uri").parse(name)
     local path
-    if parsed.scheme == "ginedit" then
+    if
+      parsed.legacy
+      and parsed.fragment
+      and vim.tbl_contains({ "ginedit", "gindiff", "ginlog" }, parsed.scheme)
+    then
+      path = legacy_path(parsed.fragment)
+    elseif parsed.scheme == "ginedit" then
       path = parsed.fragment
     elseif parsed.scheme == "gindiff" and parsed.fragment then
       local decoded, paths = pcall(vim.json.decode, parsed.fragment)
@@ -85,13 +114,7 @@ function M.expand(expr)
     elseif parsed.scheme == "ginlog" and parsed.fragment then
       -- Lua log URIs carry argv; file paths follow the explicit separator.
       local decoded, args = pcall(vim.json.decode, parsed.fragment)
-      if parsed.legacy then
-        if decoded then
-          path = args[1]
-        else
-          path = parsed.fragment
-        end
-      elseif decoded then
+      if decoded then
         for i, value in ipairs(args) do
           if value == "--" then
             path = args[i + 1]
@@ -101,7 +124,7 @@ function M.expand(expr)
       end
     end
     if type(path) == "string" and path ~= "" then
-      local absolute = path:match("^/") or path:match("^%a:[/\\]")
+      local absolute = not parsed.legacy and (path:match("^/") or path:match("^%a:[/\\]"))
       return vim.fs.normalize(absolute and path or (parsed.root .. "/" .. path))
     end
     return name

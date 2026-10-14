@@ -53,6 +53,36 @@ T["legacy log expansion accepts a plain path fragment"] = function()
     MiniTest.expect.equality(args, { root .. "/" .. path })
   end)
 end
+T["legacy file URI expansion shares JSON fragment semantics"] = function()
+  local root = vim.fn.tempname()
+  for _, scheme in ipairs({ "ginedit", "gindiff", "ginlog" }) do
+    for _, case in ipairs({
+      { ' ["sub/file.lua","other"]', "sub/file.lua" },
+      { "[]", false },
+      { "[null]", false },
+      { "[false]", false },
+      { "[0]", false },
+      { '[""]', false },
+      { "[12]", "[12]" },
+      { "[{}]", "[{}]" },
+      { "{}", "{}" },
+      { "null", "null" },
+      { "12", "12" },
+      { '"text"', "t" },
+      { '"日本語"', "日" },
+      { '""', false },
+      { '["/absolute/file"]', "absolute/file" },
+    }) do
+      local name = scheme .. "://" .. root .. ";commitish=HEAD#" .. case[1]
+      with_name(name, function()
+        MiniTest.expect.equality(
+          vim.fn["gin#util#expand"]("%"),
+          case[2] and root .. "/" .. case[2] or name
+        )
+      end)
+    end
+  end
+end
 T["expand leaves views without file paths unchanged"] = function()
   for _, case in ipairs({
     { "ginstatus", nil },

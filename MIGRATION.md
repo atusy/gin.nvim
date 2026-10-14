@@ -1681,3 +1681,14 @@ outer error handler returned the original URI. A public Vimscript API test and
 command-placeholder assertion cover a path with spaces and Japanese text. Native
 GinLog argv fragments keep their existing separator-based interpretation; this
 change does not reinterpret native malformed fragments as filesystem paths.
+
+Legacy GinEdit, GinDiff and GinLog now share the locked expander's JSON fragment
+selection: array first elements, empty/falsy selections, string first characters,
+and literal-fragment fallback when indexing or joining has the wrong type.
+Legacy joins retain the repository prefix even for a leading slash, matching
+std/path.join rather than treating the fragment as an absolute override. Fifteen
+fragment cases across the three schemes are checked through gin#util#expand;
+the expected selections and joins were also executed in Deno with upstream's
+std/path dependency. Native URI interpretations remain separate. Unpaired
+UTF-16 string selections cannot be represented safely and leave the URI intact;
+full transport/encoding-edge parity is not claimed.
