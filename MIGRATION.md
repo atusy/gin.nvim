@@ -1627,3 +1627,11 @@ monolithic-startup limitation is resolved. Fresh Neovim cases cover each marker
 with false and 1, retained marker values, enabled commands and BufReadCmd routes,
 absence of disabled read/write routes, public event registration and idempotent
 re-sourcing. Normal command declarations remain compared against upstream.
+
+Syntax and existing ftplugin entrypoints now also test loaded-marker presence,
+matching the pinned `exists('b:current_syntax')` and `exists('b:did_ftplugin')`
+guards. A false marker must not clear existing syntax or install mappings/change
+options. A runtime-file matrix exercises all four Lua syntax files and all eight
+existing Lua ftplugins, preserving sentinel syntax, normal mappings, display
+options and marker values. This does not establish parity for absent ftplugins
+or all syntax matches; blame ftplugin initialization still needs separate audit.

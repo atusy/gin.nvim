@@ -1,4 +1,4 @@
-if vim.b.current_syntax then
+if vim.b.current_syntax ~= nil then
   return
 end
 vim.cmd("syntax clear")

@@ -1,4 +1,4 @@
-if vim.b.did_ftplugin then
+if vim.b.did_ftplugin ~= nil then
   return
 end
 vim.b.did_ftplugin = 1
