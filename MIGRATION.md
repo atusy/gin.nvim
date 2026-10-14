@@ -3507,3 +3507,26 @@ implementation and regression evidence above follow the executable routes.
 Validation: all 1,304 mini.test cases across 48 groups pass. The 26-case
 GinBuffer suite and subsequently added preview case pass on Neovim 0.10.0.
 `make check` and `git diff --check` pass.
+
+## Rebase cancellation and remaining terminal proxy gap
+
+`test_editor_interaction.lua` now cancels an edited interactive-rebase todo
+through actual keyboard input, both with and without `Gin ++wait`. The todo is
+changed from `pick` to `drop` before `:Cancel`. Git must exit unsuccessfully,
+without `GinCommandPost`, while HEAD, index entries and working content remain
+unchanged and no rebase state directory remains. This complements the existing
+consecutive-reword tests that exercise multiple successful editor requests.
+The cancellation route matches pinned `proxy/server.ts` (clear the editor file
+and return a failed editor status) and `autoload/gin/internal/proxy.vim`.
+
+The proxy checklist remains unchecked: pinned `proxy/server.ts` sets process-wide
+`GIT_EDITOR`, `GIT_ASKPASS` and its listener address at startup, and the pinned
+help explicitly covers Git invoked from Neovim terminals. Lua currently builds
+these overrides only for Gin child processes via `editor.environment()`; plugin
+startup does not export them. Ordinary terminal Git therefore does not yet
+inherit the proxy. This is a confirmed implementation gap, not merely missing
+test coverage, and must be addressed before completing the proxy audit.
+
+Validation: all 1,306 mini.test cases in 48 groups pass. All 21 keyboard-driven
+editor interaction cases also pass on Neovim 0.10.0. `make check` and
+`git diff --check` pass.

@@ -125,6 +125,47 @@ for _, wait in ipairs({ false, true }) do
       MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
     end
   end
+  T["cancelling the rebase todo preserves history and staged state" .. (wait and " with ++wait" or "")] = function()
+    H.git(root, "commit", "-m", "base")
+    vim.fn.writefile({ "second" }, root .. "/file")
+    H.git(root, "commit", "-am", "second")
+    local head = H.git(root, "rev-parse", "HEAD")
+    local index = H.git(root, "ls-files", "--stage")
+    child.lua([[
+      local git = require("gin.git")
+      local start = git.start
+      git.start = function(args, options, callback)
+        if args[1] ~= "rebase" then return start(args, options, callback) end
+        return start(args, options, function(result)
+          _G.gin_test_exit = result.code
+          callback(result)
+        end)
+      end
+    ]])
+    child.type_keys(":silent! Gin " .. (wait and "++wait " or "") .. "rebase -i HEAD~1<CR>")
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("vim.b.gin_editor_request ~= nil")
+          and child.fn.fnamemodify(child.api.nvim_buf_get_name(0), ":t") == "git-rebase-todo"
+      end, 10),
+      true
+    )
+    child.type_keys("gg0cw", "drop", "<Esc>", ":Cancel<CR>")
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("_G.gin_test_exit ~= nil")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("_G.gin_test_exit ~= 0"), true)
+    MiniTest.expect.equality(child.lua_get("_G.gin_test_completed"), false)
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), head)
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "second" })
+    MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-merge"), 0)
+    MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-apply"), 0)
+  end
   T["keyboard input rewords consecutive commits through repeated editor requests" .. (wait and " with ++wait" or "")] = function()
     H.git(root, "commit", "-m", "base")
     local base = H.git(root, "rev-parse", "HEAD")
