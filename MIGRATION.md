@@ -1993,3 +1993,9 @@ handler directly because all also suppresses BufWriteCmd, restore eventignore
 before draining, and compare normal versus suppressed completion. Both cases
 verify updated index content, an unchanged working file and a cleared modified
 flag. Existing write/filter/failure tests continue to exercise the write path.
+
+Index-write validation now includes a throwing BufWritePost command. On the
+current Neovim path, the hook error reaches the caller while the completed
+index write still produces GinCommandPost. The regression checks the exact
+saved index content, unchanged working file, cleared modified flag and one
+completion event. No production change was needed for this case.

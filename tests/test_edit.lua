@@ -119,6 +119,33 @@ T["failed index writes keep edits marked modified and preserve both files"] = fu
   MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "index\n")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
 end
+T["successful index writes still notify when a post-write hook fails"] = function()
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "saved index" })
+  H.drain()
+  local events = 0
+  local completion = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  local hook = vim.api.nvim_create_autocmd("BufWritePost", {
+    buffer = 0,
+    command = "throw 'post-write hook failed'",
+  })
+  local ok, err = pcall(vim.cmd.write)
+  vim.api.nvim_del_autocmd(hook)
+  local drained, drain_error = pcall(H.drain)
+  vim.api.nvim_del_autocmd(completion)
+  assert(drained, drain_error)
+  MiniTest.expect.equality(ok, false)
+  MiniTest.expect.equality(tostring(err):find("post-write hook failed", 1, true) ~= nil, true)
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "saved index\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+  MiniTest.expect.equality(vim.bo.modified, false)
+  MiniTest.expect.equality(events, 1)
+end
 T["index writes honor clean filters for the repository path"] = function()
   vim.fn.writefile({ "sub/file.lua filter=upper" }, root .. "/.gitattributes")
   H.git(root, "config", "filter.upper.clean", "tr a-z A-Z")
