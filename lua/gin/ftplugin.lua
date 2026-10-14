@@ -45,8 +45,7 @@ function M.default_mappings(buf, kind)
     })
   end
   vim.b[buf]._gin_list_mappings = kind
-  local disabled = vim.g["gin_" .. kind .. "_disable_default_mappings"]
-  return not disabled or disabled == vim.NIL or disabled == 0
+  return not require("gin.util").vimscript_flag("gin_" .. kind .. "_disable_default_mappings")
 end
 
 function M.setup_mappings(buf, kind)
@@ -110,11 +109,7 @@ function M.blame_mappings(target)
   vim.keymap.set("n", "<Plug>(gin-blame-switch-commit)", function()
     require("gin.blame").switch_commit()
   end, { buffer = target, silent = true })
-  if
-    not vim.g.gin_blame_disable_default_mappings
-    or vim.g.gin_blame_disable_default_mappings == vim.NIL
-    or vim.g.gin_blame_disable_default_mappings == 0
-  then
+  if not require("gin.util").vimscript_flag("gin_blame_disable_default_mappings") then
     vim.keymap.set(
       "n",
       "<CR>",
@@ -127,11 +122,7 @@ function M.blame_mappings(target)
     vim.keymap.set("n", plug, function()
       require("gin.blame").navigate_history(direction)
     end, { buffer = target, silent = true })
-    if
-      not vim.g.gin_blame_disable_default_mappings
-      or vim.g.gin_blame_disable_default_mappings == vim.NIL
-      or vim.g.gin_blame_disable_default_mappings == 0
-    then
+    if not require("gin.util").vimscript_flag("gin_blame_disable_default_mappings") then
       vim.keymap.set("n", key, plug, { buffer = target, remap = true })
     end
   end

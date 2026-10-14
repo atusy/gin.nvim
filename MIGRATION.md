@@ -2403,3 +2403,18 @@ strings for both filetypes and all existing-command cases. Before the change,
 three confirmation cases and eighteen alias cases failed. Existing numeric-one
 application and alias-disable cases still verify the true branch. This extends
 the preceding null fix to the actual native conversion rule for these two flags.
+
+## Native condition conversion for ftplugin mapping flags
+
+The list, buffer, diff and blame mapping installers now use the same native
+Vimscript flag reader as the editor aliases. This extends the earlier null fix:
+string zero, empty strings and nonnumeric strings keep defaults enabled, while
+numeric strings such as `"1"` and `"0x1"` disable them. The pinned ftplugins use
+`!get(g:, ...)`, so Lua truthiness is not an equivalent condition.
+
+The ten-filetype matrix now covers six representative values and checks both
+mapping installation and omission; blame also checks its older/newer keys.
+Thirty cases failed before this change, all for false-valued strings. Existing
+reload and user-mapping preservation tests continue to exercise the installation
+lifecycle. Denops-validated Patch/Chaperon flags retain their separately documented
+boolean/numeric contract and are not passed through Vimscript coercion.

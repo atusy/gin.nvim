@@ -119,19 +119,38 @@ for _, kind in ipairs({
   "blame",
   "blame-nav",
 }) do
-  T[kind .. " null mapping flag keeps defaults enabled"] = function()
-    local setting = "gin_"
-      .. (kind == "blame-nav" and "blame" or kind)
-      .. "_disable_default_mappings"
-    vim.g[setting] = vim.NIL
-    vim.bo.filetype = "gin-" .. kind
-    local mapping = vim.fn.maparg("<CR>", "n", false, true)
-    MiniTest.expect.equality(mapping.buffer, 1)
-    MiniTest.expect.equality(type(mapping.rhs), "string")
-    MiniTest.expect.equality(mapping.rhs:find("<Plug>(gin-", 1, true), 1)
-    if kind == "blame" or kind == "blame-nav" then
-      MiniTest.expect.equality(vim.fn.maparg("<C-O>", "n"), "<Plug>(gin-blame-navigate-older)")
-      MiniTest.expect.equality(vim.fn.maparg("<C-I>", "n"), "<Plug>(gin-blame-navigate-newer)")
+  for _, case in ipairs({
+    { vim.NIL, true },
+    { "0", true },
+    { "", true },
+    { "true", true },
+    { "1", false },
+    { "0x1", false },
+  }) do
+    T[kind .. " mapping flag " .. vim.inspect(case[1]) .. " follows Vimscript truthiness"] = function()
+      local setting = "gin_"
+        .. (kind == "blame-nav" and "blame" or kind)
+        .. "_disable_default_mappings"
+      vim.g[setting] = case[1]
+      vim.bo.filetype = "gin-" .. kind
+      local mapping = vim.fn.maparg("<CR>", "n", false, true)
+      if case[2] then
+        MiniTest.expect.equality(mapping.buffer, 1)
+        MiniTest.expect.equality(type(mapping.rhs), "string")
+        MiniTest.expect.equality(mapping.rhs:find("<Plug>(gin-", 1, true), 1)
+      else
+        MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), "")
+      end
+      if kind == "blame" or kind == "blame-nav" then
+        MiniTest.expect.equality(
+          vim.fn.maparg("<C-O>", "n"),
+          case[2] and "<Plug>(gin-blame-navigate-older)" or ""
+        )
+        MiniTest.expect.equality(
+          vim.fn.maparg("<C-I>", "n"),
+          case[2] and "<Plug>(gin-blame-navigate-newer)" or ""
+        )
+      end
     end
   end
 end
