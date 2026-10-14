@@ -3032,3 +3032,19 @@ and tilde directories, plus a decoy path selected by the environment variable.
 They verify the intended entry is read and written, the decoy index blob is
 unchanged, and the literal working file is preserved. Both cases failed before
 the fix: one read the decoy and the other raised an outside-repository error.
+
+## Symlink index writes and clean filters
+
+GinEdit's direct hash-object/update-index path preserves the existing index
+mode, but previously used path-based clean conversion for symlinks as well as
+regular files. Git add stores a symlink's target string without applying a
+matching clean filter. GinEdit could therefore change that string unexpectedly
+on write, even while retaining mode 120000.
+
+Writes for mode 120000 now use hash-object --no-filters; ordinary file writes
+retain their path-based clean filters. A real symlink fixture configures an
+uppercase clean filter, confirms Git add leaves the original target lowercase,
+then edits the index target and verifies its exact lowercase bytes and mode.
+The working symlink and its target file remain unchanged. The fixture disables
+fixendofline explicitly to retain the link blob's no-EOL representation. Before
+the fix, the written target was incorrectly uppercased.

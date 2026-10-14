@@ -374,4 +374,28 @@ for _, directory in ipairs({ "$GIN_EDIT_LITERAL", "~" }) do
     assert(ok, err)
   end
 end
+T["index writes preserve symlink mode and leave the working link and target untouched"] = function()
+  vim.fn.writefile({ "target content" }, root .. "/target")
+  assert(vim.uv.fs_symlink("target", root .. "/link"))
+  vim.fn.writefile({ "link filter=uppercase" }, root .. "/.git/info/attributes")
+  H.git(root, "config", "filter.uppercase.clean", "tr a-z A-Z")
+  H.git(root, "config", "filter.uppercase.required", "true")
+  H.git(root, "add", "target", "link")
+  require("gin.edit").command({ fargs = { "link" }, smods = {} })
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "target" })
+  MiniTest.expect.equality(vim.bo.endofline, false)
+  vim.bo.fixendofline = false
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "other-target" })
+  vim.cmd.write()
+  MiniTest.expect.equality(
+    H.git(root, "ls-files", "--stage", "--", "link"):match("^(%d+)"),
+    "120000"
+  )
+  MiniTest.expect.equality(
+    require("gin.git").run({ "show", ":link" }, { cwd = root }).stdout,
+    "other-target"
+  )
+  MiniTest.expect.equality(vim.uv.fs_readlink(root .. "/link"), "target")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/target"), { "target content" })
+end
 return T

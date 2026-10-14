@@ -119,7 +119,7 @@ function M.write(buf, name)
   assert(mode, "Path has no stage-zero index entry: " .. path)
   local hash = vim.trim(
     git.run(
-      { "hash-object", "-w", "--stdin", "--path=" .. path },
+      { "hash-object", "-w", "--stdin", mode == "120000" and "--no-filters" or "--path=" .. path },
       { cwd = parsed.root, stdin = M.encode(buf), progress = true }
     ).stdout
   )
