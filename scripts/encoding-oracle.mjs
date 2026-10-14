@@ -175,7 +175,29 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     }
     records.push({ encoding: canonical, aliases: encoding.labels, cases });
   } else if (canonical.startsWith('utf-')) {
-    records.push({ encoding: canonical, aliases: encoding.labels, cases: unicodeCases.map(bytes => ({ bytes, ...decode(canonical, bytes) })) });
+    const record = { encoding: canonical, aliases: encoding.labels, cases: unicodeCases.map(bytes => ({ bytes, ...decode(canonical, bytes) })) };
+    if(canonical==='utf-16le'||canonical==='utf-16be') {
+      const rows=[];
+      for(let first=0;first<256;first++) {
+        const row=[];
+        for(let second=0;second<256;second++)row.push(decode(canonical,[first,second],false).text);
+        rows.push(row);
+      }
+      additionalOutputs[`tests/audit/${canonical}-oracle.json`]='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
+      const inputs=unicodeCases.map(bytes=>bytes.slice());
+      const unit=code=>canonical==='utf-16le'?[code&255,code>>8]:[code>>8,code&255];
+      const bounds=[0,65,0xd7ff,0xd800,0xdbff,0xdc00,0xdfff,0xe000,0xfeff,0xfffe,0xffff];
+      for(const a of bounds) {
+        for(const b of bounds)inputs.push([...unit(a),...unit(b)]);
+        for(let byte=0;byte<256;byte++)inputs.push([...unit(a),byte]);
+      }
+      for(let byte=0;byte<256;byte++)inputs.push([byte]);
+      let seed=0x12345678;
+      const randomByte=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed>>>24;};
+      for(let n=0;n<200;n++)inputs.push(Array.from({length:n%65},randomByte));
+      record.replacement_cases=inputs.map(bytes=>({bytes,...decode(canonical,bytes,false)}));
+    }
+    records.push(record);
   }
 }
 function lua(source) {

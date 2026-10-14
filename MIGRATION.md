@@ -3860,3 +3860,33 @@ regeneration, formatting and diff checks pass. The full suite passes all 3,863
 cases across 58 groups (`/tmp/gin-explicit-single-full.log`).
 UTF-16 and legacy multibyte replacement decoding, metadata differences and the
 broader write-encoding audit remain separate work.
+
+## Explicit UTF-16 replacement and label semantics
+
+UTF-16 candidates and explicit reads now share a fixed-endian decoder with strict
+or replacement modes. In replacement mode, malformed/unpaired surrogates and
+incomplete code units produce U+FFFD; a pending high surrogate plus a partial
+trailing unit at EOF produces one replacement, matching TextDecoder. Label
+normalization now also applies to explicit UTF-16, so `utf-16` and `ucs-2` read
+as LE. The incomplete UTF-16 GinEdit regression failed before implementation.
+
+The generator records every two-byte input for both endiannesses, selected
+code-unit boundary combinations, all one-byte suffixes, lone bytes and longer
+inputs. A temporary independent corpus of 78,729 cases per endianness also passed
+against the integrated decoder. The actual pinned-upstream probes now agree on
+displayed text and selected encoding for incomplete UTF-16, an invalid surrogate
+followed by ASCII, and the generic utf-16 label. Previously documented BOM and
+endofline metadata differences remain separate.
+
+Three existing expectations needed correction for this behavior. Native
+big-endian utf-16/ucs-2 write comparisons retain their byte-exact assertions but
+read the result back with explicit utf-16be; the same generic labels no longer
+mean BE when reading. Failed-decoder snapshot restoration now uses the existing
+strict ucs-2le extension, since malformed UTF-16 is successfully replacement-
+decoded. The shared native Unicode writer and its validation remain unchanged.
+
+All 780 encoding/explicit-read/edit/buffer tests pass on current Neovim and
+Neovim 0.10.0. Oracle regeneration, formatting and diff checks pass. The full
+suite passes 4,394 cases across 59 groups (`/tmp/gin-explicit-utf16-full.log`).
+Legacy multibyte replacement decoding and the remaining
+API/metadata/write compatibility audits are not complete.

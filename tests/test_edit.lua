@@ -429,7 +429,9 @@ for _, encoding in ipairs({
       expected
     )
     MiniTest.expect.equality(vim.fn.readfile(root .. "/bom-input", "b"), { content, "" })
-    vim.cmd("GinEdit ++enc=" .. encoding .. " bom-input")
+    -- Native utf-16/ucs-2 writes are BE; TextDecoder's same labels mean LE.
+    local read_encoding = (encoding == "utf-16" or encoding == "ucs-2") and "utf-16be" or encoding
+    vim.cmd("GinEdit ++enc=" .. read_encoding .. " bom-input")
     MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { content })
     MiniTest.expect.equality(vim.bo.bomb, encoding ~= "latin1")
   end

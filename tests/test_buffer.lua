@@ -356,7 +356,7 @@ T["failed output decoding preserves the display and allows a later reload"] = fu
   end
   H.git(root, "config", "alias.binary-output", "!cat file")
   output("o\0l\0d\0\n\0")
-  vim.cmd("GinBuffer ++enc=utf-16le binary-output")
+  vim.cmd("GinBuffer ++enc=ucs-2le binary-output")
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "old" })
   for _, expected in ipairs({ "old", "new" }) do
     output("x")
@@ -367,7 +367,7 @@ T["failed output decoding preserves the display and allows a later reload"] = fu
       true
     )
     MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { expected })
-    MiniTest.expect.equality(vim.bo.fileencoding, "utf-16le")
+    MiniTest.expect.equality(vim.bo.fileencoding, "ucs-2le")
     MiniTest.expect.equality(vim.bo.modifiable, false)
     MiniTest.expect.equality(vim.bo.modified, false)
     output("n\0e\0w\0\n\0")

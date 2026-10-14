@@ -113,4 +113,46 @@ for _, scheme in ipairs({ "gin", "ginedit" }) do
     MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
   end
 end
+T["GinEdit replaces incomplete explicit UTF-16"] = function()
+  stage(string.char(255, 254, 65))
+  vim.cmd("GinEdit ++enc=utf-16le file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "�" })
+end
+for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+  for _, case in ipairs({
+    { "utf-16le", { 255, 254, 65 }, "�" },
+    { "utf-16be", { 254, 255, 65 }, "�" },
+    { "utf-16", { 0, 216, 65, 0 }, "�A" },
+    { "ucs-2", { 61, 216, 0, 222 }, "😀" },
+    { "utf-16be", { 0, 65 }, "A" },
+    { "utf-16le", { 0, 220 }, "�" },
+  }) do
+    T[command .. " replaces UTF-16 " .. case[1] .. " " .. vim.inspect(case[2])] = function()
+      local data = string.char(unpack(case[2]))
+      stage(data)
+      local suffix = command == "GinBuffer" and " show :file" or " file"
+      vim.cmd(command .. " ++enc=" .. case[1] .. suffix)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] })
+      MiniTest.expect.equality(
+        require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+        data
+      )
+    end
+  end
+end
+for _, scheme in ipairs({ "gin", "ginedit" }) do
+  T[scheme .. " addressed reads replace malformed UTF-16"] = function()
+    stage(string.char(0, 216, 65, 0, 10, 0))
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.bo.fileencoding = "utf-8"
+    local fragment = scheme == "gin" and "show :file" or "file"
+    local name = require("gin.uri").format(scheme, root, {}, fragment)
+    vim.cmd("1read ++enc=utf-16le " .. vim.fn.fnameescape(name))
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", "�A", "after" }
+    )
+    MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+  end
+end
 return T

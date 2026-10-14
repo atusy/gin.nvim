@@ -304,8 +304,19 @@ Single-byte replacement decoding is checked separately from strict selection.
 The common oracle includes nonfatal output for every single byte and one input
 containing all 256 bytes for each of the 29 single-byte families (7,453 reference
 comparisons). `gin.encoding.decode(data, label, { fatal = false })` enables
-replacement for UTF-8 and these families; unsupported replacement codecs fail
+replacement for UTF-8, UTF-16 and these families; unsupported replacement codecs fail
 explicitly. `supports_replacement` gates the view integration while the remaining
 nonfatal codecs are implemented. Strict decoding remains the default used by
 automatic selection. Real-view tests cover Latin-1/ASCII Windows-1252 aliases,
 undefined bytes, and destination-option preservation on addressed reads.
+
+UTF-16 replacement decoding uses fixed byte order from the normalized label;
+`utf-16` and `ucs-2` mean UTF-16LE. The common generator writes full 256-by-256
+replacement matrices for LE and BE and adds boundary code-unit combinations,
+all one-byte suffixes after selected units, lone bytes and deterministic longer
+inputs to the regular fixture. `tests/test_utf16_encoding.lua` checks every
+2-byte input and verifies that strict candidate mode still rejects malformed
+surrogates. The view suite also covers partial units, malformed surrogate pairs,
+labels, addressed reads and unchanged source bytes. Native write-encoding names
+remain separate: big-endian utf-16/ucs-2 writes are read back explicitly as
+utf-16be in the existing write tests.
