@@ -2252,5 +2252,294 @@
     "expected": {
       "status": "compile-error"
     }
+  },
+  {
+    "name": "named-duplicate-alternatives",
+    "pattern": "^(?:(?<x>a)|(?<x>b))\\k<x>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-first-alternative",
+    "pattern": "^(?:(?<x>a)|(?<x>b))\\k<x>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ],
+        null
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-no-match",
+    "pattern": "^(?:(?<x>a)|(?<x>b))\\k<x>$",
+    "input": "ab",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "named-duplicate-forward",
+    "pattern": "^\\k<x>(?:(?<x>a)|(?<x>b))$",
+    "input": "b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-unmatched",
+    "pattern": "^(?:(?<x>a)|(?<x>b)|c)\\k<x>$",
+    "input": "c",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          99
+        ],
+        null,
+        null
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-repeat",
+    "pattern": "^(?:(?<x>a)|(?<x>b))+\\k<x>$",
+    "input": "abb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-repeat-first-last",
+    "pattern": "^(?:(?<x>a)|(?<x>b))+\\k<x>$",
+    "input": "baa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          97,
+          97
+        ],
+        [
+          97
+        ],
+        null
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-backtracking",
+    "pattern": "^(?:(?<x>a)|(?<x>ab))\\k<x>$",
+    "input": "abab",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          97,
+          98
+        ],
+        null,
+        [
+          97,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-numbered-reference",
+    "pattern": "^(?:(?<x>a)|(?<x>b))\\1\\2$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-nested-alternatives",
+    "pattern": "^(?:(?:(?<x>a)|(?<x>b))|(?<x>c))\\k<x>$",
+    "input": "cc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          99,
+          99
+        ],
+        null,
+        null,
+        [
+          99
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-lookahead-alternatives",
+    "pattern": "^(?:(?=(?<x>a))a|(?=(?<x>b))b)\\k<x>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-lookbehind",
+    "pattern": "(?<=\\k<x>(?:(?<x>a)|(?<x>b)))c",
+    "input": "bbc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          99
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-escaped-equivalent",
+    "pattern": "^(?:(?<x>a)|(?<\\u0078>b))\\k<x>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        null,
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-duplicate-sequence-invalid",
+    "pattern": "^(?<x>a)(?<x>b)$",
+    "input": "ab",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-nested-invalid",
+    "pattern": "^(?<x>(?<x>a)|b)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-separate-disjunctions-invalid",
+    "pattern": "^(?:(?<x>a)|b)(?:a|(?<x>b))$",
+    "input": "ab",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-optional-invalid",
+    "pattern": "^(?<x>a)?(?<x>b)?$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-lookahead-invalid",
+    "pattern": "^(?=(?<x>a))(?<x>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-negative-lookahead-invalid",
+    "pattern": "^(?!(?<x>b))(?<x>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-same-branch-invalid",
+    "pattern": "^(?:(?<x>a)(?<x>b)|c)$",
+    "input": "c",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-duplicate-zero-repeat-invalid",
+    "pattern": "^(?<x>a){0}(?<x>b)$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
   }
 ]

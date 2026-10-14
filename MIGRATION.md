@@ -1498,3 +1498,11 @@ four added Node-oracle cases bring the corpus to 138. An escaped `>` name
 terminator follows observed Node/Deno V8 behavior, with explicit tests. Duplicate
 name rules, inline modifiers, resource/encoding limits and real action
 integration still require work.
+
+The regex candidate now accepts duplicate names on separate alternatives and
+rejects duplicates whose declarations can occur along the same syntactic path.
+Named references retain all associated capture numbers and read the participating
+capture. Twenty-one Node-oracle cases cover alternatives, repeated capture
+clearing, backtracking, lookaround and invalid duplicate declarations, bringing
+the corpus to 159. This remains test-only pending the remaining syntax, resource
+and integration work.

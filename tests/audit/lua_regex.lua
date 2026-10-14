@@ -328,7 +328,6 @@ function M.compile(pattern)
             kind, direction, positive = "look", -1, false
           else
             name = capture_name()
-            assert(not names[name], "Unsupported or invalid duplicate capture name")
           end
         else
           error("Invalid regular expression: group prefix")
@@ -338,7 +337,8 @@ function M.compile(pattern)
         count = count + 1
         number = count
         if name then
-          names[name] = number
+          names[name] = names[name] or {}
+          names[name][#names[name] + 1] = number
         end
       end
       local child = disjunction()
@@ -347,6 +347,7 @@ function M.compile(pattern)
         kind = kind,
         child = child,
         number = number,
+        name = name,
         positive = positive,
         direction = direction,
       }
@@ -428,18 +429,33 @@ function M.compile(pattern)
   assert(cursor > #source, "Invalid regular expression: unmatched parenthesis")
   local function validate(node)
     if node.kind == "reference" then
-      node.number = node.number or names[node.name]
-      assert(
-        node.number and node.number <= count,
-        "Unsupported or invalid regular expression: backreference"
-      )
+      node.numbers = node.number and { node.number } or names[node.name]
+      assert(node.numbers, "Invalid regular expression: unknown backreference")
+      for _, number in ipairs(node.numbers) do
+        assert(number <= count, "Invalid regular expression: backreference")
+      end
+    end
+    local declared = {}
+    if node.kind == "capture" and node.name then
+      declared[node.name] = true
+    end
+    local function include(child)
+      for name in pairs(validate(child)) do
+        -- Only different alternatives make duplicate declarations exclusive.
+        assert(
+          node.kind == "alternation" or not declared[name],
+          "Invalid regular expression: duplicate capture name"
+        )
+        declared[name] = true
+      end
     end
     if node.child then
-      validate(node.child)
+      include(node.child)
     end
     for _, child in ipairs(node.children or {}) do
-      validate(child)
+      include(child)
     end
+    return declared
   end
   validate(tree)
 
@@ -523,7 +539,13 @@ function M.compile(pattern)
             return continuation(position, captures)
           end
         elseif kind == "reference" then
-          local capture = captures[node.number]
+          local capture
+          for _, number in ipairs(node.numbers) do
+            if captures[number] then
+              capture = captures[number]
+              break
+            end
+          end
           local length = capture and capture[2] - capture[1] or 0
           local start = direction == 1 and position or position - length
           for offset = 0, length - 1 do
