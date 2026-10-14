@@ -146,4 +146,25 @@ T["status patch action opens the selected file in a new tab"] = function()
   MiniTest.expect.equality(vim.bo.buftype, "acwrite")
   MiniTest.expect.equality(vim.b.gin_path, "sub/file")
 end
+for _, side in ipairs({ "head", "worktree" }) do
+  T["status patch " .. side .. " applies only the selected hunk"] = function()
+    if side == "head" then
+      H.git(root, "add", "sub/file")
+    end
+    vim.cmd.GinStatus()
+    local tabs = #vim.api.nvim_list_tabpages()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "patch:" .. side, { 2, 2 })
+    MiniTest.expect.equality(#vim.api.nvim_list_tabpages(), tabs + 1)
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    MiniTest.expect.equality(vim.b.gin_path, "sub/file")
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.api.nvim_feedkeys("do", "mx", false)
+    vim.cmd.write()
+    local index = vim.split(H.git(root, "show", ":sub/file"), "\n", { trimempty = true })
+    MiniTest.expect.equality(index[1], side == "head" and "first" or "changed first")
+    MiniTest.expect.equality(index[10], side == "head" and "changed last" or "last")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[1], "changed first")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[10], "changed last")
+  end
+end
 return T

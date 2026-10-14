@@ -178,16 +178,23 @@ T["status chaperon honors persistent pane settings through conflict resolution"]
   vim.g.gin_chaperon_persistent_args = previous
   assert(ok, err)
 end
-T["status theirs action resolves using its sole side"] = function()
-  vim.cmd.GinStatus()
-  require("gin.action").call(vim.api.nvim_get_current_buf(), "chaperon:theirs", { 2, 2 })
-  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
-  MiniTest.expect.equality(vim.fn.maparg("dor", "n"), "")
-  vim.api.nvim_win_set_cursor(0, { 2, 0 })
-  vim.api.nvim_feedkeys("do", "mx", false)
-  vim.cmd.write()
-  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "before", "theirs", "after" })
+for _, side in ipairs({ "theirs", "ours" }) do
+  T["status " .. side .. " action resolves using its sole side"] = function()
+    vim.cmd.GinStatus()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "chaperon:" .. side, { 2, 2 })
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    MiniTest.expect.equality(vim.fn.maparg(side == "theirs" and "dor" or "dol", "n"), "")
+    vim.api.nvim_win_set_cursor(0, { 2, 0 })
+    vim.api.nvim_feedkeys("do", "mx", false)
+    vim.cmd.write()
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), { "before", side, "after" })
+    MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged") ~= "", true)
+    vim.cmd("Gin ++wait add -- %:p")
+    MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged"), "")
+    MiniTest.expect.equality(H.git(root, "show", ":sub/file"), "before\n" .. side .. "\nafter\n")
+  end
 end
+
 T["GinChaperon defaults to current file and can omit theirs"] = function()
   vim.cmd.edit("file")
   vim.cmd("GinChaperon ++no-theirs")

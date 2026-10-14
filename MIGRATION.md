@@ -11,7 +11,7 @@ scope, not proof of complete upstream parity.
 - [x] Git process execution and worktree discovery (files, subdirectories, symlinks, linked worktrees).
 - [ ] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events.
 - [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
-- [ ] GinStatus: status display, path selection and all status actions.
+- [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [ ] GinBranch, GinTag: parsed views and ref actions.
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
 - [ ] GinEdit: revision and index buffers with write-back; working files via edit actions.
@@ -128,8 +128,9 @@ to prove an action produces the intended Git state.
   action repeat, local/cached edit navigation, named-register path yanks, restore
   including conflict sides/markers, add/removal, stash/keep-index and intent-to-add.
 
-Gin, GinBuffer and GinStatus remain unchecked above because their full option,
-UI and action scope is still incomplete. No full upstream parity claim is made.
+Gin and GinBuffer remain unchecked above because their full option and UI scope
+is still incomplete. GinStatus's functional audit is recorded below. No full
+upstream parity claim is made.
 URI arguments use whitespace/backslash escaping to preserve argv boundaries
 when reloaded; exact upstream URI interoperability still needs an audit.
 Unstaging a rename resets both destination and original paths, so the whole
@@ -2791,3 +2792,46 @@ refreshes status. Restoring and staging the missing file, refreshing the view
 and retrying converts it to an empty intent entry and unstages the other file,
 preserving both working files. The regression failed against the old ordering
 because the tracked index contained HEAD content instead of its staged content.
+
+## GinStatus functional-scope completion audit
+
+The pinned command/status/main.ts, command.ts and edit.ts map to gin.status's
+argument validation, URI construction, reads, candidate selection and action
+installation. The allowed flag inventory matches the pinned command. Status
+tests cover default and persistent arguments, explicit worktree selection,
+flag grouping and separators, path filters through reload, legacy URI reads,
+encoding, Git colors and literal filename bytes. Shared command declaration,
+ftplugin, mapping and buffer tests cover the common command/UI contracts.
+
+Every action family initialized by status/edit.ts has functional evidence:
+
+| Pinned action family | Lua behavior and evidence |
+| --- | --- |
+| core, echo | Visual selection, keyboard choice/completion, cancellation, repeat, aliases/help; exact public echo fields for tracked, renamed and unknown paths |
+| add, stage | Forced add, intent entries, deletion, stage/unstage from subdirectories and literal paths; partial failure ordering and completion events |
+| reset_file | Destination-only reset of a staged rename, separate from whole-rename unstage |
+| restore | Working/index restoration, ours/theirs and merge/diff3 conflict markers with unmerged index stages |
+| rm | Cached removal, ordinary refusal and forced removal with working-file and other-index-entry preservation |
+| stash | Selected-path stash, empty selection, keep-index with distinct staged and working contents |
+| edit | Working, index and HEAD reads, split opening and persistent decoding settings |
+| diff, diff_smart | Working/index/HEAD comparisons and smart selection for staged versus unstaged changes; persistent arguments |
+| patch | Both panes and each single-side variant from status; real partial staging/unstaging from a subdirectory, retaining the other hunk and working contents |
+| chaperon | Both sides and ours/theirs variants from status; real conflict resolution, still-unmerged index until explicit staging, then selected-side index contents |
+| browse | Status-selected path from a subdirectory; shared provider, remote, register and opener coverage in the Browse audit |
+| yank | Named-register absolute paths and original rename paths, including empty original-path rows |
+
+The new single-side Patch cases verify a new tab, the two-pane layout and index
+contents after applying just the first hunk. Chaperon's side cases now verify
+both the working result and the index after explicit staging. Existing refresh
+tests cover command events in visible/hidden views, file writes while hidden,
+preserved window positions and action repeat after reload. The pinned action
+registration oracle independently inventories Plug names and aliases; it is
+not used as proof of mutation semantics.
+
+This closes the status functional checklist. Known representation and behavior
+differences remain explicit: NUL-delimited Git output preserves literal paths;
+display quoting/sorting uses the decoded paths; unstage handles both sides of a
+rename while reset remains destination-only; empty selections for Git mutation
+file actions are no-ops. This is not an exact display-byte or unrestricted URI interoperability
+claim. The broader command/URI audit and the independent Patch, Chaperon and
+other command checklists remain open.
