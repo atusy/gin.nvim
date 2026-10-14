@@ -263,4 +263,56 @@ T["reopening chaperon refreshes visible conflict stages"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
   MiniTest.expect.equality(vim.api.nvim_buf_get_lines(reopened.worktree, 0, -1, false), resolution)
 end
+for _, operation in ipairs({ "cherry-pick", "rebase", "revert" }) do
+  T[operation .. " conflict supplements use the active operation head"] = function()
+    H.git(root, "merge", "--abort")
+    local ours = vim.trim(H.git(root, "rev-parse", "main"))
+    local theirs = vim.trim(H.git(root, "rev-parse", "topic"))
+    local args, alias, expected_head
+    if operation == "cherry-pick" then
+      args, alias, expected_head = { "cherry-pick", "topic" }, "CHERRY_PICK_HEAD", theirs
+    elseif operation == "rebase" then
+      args, alias, expected_head = { "rebase", "topic" }, "REBASE_HEAD", ours
+    else
+      H.git(root, "checkout", "topic")
+      args, alias, expected_head = { "revert", "--no-edit", "main" }, "REVERT_HEAD", ours
+    end
+    local result = require("gin.git").run(args, { cwd = root, check = false })
+    MiniTest.expect.equality(result.code, 1)
+    MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", alias)), expected_head)
+    local index = H.git(root, "ls-files", "--stage")
+    local working = vim.fn.readfile(root .. "/sub/file")
+    vim.g.gin_chaperon_supplement_disable = 0
+    vim.g.gin_chaperon_supplement_height = 4
+    local panes = require("gin.chaperon").command({ fargs = { "file" }, smods = {} })
+    local logs = {}
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if not vim.wo[win].diff then
+        local buf = vim.api.nvim_win_get_buf(win)
+        local command = require("gin.uri").parse(vim.api.nvim_buf_get_name(buf)).fragment
+        logs[command] = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n") .. "\n"
+        MiniTest.expect.equality(vim.wo[win].winfixheight, true)
+      end
+    end
+    MiniTest.expect.equality(vim.tbl_count(logs), 3)
+    MiniTest.expect.equality(
+      logs["log -1 " .. alias .. " -p"],
+      H.git(root, "log", "-1", alias, "-p")
+    )
+    MiniTest.expect.equality(logs["log -1 HEAD -p"], H.git(root, "log", "-1", "HEAD", "-p"))
+    MiniTest.expect.equality(
+      logs["log --oneline --left-right " .. alias .. "...HEAD"],
+      H.git(root, "log", "--oneline", "--left-right", alias .. "...HEAD")
+    )
+    for stage, side in pairs({ [2] = "ours", [3] = "theirs" }) do
+      MiniTest.expect.equality(
+        table.concat(vim.api.nvim_buf_get_lines(panes[side], 0, -1, false), "\n") .. "\n",
+        H.git(root, "show", ":" .. stage .. ":sub/file")
+      )
+    end
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), panes.worktree)
+    MiniTest.expect.equality(H.git(root, "ls-files", "--stage"), index)
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file"), working)
+  end
+end
 return T

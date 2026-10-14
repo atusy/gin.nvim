@@ -2941,3 +2941,18 @@ and verifies the same side buffers now show the updated contents. The test also
 checks that a manual unsaved resolution stays in the working buffer and the
 working file on disk remains unchanged. The old code failed by showing the old
 ours content after reopening.
+
+## Chaperon supplements during non-merge operations
+
+Real conflict fixtures now cover cherry-pick, rebase and revert alongside the
+existing merge case. Each fixture confirms the expected CHERRY_PICK_HEAD,
+REBASE_HEAD or REVERT_HEAD commit, opens Chaperon with supplements enabled, and
+compares all three rendered logs with Git output for that operation head,
+HEAD, and their left/right history comparison. Side-pane content is checked
+against the actual index stages 2 and 3, rather than assuming branch labels
+retain their ordinary meaning during rebase or revert.
+
+The tests also verify fixed-height supplement windows, final working-pane focus,
+and unchanged index and disk content. This exercises every alias in the pinned
+chaperon/util.ts inventory through a real stopped Git operation; no production
+change was needed.
