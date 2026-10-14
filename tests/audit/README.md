@@ -169,3 +169,18 @@ surrogates raise an explicit conversion error, matching the fact that Neovim's
 JSON decoder rejects a JSON string containing an unpaired surrogate. Unselected
 captures are not converted, since upstream parsers do not expose those fields.
 Five adapter tests cover these distinctions and UTF-8 encoding boundaries.
+
+## Pinned parser oracle
+
+`node scripts/parser-oracle.mjs --write` regenerates and `--check` verifies
+`parser-oracle.json` using the four TypeScript parsers from the locked vim-gin
+checkout. The script requires the expected HEAD and unmodified parser sources;
+Node v26.8.2 loads those files directly. The 44 cases compare editor-facing JSON
+for custom patterns across empty/unmatched captures, duplicate and blank lines,
+Unicode, syntax errors and invalid/overflowing stash indices. Buffer NULs become
+embedded newlines at the getbufline boundary before upstream parsing.
+
+`tests/test_candidate_parser.lua` runs the fixture in the ordinary mini.nvim
+suite and checks that every candidate remains an object, even when all captures
+are missing. An actual echo-action test also verifies `[{}, {}]` formatting
+instead of the accidental `[[], []]` produced by untyped empty Lua tables.

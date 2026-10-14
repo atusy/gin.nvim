@@ -137,6 +137,11 @@ T["custom parsing preserves blank filtering, duplicate rows and missing captures
   MiniTest.expect.equality(require("gin.log").candidates(buf, { 1, 3 }), { {}, {} })
   require("gin.action").call(buf, "yank:commit", { 1, 3 })
   MiniTest.expect.equality(vim.fn.getreg('"'), "\n")
+  local echoed = vim.api.nvim_exec2(
+    "lua require('gin.action').call(vim.api.nvim_get_current_buf(), 'echo', {1, 3})",
+    { output = true }
+  ).output
+  MiniTest.expect.equality(echoed, "[\n  {},\n  {}\n]")
 end
 T["stash custom index follows decimal prefix parsing"] = function()
   vim.cmd("GinStash --format=ref:idx")

@@ -1552,3 +1552,10 @@ Regex resource/encoding extremes and full migration parity remain under audit.
 Non-numeric or overflowing custom stash indices use `vim.NIL` in the editor-
 facing candidate so echo produces JSON null, matching upstream JSON.stringify
 instead of failing on Lua NaN/Infinity.
+
+Custom candidates now retain JSON object identity when all captured fields are
+missing, so echo emits `{}` rather than `[]`. A new 44-case oracle directly
+executes the four locked upstream parsers and checks their editor-facing JSON
+against Lua results. It includes missing/empty captures, blank/duplicate rows,
+Unicode, NUL's getbufline conversion and invalid/overflowing stash indices.
+The generator rejects a mismatched upstream HEAD or modified parser sources.

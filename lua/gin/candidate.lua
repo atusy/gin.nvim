@@ -21,8 +21,9 @@ function M.custom(buf, range, kind)
       if captures then
         local first = captures[1] ~= vim.NIL and captures[1] or nil
         local second = captures[2] ~= vim.NIL and captures[2] or nil
+        local entry = vim.empty_dict()
         if kind == "tag" then
-          result[#result + 1] = { commit = first, tag = second }
+          entry.commit, entry.tag = first, second
         elseif kind == "stash" then
           local number = second and integer:match_strings(second, { 2 })
           local index = number and tonumber(number[1])
@@ -30,10 +31,11 @@ function M.custom(buf, range, kind)
           if not index or index == math.huge or index == -math.huge then
             index = vim.NIL
           end
-          result[#result + 1] = { stashRef = first, commit = first, index = index }
+          entry.stashRef, entry.commit, entry.index = first, first, index
         else
-          result[#result + 1] = { commit = first }
+          entry.commit = first
         end
+        result[#result + 1] = entry
       end
     end
   end
