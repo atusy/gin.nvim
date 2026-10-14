@@ -1,6 +1,7 @@
 -- Optional dependency audit, intentionally outside tests/test_*.lua.
 local T = MiniTest.new_set()
-local cases = vim.json.decode(table.concat(vim.fn.readfile("tests/audit/regex-oracle.json"), "\n"))
+local cases =
+  vim.json.decode(table.concat(vim.fn.readfile("tests/audit/regex-oracle.json", "b"), "\n"))
 for _, case in ipairs(cases) do
   T[case.name] = function()
     local result = vim

@@ -35,14 +35,17 @@ an incompatible candidate result, not a passing product test. This finite corpus
 is a selection gate, not proof of complete ECMAScript compatibility.
 
 At jsregexp `aadbcc2045ac5bddad8b211c80cb17b002775c26`, on macOS arm64,
-22 of 29 cases pass. Failures with this adapter are:
+23 of 29 cases pass. Failures with this adapter are:
 
 - `optional`, `unmatched-backreference`: absent captures become empty strings.
 - `optional-wide`: child exits on signal 11 (SIGSEGV).
-- `whitespace`: returned full-match code units omit U+FEFF.
 - `non-bmp-class`: automatic Unicode mode changes whether a match exists.
 - `surrogate-captures`: split surrogate captures differ from JavaScript.
 - `nul`: no match for an input containing NUL.
 
 No candidate is installed or selected by these tools. Actual log/reflog/tag/stash
 action integration and error propagation still require separate product tests.
+
+The oracle must be read in binary mode: Vimscript `readfile()` in text mode
+removes U+FEFF bytes, including inside JSON strings. An earlier audit incorrectly
+reported a whitespace mismatch because of this input corruption.

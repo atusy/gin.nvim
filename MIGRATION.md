@@ -1355,7 +1355,7 @@ an unmodified ECMAScript-labelled binding as sufficient parity evidence.
 The optional [regex backend audit](tests/audit/README.md) now contains 29
 Node-generated no-flags JavaScript cases, compared through mini.nvim with each
 candidate invocation isolated in a timed child process. The tested jsregexp
-revision fails seven cases, including a SIGSEGV on an unmatched group with a
+revision fails six cases, including a SIGSEGV on an unmatched group with a
 non-ASCII input. Other differences cover absent captures, Unicode, split
 surrogates and NUL. These are candidate rejection results, not passing migration
 tests; the backend and action integration remain unimplemented.
@@ -1444,3 +1444,8 @@ therefore emits `noremap`, rather than `nnoremap`. Twelve real Git tests invoke
 old/new/smart Plug keys from all four modes and verify destination text/cursor,
 unmodified buffers and unchanged Git status. Nine non-Normal cases failed
 before the mode fix. The ordinary Enter defaults remain Normal-only.
+
+The regex audit now reads its JSON fixture in binary mode. Text-mode
+`readfile()` removed U+FEFF from an input string, creating a false whitespace
+mismatch for jsregexp. With input preserved, that candidate passes 23/29 cases
+and fails six, including the previously reproduced SIGSEGV.
