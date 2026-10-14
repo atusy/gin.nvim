@@ -179,8 +179,7 @@ function M.read(buf, name)
     end,
   })
   local function run(args)
-    local result = git.run(args, { cwd = parsed.root, progress = "both" })
-    require("gin.command").finish(result, {}, {})
+    require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
   end
   for _, detach in ipairs({ false, true }) do
     action.define(buf, detach and "switch:detach" or "switch", function(target, range)

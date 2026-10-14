@@ -196,6 +196,13 @@ function M.execute(opts)
   return process
 end
 
+---Run a synchronous action while retaining completion-event suppression.
+function M.run(args, options)
+  local finish_options =
+    { eventignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all") }
+  return M.finish(require("gin.git").run(args, options), finish_options, {})
+end
+
 function M.finish(result, options, mods)
   local output = (result.stdout or "") .. (result.stderr or "")
   local encoding = options.enc or options.encoding

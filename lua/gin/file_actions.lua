@@ -13,11 +13,10 @@ function M.setup(buf, gather)
       for _, entry in ipairs(entries) do
         command[#command + 1] = entry.path
       end
-      local result = require("gin.git").run(command, {
+      require("gin.command").run(command, {
         cwd = vim.b[target].gin_worktree,
         progress = "both",
       })
-      require("gin.command").finish(result, {}, {})
     end)
   end
   define_git("reset", { "reset", "--quiet" })

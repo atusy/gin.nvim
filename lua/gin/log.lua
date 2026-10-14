@@ -134,19 +134,11 @@ function M.read(buf, name)
         args[#args + 1] = "--detach"
       end
       vim.list_extend(args, { "--", candidate_field(row, "commit") })
-      require("gin.command").finish(
-        require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
-        {},
-        {}
-      )
+      require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
     end)
   end
   local function run(args)
-    require("gin.command").finish(
-      require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
-      {},
-      {}
-    )
+    require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
   end
   for _, method in ipairs({ "ff", "no-ff", "ff-only" }) do
     action.define(buf, "merge:" .. method, function(target, range)
@@ -253,11 +245,7 @@ function M.read(buf, name)
         args[#args + 1] = "--" .. mode
       end
       args[#args + 1] = candidate_field(row, "commit")
-      require("gin.command").finish(
-        require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
-        {},
-        {}
-      )
+      require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
     end)
   end
   for _, force in ipairs({ false, true }) do
@@ -279,11 +267,7 @@ function M.read(buf, name)
             args[#args + 1] = "--force"
           end
           vim.list_extend(args, { "--", name, candidate_field(row, "commit") })
-          require("gin.command").finish(
-            require("gin.git").run(args, { cwd = parsed.root, progress = "both" }),
-            {},
-            {}
-          )
+          require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
         end)
       end
     )
@@ -333,7 +317,7 @@ function M.read(buf, name)
       "--quiet",
     }
     args[#args + 1] = parent.code == 0 and vim.trim(parent.stdout) or "--root"
-    require("gin.command").finish(git.run(args, { cwd = parsed.root, progress = "both" }), {}, {})
+    require("gin.command").run(args, { cwd = parsed.root, progress = "both" })
     vim.cmd("silent checktime")
   end
   for _, instant in ipairs({ false, true }) do
@@ -344,12 +328,10 @@ function M.read(buf, name)
       end
       assert(#rows == 1, "Fixup requires exactly one commit")
       local commit = candidate_field(rows[1], "commit")
-      local git = require("gin.git")
-      local result = git.run(
+      require("gin.command").run(
         { "commit", "--fixup=" .. commit },
         { cwd = parsed.root, progress = "both" }
       )
-      require("gin.command").finish(result, {}, {})
       if instant then
         instant_squash(commit)
       end

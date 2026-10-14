@@ -1971,3 +1971,11 @@ command handler. The regression restores eventignore immediately after staging
 and drains callbacks: no delayed event appears, while the index contains the
 staged data. A subsequent ordinary stage emits one event and updates the index,
 showing that suppression does not leak into later operations.
+
+Synchronous file, Branch, Tag, Stash, Log and Reflog actions now use a shared
+command.run wrapper that captures eventignore=all before Git and carries it
+into final output/completion handling. This removes the unqualified finish
+calls that could emit a delayed event after eventignore was restored. Twelve
+real-Git cases cover normal and suppressed completion across six views, with
+index/ref/stash assertions in addition to event counts. The specialized Status
+staging path retains its previously verified per-operation suppression.
