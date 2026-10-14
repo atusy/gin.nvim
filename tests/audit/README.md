@@ -55,13 +55,16 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-87-case corpus passes, including the initial cases that reject the C candidate
+104-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
 references), class context, octal digit limits and quantifier binding on
 remaining digits. A range involving a class escape becomes a union of both
 endpoints and a literal hyphen, as specified by [ECMAScript Annex
 B](https://tc39.es/ecma262/multipage/additional-ecmascript-features-for-web-browsers.html#sec-characterrangeorunion).
+The presence of named captures anywhere in the pattern determines whether `\k`
+is an identity escape or requires a valid named reference, including inside
+classes and before the named group.
 Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 
 This is not an adopted runtime backend and no Gin action calls it. Its output is

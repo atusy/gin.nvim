@@ -1482,3 +1482,10 @@ character code reduced modulo 32. Nine added Node-oracle cases cover those
 controls, negation, range ordering, following digits and the distinct outside-
 class fallback. All 87 candidate cases pass; this does not yet integrate the
 candidate into production parsers.
+
+The experimental compiler now distinguishes `\k` identity escapes from named
+backreferences based on named captures anywhere in the pattern. Seventeen new
+Node-oracle cases cover forward references, missing/empty names, class errors
+with named groups, and literal fallback without them. The capture pre-scan also
+excludes ordinary `<` text, lookbehind and escaped/class parentheses from named
+group detection. The candidate passes 104 cases and remains test-only.

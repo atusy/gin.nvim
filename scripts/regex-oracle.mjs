@@ -91,6 +91,23 @@ const cases = [
   ['control-class-digit-range-reversed', String.raw`[\c9-\c0]`, '\x10'],
   ['control-class-digit-following-number', String.raw`^([\c01]+)$`, '\x101'],
   ['control-underscore-outside-class', String.raw`^(\c_)$`, String.raw`\c_`],
+  ['named-reference-without-named-capture', String.raw`^(\k<name>)$`, 'k<name>'],
+  ['named-reference-forward', String.raw`^\k<name>(?<name>a)$`, 'a'],
+  ['named-reference-unknown', String.raw`^(?<name>a)\k<other>$`, 'a'],
+  ['named-reference-bare-invalid', String.raw`^(?<name>a)\k$`, 'ak'],
+  ['named-reference-bare-forward-invalid', String.raw`^\k(?<name>a)$`, 'ka'],
+  ['named-reference-class-invalid', String.raw`^(?<name>a)[\k]$`, 'ak'],
+  ['named-reference-class-forward-invalid', String.raw`^[\k](?<name>a)$`, 'ka'],
+  ['named-reference-identity-bare', String.raw`^(\k+)$`, 'kkk'],
+  ['named-reference-identity-incomplete', String.raw`^(\k<)$`, 'k<'],
+  ['named-reference-identity-class', String.raw`^([\k<name>]+)$`, 'k<name>'],
+  ['named-reference-identity-empty-name', String.raw`^(\k<>)$`, 'k<>'],
+  ['named-reference-identity-quantifier', String.raw`^(\k<x>+)$`, 'k<x>>>'],
+  ['named-reference-identity-lookbehind', String.raw`(?<=a)\k<x>`, 'ak<x>'],
+  ['named-reference-identity-parenthesis', String.raw`^(a<b)\k$`, 'a<bk'],
+  ['named-reference-identity-class-parens', String.raw`^[(?<name>)]\k$`, '(k'],
+  ['named-reference-identity-escaped-parens', String.raw`^\(\?<name>\)\k$`, '(?<name>)k'],
+  ['named-reference-empty-name-invalid', String.raw`^(?<name>a)\k<>$`, 'a'],
 ];
 const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
 const records = cases.map(([name, pattern, input]) => {

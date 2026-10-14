@@ -71,9 +71,9 @@ local function class_matches(node, cp)
   return node.negated and not found or not node.negated and found
 end
 
--- Decimal escapes depend on the total capture count, including forward groups.
-local function capture_count(source)
-  local index, count, in_class = 1, 0, false
+-- Escape interpretation depends on captures anywhere in the pattern.
+local function capture_info(source)
+  local index, count, in_class, has_named = 1, 0, false, false
   while index <= #source do
     local cp = source[index]
     if cp == 92 then
@@ -84,9 +84,11 @@ local function capture_count(source)
       elseif cp == 93 and in_class then
         in_class = false
       elseif cp == 40 and not in_class then
-        local named = source[index + 2] == 60
+        local named = source[index + 1] == 63
+          and source[index + 2] == 60
           and source[index + 3] ~= 61
           and source[index + 3] ~= 33
+        has_named = has_named or named
         if source[index + 1] ~= 63 or named then
           count = count + 1
         end
@@ -94,12 +96,12 @@ local function capture_count(source)
       index = index + 1
     end
   end
-  return count
+  return count, has_named
 end
 
 function M.compile(pattern)
   local source, cursor, count, names = units(pattern), 1, 0, {}
-  local total_captures = capture_count(source)
+  local total_captures, has_named = capture_info(source)
   local function peek()
     return ascii(source[cursor])
   end
@@ -152,7 +154,9 @@ function M.compile(pattern)
       cursor = cursor - 1
       return literal(92)
     end
-    if not in_class and char == "k" and take("<") then
+    if char == "k" and has_named then
+      assert(not in_class, "Invalid regular expression: named reference in class")
+      expect("<")
       local name = ""
       while source[cursor] and peek() ~= ">" do
         assert(peek() ~= "", "Unsupported regular expression: non-ASCII capture name")

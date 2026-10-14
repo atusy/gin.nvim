@@ -1559,5 +1559,282 @@
         ]
       ]
     }
+  },
+  {
+    "name": "named-reference-without-named-capture",
+    "pattern": "^(\\k<name>)$",
+    "input": "k<name>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60,
+          110,
+          97,
+          109,
+          101,
+          62
+        ],
+        [
+          107,
+          60,
+          110,
+          97,
+          109,
+          101,
+          62
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-forward",
+    "pattern": "^\\k<name>(?<name>a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-unknown",
+    "pattern": "^(?<name>a)\\k<other>$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-reference-bare-invalid",
+    "pattern": "^(?<name>a)\\k$",
+    "input": "ak",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-reference-bare-forward-invalid",
+    "pattern": "^\\k(?<name>a)$",
+    "input": "ka",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-reference-class-invalid",
+    "pattern": "^(?<name>a)[\\k]$",
+    "input": "ak",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-reference-class-forward-invalid",
+    "pattern": "^[\\k](?<name>a)$",
+    "input": "ka",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-reference-identity-bare",
+    "pattern": "^(\\k+)$",
+    "input": "kkk",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          107,
+          107
+        ],
+        [
+          107,
+          107,
+          107
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-incomplete",
+    "pattern": "^(\\k<)$",
+    "input": "k<",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60
+        ],
+        [
+          107,
+          60
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-class",
+    "pattern": "^([\\k<name>]+)$",
+    "input": "k<name>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60,
+          110,
+          97,
+          109,
+          101,
+          62
+        ],
+        [
+          107,
+          60,
+          110,
+          97,
+          109,
+          101,
+          62
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-empty-name",
+    "pattern": "^(\\k<>)$",
+    "input": "k<>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60,
+          62
+        ],
+        [
+          107,
+          60,
+          62
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-quantifier",
+    "pattern": "^(\\k<x>+)$",
+    "input": "k<x>>>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60,
+          120,
+          62,
+          62,
+          62
+        ],
+        [
+          107,
+          60,
+          120,
+          62,
+          62,
+          62
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-lookbehind",
+    "pattern": "(?<=a)\\k<x>",
+    "input": "ak<x>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          107,
+          60,
+          120,
+          62
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-parenthesis",
+    "pattern": "^(a<b)\\k$",
+    "input": "a<bk",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          60,
+          98,
+          107
+        ],
+        [
+          97,
+          60,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-class-parens",
+    "pattern": "^[(?<name>)]\\k$",
+    "input": "(k",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          40,
+          107
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-identity-escaped-parens",
+    "pattern": "^\\(\\?<name>\\)\\k$",
+    "input": "(?<name>)k",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          40,
+          63,
+          60,
+          110,
+          97,
+          109,
+          101,
+          62,
+          41,
+          107
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-reference-empty-name-invalid",
+    "pattern": "^(?<name>a)\\k<>$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
   }
 ]
