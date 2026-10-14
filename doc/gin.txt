@@ -88,6 +88,9 @@ COMMANDS                                                        *gin-commands*
     gets a HEAD hunk, dor gets a working-file hunk, and :write saves the index.
     do gets the right pane if present, otherwise the left. dp puts the hunk
     into the working pane. Other panes use do/dp with the index where possible.
+    Visual mappings pass the selected line range to Neovim's diffget/diffput.
+    Diff boundaries determine which additions/deletions belong to that range;
+    this is not an arbitrary line replacement operation.
 
 :GinChaperon [++no-ours] [++no-theirs] [path]                  *:GinChaperon*
     Open theirs, working-file and ours conflict panes, focusing the working

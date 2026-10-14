@@ -255,4 +255,40 @@ T["reopening patch retains unsaved index edits"] = function()
   MiniTest.expect.equality(vim.bo[reopened.index].modified, true)
   MiniTest.expect.equality(H.git(root, "show", ":sub/file"), before)
 end
+for _, method in ipairs({ "get", "put" }) do
+  for _, selection in ipairs({ "2GV9j", "11GV9k" }) do
+    T["visual " .. method .. " " .. selection .. " stages only the selected change"] = function()
+      local base = {}
+      for i = 1, 22 do
+        base[i] = "line " .. i
+      end
+      vim.fn.writefile(base, root .. "/sub/selection")
+      H.git(root, "add", "sub/selection")
+      H.git(root, "commit", "-m", "selection")
+      local working = vim.deepcopy(base)
+      working[3], working[10], working[20] = "changed 3", "changed 10", "changed 20"
+      local expected = vim.deepcopy(base)
+      expected[3], expected[10] = working[3], working[10]
+      vim.fn.writefile(working, root .. "/sub/selection")
+      local panes = require("gin.patch").command({ fargs = { "selection" }, smods = {} })
+      vim.cmd.diffupdate()
+      local source = method == "get" and panes.index or panes.worktree
+      vim.api.nvim_set_current_win(vim.fn.bufwinid(source))
+      vim.api.nvim_feedkeys(selection .. (method == "get" and "dor" or "dp"), "mx", false)
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "nx", false)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(panes.index, 0, -1, false), expected)
+      MiniTest.expect.equality(
+        H.git(root, "show", ":sub/selection"),
+        table.concat(base, "\n") .. "\n"
+      )
+      vim.api.nvim_set_current_win(vim.fn.bufwinid(panes.index))
+      vim.cmd.write()
+      MiniTest.expect.equality(
+        H.git(root, "show", ":sub/selection"),
+        table.concat(expected, "\n") .. "\n"
+      )
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/selection"), working)
+    end
+  end
+end
 return T

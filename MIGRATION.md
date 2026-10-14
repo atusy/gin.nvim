@@ -2869,3 +2869,21 @@ A regression verifies that the reused index buffer shows the new staged content;
 a separate case verifies that unsaved index edits survive a refused non-forced
 reload and do not alter Git's index. The existing forced-decoding test guards
 against losing ++enc/++ff during this initialization refresh.
+
+## Patch Visual ranges
+
+Four keyboard cases now verify forward/reverse Visual ranges with both index
+diffget and worktree diffput. The selection spans two separated changes and
+leaves a third change outside the range. Tests inspect the index buffer before
+writing, confirm Git's index is still unchanged, then write and verify both
+selected changes are staged while the working file retains all three changes.
+Removing the range argument makes all four cases fail.
+
+The Lua mappings explicitly pass the captured Visual range; the pinned mappings
+use <Cmd>diffget/diffput without an explicit range. This is a Lua behavior
+extension, not exact mapping execution parity. Both routes use Neovim's native
+diff engine. Direct native range experiments also showed that a selection at
+an insertion/deletion boundary need not behave like replacing the same numbered
+lines in another buffer. The tests establish range propagation across separated
+changes, not arbitrary line replacement within a diff block; help now states
+that boundary. No production-code change was needed for these tests.
