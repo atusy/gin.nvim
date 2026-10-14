@@ -340,4 +340,103 @@ for _, case in ipairs({
     )
   end
 end
+T["Plug dispatch reports action errors without changing strict calls"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "failure", function()
+    error("action failed", 0)
+  end)
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks, history)
+    messages[#messages + 1] = { chunks, history }
+  end
+  local dispatch = vim.fn.maparg("<Plug>(gin-action-failure)", "n", false, true).callback
+  local ok, err = pcall(dispatch)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(messages, { { { { "[gin]: action failed", "ErrorMsg" } }, false } })
+  MiniTest.expect.error(function()
+    action.call(buf, "failure", { 2, 3 })
+  end, "action failed")
+  MiniTest.expect.equality(action.range(), { 1, 1 })
+end
+T["deferred choice failures stay inside the mapping boundary"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  local ranges, completed = {}, nil
+  action.define(buf, "failure", function(_, range)
+    ranges[#ranges + 1] = range
+    error("chosen action failed", 0)
+  end)
+  local input = vim.ui.input
+  vim.ui.input = function(_, callback)
+    completed = callback
+  end
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks, history)
+    messages[#messages + 1] = { chunks, history }
+  end
+  local ok, err = pcall(function()
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "one", "two", "three" })
+    vim.api.nvim_win_set_cursor(0, { 2, 0 })
+    vim.fn.maparg("<Plug>(gin-action-choice)", "n", false, true).callback()
+    vim.api.nvim_win_set_cursor(0, { 3, 0 })
+    completed("failure")
+    vim.fn.maparg("<Plug>(gin-action-repeat)", "n", false, true).callback()
+  end)
+  vim.ui.input, vim.api.nvim_echo = input, echo
+  assert(ok, err)
+  MiniTest.expect.equality(ranges, { { 2, 2 }, { 3, 3 } })
+  MiniTest.expect.equality(messages, {
+    { { { "[gin]: chosen action failed", "ErrorMsg" } }, false },
+    { { { "[gin]: chosen action failed", "ErrorMsg" } }, false },
+  })
+  MiniTest.expect.equality(vim.b.denops_action_previous, "failure")
+  MiniTest.expect.equality(action.range(), { 3, 3 })
+end
+T["direct choice completion retains strict errors"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "failure", function()
+    error("direct choice failed", 0)
+  end)
+  local input, completed = vim.ui.input, nil
+  vim.ui.input = function(_, callback)
+    completed = callback
+  end
+  local ok, err = pcall(action.call, buf, "choice", { 2, 3 })
+  vim.ui.input = input
+  assert(ok, err)
+  MiniTest.expect.error(function()
+    completed("failure")
+  end, "direct choice failed")
+  MiniTest.expect.equality(action.range(), { 1, 1 })
+end
+T["native Plug aliases report failures without leaking editor errors"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  action.define(buf, "failure", function()
+    error("mapped failure", 0)
+  end)
+  action.alias(buf, "selected", "failure")
+  vim.v.errmsg = ""
+  vim.cmd("messages clear")
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks, history)
+    messages[#messages + 1] = { chunks, history }
+  end
+  vim.api.nvim_feedkeys(
+    vim.api.nvim_replace_termcodes("<Plug>(gin-action-selected)", true, false, true),
+    "mx",
+    false
+  )
+  vim.api.nvim_echo = echo
+  MiniTest.expect.equality(messages, { { { { "[gin]: mapped failure", "ErrorMsg" } }, false } })
+  MiniTest.expect.equality(vim.v.errmsg, "")
+  MiniTest.expect.equality(vim.api.nvim_exec2("messages", { output = true }).output, "")
+end
 return T

@@ -56,7 +56,9 @@ end
 function M.define(buf, name, callback)
   assert(actions[buf], "Action buffer has not been initialized")
   local dispatch = function()
-    return callback(buf, M.range())
+    return require("gin.command").friendly(function()
+      return callback(buf, M.range(), true)
+    end, {})
   end
   actions[buf][name] = { callback = callback, dispatch = dispatch }
   vim.keymap.set({ "n", "x", "s", "o" }, "<Plug>(gin-action-" .. name .. ")", dispatch, {
@@ -215,15 +217,23 @@ function M.setup(buf, gather, target_field, echo_gather)
       vim.api.nvim_echo({ { output, "None" } }, true, {})
     end)
   end
-  M.define(buf, "choice", function(target, range)
+  M.define(buf, "choice", function(target, range, from_mapping)
     vim.ui.input(
       { prompt = "action: ", completion = "customlist,v:lua.require'gin.action'.complete" },
       function(name)
         if not name or not vim.api.nvim_buf_is_valid(target) then
           return
         end
-        vim.b[target].denops_action_previous = name
-        M.call(target, name, range)
+        local function invoke()
+          vim.b[target].denops_action_previous = name
+          return M.call(target, name, range)
+        end
+        -- Input providers may complete after the mapping callback has returned.
+        if from_mapping then
+          require("gin.command").friendly(invoke, {})
+        else
+          invoke()
+        end
       end
     )
   end)
