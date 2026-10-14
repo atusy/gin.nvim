@@ -243,4 +243,48 @@ for _, scheme in ipairs({ "gin", "ginedit" }) do
     MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
   end
 end
+T["GinEdit recovers bytes after malformed ISO-2022-JP escape"] = function()
+  stage(string.char(27, 36, 32))
+  vim.cmd("GinEdit ++enc=iso-2022-jp file")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "�$ " })
+end
+for _, command in ipairs({ "GinBuffer", "GinEdit" }) do
+  for _, case in ipairs({
+    { "truncated escape", { 27 }, "�" },
+    { "truncated designation", { 27, 36 }, "�$" },
+    { "Roman recovery", { 27, 40, 74, 92, 27, 36, 32, 126 }, "¥�$ ‾" },
+    { "escape inside pair", { 27, 36, 66, 36, 27, 40, 66, 65 }, "�A" },
+    { "truncated pair", { 27, 36, 66, 36 }, "�" },
+    { "consecutive escapes", { 27, 40, 74, 27, 40, 66, 65 }, "�A" },
+    { "kana recovery", { 27, 40, 73, 32, 33 }, "�｡" },
+    { "JIS recovery", { 27, 36, 66, 32, 36, 34 }, "�あ" },
+  }) do
+    T[command .. " ISO-2022-JP replacement " .. case[1]] = function()
+      local bytes = string.char(unpack(case[2]))
+      stage(bytes)
+      local suffix = command == "GinBuffer" and " show :file" or " file"
+      vim.cmd(command .. " ++enc=iso-2022-jp" .. suffix)
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { case[3] })
+      MiniTest.expect.equality(
+        require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
+        bytes
+      )
+    end
+  end
+end
+for _, scheme in ipairs({ "gin", "ginedit" }) do
+  T[scheme .. " addressed ISO-2022-JP read recovers malformed escape"] = function()
+    stage(string.char(27, 36, 32) .. "\n")
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "before", "after" })
+    vim.bo.fileencoding = "utf-8"
+    local fragment = scheme == "gin" and "show :file" or "file"
+    local name = require("gin.uri").format(scheme, root, {}, fragment)
+    vim.cmd("1read ++enc=iso-2022-jp " .. vim.fn.fnameescape(name))
+    MiniTest.expect.equality(
+      vim.api.nvim_buf_get_lines(0, 0, -1, false),
+      { "before", "�$ ", "after" }
+    )
+    MiniTest.expect.equality(vim.bo.fileencoding, "utf-8")
+  end
+end
 return T

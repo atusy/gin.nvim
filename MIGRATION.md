@@ -3935,3 +3935,25 @@ on Neovim 0.10.0. Oracle regeneration and formatting checks pass. The full suite
 passes 4,454 cases across 59 groups (`/tmp/gin-eucjp-replacement-full.log`).
 ISO-2022-JP and GBK/gb18030 replacement and broader
 metadata, write-encoding and API compatibility audits remain incomplete.
+
+## Explicit ISO-2022-JP replacement
+
+ISO-2022-JP now supports replacement decoding for explicit reads. Invalid
+escapes replace ESC and reprocess the remaining bytes in the previous output
+state. A valid escape interrupting a JIS pair replaces the unfinished character
+and changes state. Consecutive valid escapes still report an error, but in
+replacement mode the new state takes effect. Strict candidate selection remains
+the default. The initial GinEdit regression retained ESC instead of emitting
+U+FFFD for `1B 24 20`.
+
+Strict and replacement fixtures cover every JIS byte pair and escape suffix,
+all mode bytes, adjacent escapes and longer mixed inputs. The integrated decoder
+also matches Deno on a separate 404,641-case corpus. Real-view and addressed-read
+tests cover truncation, each output state, invalid escapes and state changes
+following errors. The pinned-upstream GinEdit probe now matches text bytes and
+fileencoding; the existing endofline metadata difference remains.
+
+All 862 related tests pass on Neovim 0.10.0. Oracle regeneration, formatting and
+diff checks pass. The full suite passes 4,474 cases across 59 groups
+(`/tmp/gin-iso-replacement-full.log`). GBK/gb18030 replacement and
+the broader metadata, write-encoding and API compatibility audits remain open.

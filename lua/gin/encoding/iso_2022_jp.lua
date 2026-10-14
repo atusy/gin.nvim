@@ -1,6 +1,11 @@
 local jis0208 = require("gin.encoding.jis0208_map")
-local function decode(data)
+local function decode(data, fatal)
+  fatal = fatal ~= false
   local output, pos, state, switched = {}, 1, "ascii", false
+  local function emit(code)
+    assert(code or not fatal, "Invalid or incomplete ISO-2022-JP sequence")
+    output[#output + 1] = code == 0 and "\0" or vim.fn.nr2char(code or 0xfffd)
+  end
   while pos <= #data do
     local byte = data:byte(pos)
     if byte == 27 then
@@ -11,30 +16,41 @@ local function decode(data)
       elseif one == 36 and (two == 64 or two == 66) then
         next_state = "jis"
       end
-      assert(next_state, "Invalid escape")
-      assert(not switched, "Consecutive escape")
-      state, switched = next_state, true
-      pos = pos + 3
+      if next_state then
+        state = next_state
+        if switched then
+          emit()
+        end
+        switched = true
+        pos = pos + 3
+      else
+        emit()
+        switched = false
+        pos = pos + 1
+      end
     else
       switched = false
       if state == "ascii" or state == "roman" then
-        assert(byte < 128 and byte ~= 14 and byte ~= 15, "Invalid ASCII/Roman byte")
-        if state == "roman" and byte == 92 then
-          output[#output + 1] = "¥"
+        if byte >= 128 or byte == 14 or byte == 15 then
+          emit()
+        elseif state == "roman" and byte == 92 then
+          emit(0xa5)
         elseif state == "roman" and byte == 126 then
-          output[#output + 1] = "‾"
+          emit(0x203e)
         else
-          output[#output + 1] = string.char(byte)
+          emit(byte)
         end
       elseif state == "kana" then
-        assert(byte >= 33 and byte <= 95, "Invalid kana byte")
-        output[#output + 1] = vim.fn.nr2char(0xff61 + byte - 33)
+        emit(byte >= 33 and byte <= 95 and 0xff61 + byte - 33 or nil)
+      elseif byte >= 33 and byte <= 126 then
+        local tail = data:byte(pos + 1)
+        local code = tail and tail >= 33 and tail <= 126 and jis0208[(byte - 33) * 94 + tail - 33]
+        emit(code or nil)
+        if tail and tail ~= 27 then
+          pos = pos + 1
+        end
       else
-        local tail = assert(data:byte(pos + 1), "Incomplete JIS pair")
-        assert(byte >= 33 and byte <= 126 and tail >= 33 and tail <= 126, "Invalid JIS byte range")
-        output[#output + 1] =
-          vim.fn.nr2char(assert(jis0208[(byte - 33) * 94 + tail - 33], "Invalid JIS pair"))
-        pos = pos + 1
+        emit()
       end
       pos = pos + 1
     end

@@ -336,3 +336,9 @@ mixed longer sequences. Explicit-read tests cover incomplete supplementary
 characters, ASCII recovery at the second and third bytes, non-ASCII failures,
 kana recovery and normal JIS0208 characters after an error, through both views
 and addressed reads. Automatic detection still uses strict decoding.
+
+ISO-2022-JP replacement matrices cover every JIS pair and every two-byte escape
+suffix. Common cases cover single bytes in each output state, adjacent valid
+escapes and mixed longer inputs. View and addressed-read cases test escape
+recovery, interrupted JIS characters, truncated prefixes and state changes after
+errors. Strict automatic selection continues to reject malformed input.

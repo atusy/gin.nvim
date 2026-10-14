@@ -33,21 +33,24 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     records.push({ encoding: canonical, aliases: encoding.labels, cases: bytes.map((value, byte) => ({ bytes: [byte], ...value })), replacement_cases });
   } else if (canonical === 'iso-2022-jp') {
     const modes=[[27,40,66],[27,40,74],[27,40,73],[27,36,64],[27,36,66]];
-    const cases=[],rows=[],escapes=[],valid=[];
+    const cases=[],rows=[],escapes=[],replacementRows=[],replacementEscapes=[],valid=[];
     for(let first=0;first<256;first++) {
       cases.push({bytes:[first],...decode(canonical,[first])});
       for(const mode of modes) {
         const bytes=[...mode,first];cases.push({bytes,...decode(canonical,bytes)});
       }
-      const row=[],escapeRow=[];
+      const row=[],escapeRow=[],replacementRow=[],replacementEscape=[];
       for(let second=0;second<256;second++) {
         const result=decode(canonical,[27,36,66,first,second]);
         const escape=decode(canonical,[27,first,second]);
         row.push(result.error?false:result.text);
+        replacementRow.push(decode(canonical,[27,36,66,first,second],false).text);
+        replacementEscape.push(decode(canonical,[27,first,second],false).text);
         escapeRow.push(escape.error?false:escape.text);
         if(!result.error)valid.push([first,second]);
       }
       rows.push(row);escapes.push(escapeRow);
+      replacementRows.push(replacementRow);replacementEscapes.push(replacementEscape);
     }
     for(const one of modes)for(const two of modes)for(const middle of [[],[65],[36,34],[92]]) {
       const bytes=[...one,...middle,...two];cases.push({bytes,...decode(canonical,bytes)});
@@ -68,8 +71,8 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
       cases.push({bytes,...decode(canonical,bytes)});
     }
     for(const bytes of [[],[27],[27,40],[27,36],[27,40,66],[27,36,66],[27,38,64,27,36,66]])cases.push({bytes,...decode(canonical,bytes)});
-    additionalOutputs['tests/audit/iso-2022-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"escapes":[\n'+escapes.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
-    records.push({encoding:canonical,aliases:encoding.labels,cases});
+    additionalOutputs['tests/audit/iso-2022-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"escapes":[\n'+escapes.map(row=>JSON.stringify(row)).join(',\n')+'],"replacement_rows":[\n'+replacementRows.map(row=>JSON.stringify(row)).join(',\n')+'],"replacement_escapes":[\n'+replacementEscapes.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
+    records.push({encoding:canonical,aliases:encoding.labels,cases,replacement_cases:cases.map(item=>({bytes:item.bytes,...decode(canonical,item.bytes,false)}))});
   } else if (canonical === 'euc-jp') {
     const cases=Array.from({length:256},(_,byte)=>({bytes:[byte],...decode(canonical,[byte])}));
     const rows=[],triples=[],replacementRows=[],replacementTriples=[],valid=[];

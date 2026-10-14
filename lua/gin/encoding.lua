@@ -17,6 +17,7 @@ function M.supports_replacement(label)
   return encoding == "utf-8"
     or encoding == "utf-16le"
     or encoding == "utf-16be"
+    or encoding == "iso-2022-jp"
     or encoding == "euc-jp"
     or encoding == "shift_jis"
     or encoding == "big5"
@@ -43,7 +44,7 @@ function M.decode(data, label, options)
     return require("gin.encoding.gb18030")(data), false
   end
   if encoding == "iso-2022-jp" then
-    return require("gin.encoding.iso_2022_jp")(data), false
+    return require("gin.encoding.iso_2022_jp")(data, fatal), false
   end
   if encoding == "euc-jp" then
     return require("gin.encoding.euc_jp")(data, fatal), false
