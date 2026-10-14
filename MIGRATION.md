@@ -4506,3 +4506,26 @@ match pinned upstream content, window count and display. Logs:
 `/tmp/gin-help-opener-{upstream,lua}.json`. README and help now describe Ex
 openers and escaped embedded modifiers. The full-suite result above predates
 these opener changes; integration testing will cover the next combined batch.
+
+
+### Processor startup and compound FileType integration
+
+Worker 7c6ed51 was cherry-picked as f3ac8d6. A missing processor executable
+reported an error without recording terminal failure when a friendly callback
+was installed, leaving `Gin ++wait` waiting indefinitely. Failure state is now
+independent of notification, direct Lua waiting calls remain strict, and user
+commands report once without a success event. Worker command tests passed on
+current Neovim and 0.10; main's integrated command/boundary suite passes 148
+cases on 0.10 (`/tmp/gin-integrated-processor-nvim010.log`). Live evidence:
+`/tmp/gin-bare-processor-{audit,fixed}.json`. Bare processors are a Lua extension;
+the pinned bare command does not accept this option.
+
+Worker f1f28e7 adds the pinned after-ftplugin entrypoint for compound blame
+FileTypes. It reuses guarded blame mappings without changing the host ftplugin.
+Five new lifecycle cases cover host settings/order, disabled defaults with Plug
+mappings, repeated sourcing with user customization, cleanup/reinitialization
+and the actual Lua ftplugin. Both versions pass 168 related cases across four
+groups (`/tmp/gin-compound-ftplugin-{current,010}.log`). The tests append the
+plugin's after directory to runtimepath and trigger FileType normally. Makefile
+format checking now includes the new after tree. The next full suite covers
+these changes together with the previously integrated opener fixes.
