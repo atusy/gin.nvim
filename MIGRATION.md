@@ -2353,3 +2353,18 @@ available. The new aliases are assigned from the same pane IDs on every read;
 they do not add another cleanup callback or alter the companion-buffer unload
 policy. This closes the thirteen-name presence inventory, not every possible
 lifecycle transition or the full Blame migration checklist.
+
+## Null default-mapping flags
+
+The pinned list, buffer, diff and blame ftplugins use Vimscript truthiness for
+`gin_*_disable_default_mappings`; `!v:null` is true. Lua previously treated
+`vim.NIL` as truthy and consequently omitted the default keys. The shared list/
+jump installer and both blame default-key branches now treat null as enabled,
+like an unset flag or zero. Plug action definitions remain available independently.
+
+Ten filetype fixtures set the corresponding flag to `vim.NIL` and verify the
+buffer-local Enter mapping; blame and blame-nav also verify older/newer keys.
+All ten failed before the change and pass afterward. Existing tests continue to
+cover disabled defaults and user mapping preservation. This change addresses
+null specifically and does not claim complete Vimscript coercion compatibility
+for arbitrary strings, lists or dictionaries passed as flag values.

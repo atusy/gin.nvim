@@ -16,6 +16,19 @@ local T = MiniTest.new_set({
       end
       vim.cmd.bwipeout({ bang = true })
       vim.wo.winfixbuf = false
+      for _, kind in ipairs({
+        "branch",
+        "status",
+        "log",
+        "reflog",
+        "tag",
+        "stash",
+        "buffer",
+        "diff",
+        "blame",
+      }) do
+        vim.g["gin_" .. kind .. "_disable_default_mappings"] = nil
+      end
       vim.wo.foldlevel = foldlevel
     end,
   },
@@ -93,6 +106,34 @@ T["display options match every pinned Gin ftplugin"] = function()
     return vim.json.decode(result.stdout)
   end
   MiniTest.expect.equality(inspect(root, ".lua"), inspect(root .. "/.deps/vim-gin", ".vim"))
+end
+for _, kind in ipairs({
+  "branch",
+  "status",
+  "log",
+  "reflog",
+  "tag",
+  "stash",
+  "buffer",
+  "diff",
+  "blame",
+  "blame-nav",
+}) do
+  T[kind .. " null mapping flag keeps defaults enabled"] = function()
+    local setting = "gin_"
+      .. (kind == "blame-nav" and "blame" or kind)
+      .. "_disable_default_mappings"
+    vim.g[setting] = vim.NIL
+    vim.bo.filetype = "gin-" .. kind
+    local mapping = vim.fn.maparg("<CR>", "n", false, true)
+    MiniTest.expect.equality(mapping.buffer, 1)
+    MiniTest.expect.equality(type(mapping.rhs), "string")
+    MiniTest.expect.equality(mapping.rhs:find("<Plug>(gin-", 1, true), 1)
+    if kind == "blame" or kind == "blame-nav" then
+      MiniTest.expect.equality(vim.fn.maparg("<C-O>", "n"), "<Plug>(gin-blame-navigate-older)")
+      MiniTest.expect.equality(vim.fn.maparg("<C-I>", "n"), "<Plug>(gin-blame-navigate-newer)")
+    end
+  end
 end
 for _, kind in ipairs({ "branch", "status", "log", "reflog", "tag", "stash" }) do
   T[kind .. " filetype applies and undoes list display options"] = function()
