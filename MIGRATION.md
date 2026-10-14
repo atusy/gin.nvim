@@ -2759,3 +2759,19 @@ This closes the shared-action functional checklist. Native vim.ui.input supports
 replacement UIs; help columns use display widths rather than JavaScript string
 lengths. Neither change introduces a Denops dependency. View-specific mutation
 semantics and the broader command/URI audit remain separate checklist items.
+
+## Status removal and original-path action evidence
+
+Status action tests now exercise two previously registration-only behaviors.
+For rm/rm:force, two files have distinct HEAD, index and working contents:
+ordinary removal rejects the selected file without dropping its index entry;
+forced removal drops only that entry, retaining the other staged file, both
+working files and HEAD contents. This checks the pinned action/rm.ts use of
+--cached and its force variant against real Git state.
+
+For yank:path:orig, a range containing a staged rename and a modified ordinary
+file yields the absolute original path followed by the ordinary entry's empty
+value. Selecting only the ordinary file clears the register. Repository status
+is unchanged. The expected empty-row behavior follows status/edit.ts's origPath
+projection and action/yank.ts's newline join. These cases extend functional
+evidence without closing the broader status checklist.

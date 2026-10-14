@@ -333,6 +333,53 @@ T["restore reverts only the selected working file"] = function()
   MiniTest.expect.equality(vim.fn.readfile(root .. "/one"), { "base" })
   MiniTest.expect.equality(vim.fn.readfile(root .. "/two"), { "changed" })
 end
+T["original path yank preserves empty rows alongside renamed paths"] = function()
+  for _, path in ipairs({ "old name", "unchanged" }) do
+    vim.fn.writefile({ path }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "initial")
+  H.git(root, "mv", "old name", "new name")
+  vim.fn.writefile({ "working" }, root .. "/unchanged")
+  vim.cmd.GinStatus()
+  local buf = vim.api.nvim_get_current_buf()
+  local before = H.git(root, "status", "--porcelain=v1", "-z")
+  require("gin.action").call(buf, "yank:path:orig", { 2, 3 })
+  MiniTest.expect.equality(vim.fn.getreg('"'), vim.uv.fs_realpath(root) .. "/old name\n")
+  require("gin.action").call(buf, "yank:path:orig", { 3, 3 })
+  MiniTest.expect.equality(vim.fn.getreg('"'), "")
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain=v1", "-z"), before)
+end
+T["forced removal drops only the selected index entry and preserves working files"] = function()
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "base" }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  H.git(root, "commit", "-m", "initial")
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "staged" }, root .. "/" .. path)
+  end
+  H.git(root, "add", ".")
+  for _, path in ipairs({ "one", "two" }) do
+    vim.fn.writefile({ "working" }, root .. "/" .. path)
+  end
+  vim.cmd.GinStatus()
+  local buf = vim.api.nvim_get_current_buf()
+  MiniTest.expect.error(function()
+    require("gin.action").call(buf, "rm", { 2, 2 })
+  end, "git exited")
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "ls-files"), "one\ntwo\n")
+  MiniTest.expect.equality(H.git(root, "show", ":one"), "staged\n")
+  require("gin.action").call(buf, "rm:force", { 2, 2 })
+  H.drain()
+  MiniTest.expect.equality(H.git(root, "ls-files"), "two\n")
+  MiniTest.expect.equality(H.git(root, "show", ":two"), "staged\n")
+  for _, path in ipairs({ "one", "two" }) do
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path), { "working" })
+    MiniTest.expect.equality(H.git(root, "show", "HEAD:" .. path), "base\n")
+  end
+end
 for _, variant in ipairs({ "ours", "theirs", "conflict:merge", "conflict:diff3" }) do
   T["restore " .. variant .. " uses unmerged index stages"] = function()
     local git = require("gin.git")
