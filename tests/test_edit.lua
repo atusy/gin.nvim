@@ -350,4 +350,28 @@ T["Mac format preserves embedded LF through native-compatible index reads and wr
   MiniTest.expect.equality(native_bytes, bytes)
   MiniTest.expect.equality(table.concat(vim.fn.readfile(root .. "/mac", "b"), "\n"), bytes)
 end
+for _, directory in ipairs({ "$GIN_EDIT_LITERAL", "~" }) do
+  T["index paths preserve literal " .. directory .. " directories"] = function()
+    local previous = vim.env.GIN_EDIT_LITERAL
+    vim.env.GIN_EDIT_LITERAL = "decoy"
+    local ok, err = pcall(function()
+      assert(vim.uv.fs_mkdir(root .. "/" .. directory, 448))
+      assert(vim.uv.fs_mkdir(root .. "/decoy", 448))
+      local path = directory .. "/file"
+      vim.fn.writefile({ "literal" }, root .. "/" .. path)
+      vim.fn.writefile({ "decoy" }, root .. "/decoy/file")
+      H.git(root, "add", ".")
+      require("gin.edit").command({ fargs = { path }, smods = {} })
+      MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "literal" })
+      MiniTest.expect.equality(vim.b.gin_path, path)
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "changed index" })
+      vim.cmd.write()
+      MiniTest.expect.equality(H.git(root, "show", ":" .. path), "changed index\n")
+      MiniTest.expect.equality(H.git(root, "show", ":decoy/file"), "decoy\n")
+      MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path), { "literal" })
+    end)
+    vim.env.GIN_EDIT_LITERAL = previous
+    assert(ok, err)
+  end
+end
 return T

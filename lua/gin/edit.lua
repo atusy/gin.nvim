@@ -5,7 +5,11 @@ local M = {}
 
 ---GinEdit's relative paths are relative to the repository, as in Git tree objects.
 function M.path(root, filename)
-  local path = vim.fs.normalize(filename)
+  -- Repository paths are literal; filename-expression expansion happens earlier.
+  if filename:sub(1, 1) == "~" then
+    filename = "./" .. filename
+  end
+  local path = vim.fs.normalize(filename, { expand_env = false })
   if path:sub(1, 1) == "/" then
     local parent = vim.uv.fs_realpath(vim.fs.dirname(path))
     path = (parent or vim.fs.dirname(path)) .. "/" .. vim.fs.basename(path)

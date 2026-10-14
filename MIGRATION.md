@@ -3017,3 +3017,18 @@ The regression reads the same blob through native edit and GinEdit, compares
 buffer contents, and compares the written index blob with a native file write.
 Both writes reproduce the original bytes, and the repository working file is
 unchanged. The original decoder failed before a buffer could be loaded.
+
+## Literal index path normalization
+
+GinEdit's path normalization implicitly expanded environment variables and a
+leading tilde. A repository path such as $GIN_EDIT_LITERAL/file could therefore
+open a different index entry, while ~/file could be rejected as outside the
+repository. The pinned edit command preserves relative filename strings.
+
+Path normalization now disables environment expansion and protects a leading
+tilde before normalization. Filename-expression expansion remains in the
+earlier command argument layer. Two real repository fixtures use literal dollar
+and tilde directories, plus a decoy path selected by the environment variable.
+They verify the intended entry is read and written, the decoy index blob is
+unchanged, and the literal working file is preserved. Both cases failed before
+the fix: one read the decoy and the other raised an outside-repository error.
