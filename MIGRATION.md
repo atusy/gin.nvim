@@ -1964,3 +1964,10 @@ no longer loses the update from an earlier intent-to-add operation. The existing
 clean-filter failure fixture now drains pending events and checks that the
 visible new-file row changes from untracked to intent-to-add. Failed commands
 still propagate their errors; the shared post-event debounce remains in use.
+
+Status staging now captures eventignore=all before each Git operation and
+omits the completion timer for suppressed operations, matching the pinned
+command handler. The regression restores eventignore immediately after staging
+and drains callbacks: no delayed event appears, while the index contains the
+staged data. A subsequent ordinary stage emits one event and updates the index,
+showing that suppression does not leak into later operations.

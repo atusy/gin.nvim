@@ -209,8 +209,11 @@ function M.action(buf, name, range)
     return
   end
   local function run(args)
+    local ignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
     git.run(args, { cwd = root, progress = "both" })
-    require("gin.command").post()
+    if not ignore_all then
+      require("gin.command").post()
+    end
   end
   local function add_intent()
     if #intent > 0 then

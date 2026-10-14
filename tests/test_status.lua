@@ -112,6 +112,35 @@ T["unstaging the branch header leaves staged files alone"] = function()
   require("gin.status").action(vim.api.nvim_get_current_buf(), "unstage", { 1, 1 })
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
 end
+T["staging under eventignore all does not publish a delayed completion"] = function()
+  vim.fn.writefile({ "first" }, root .. "/file")
+  vim.cmd.GinStatus()
+  H.drain()
+  local events = 0
+  local autocmd = vim.api.nvim_create_autocmd("User", {
+    pattern = "GinCommandPost",
+    callback = function()
+      events = events + 1
+    end,
+  })
+  local ignored = vim.o.eventignore
+  local ok, err = pcall(function()
+    vim.o.eventignore = "all"
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+    vim.o.eventignore = ignored
+    H.drain()
+    MiniTest.expect.equality(events, 0)
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "first\n")
+    vim.fn.writefile({ "second" }, root .. "/file")
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "stage", { 2, 2 })
+    H.drain()
+    MiniTest.expect.equality(events, 1)
+    MiniTest.expect.equality(H.git(root, "show", ":file"), "second\n")
+  end)
+  vim.o.eventignore = ignored
+  vim.api.nvim_del_autocmd(autocmd)
+  assert(ok, err)
+end
 T["stage records deleted files in the index"] = function()
   vim.fn.writefile({ "content" }, root .. "/file")
   H.git(root, "add", "file")
