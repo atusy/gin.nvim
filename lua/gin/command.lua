@@ -44,7 +44,8 @@ function M.parse(args, allowed)
         error("Unknown Gin option: ++" .. name, 0)
       end
       assert(options[name] == nil, "Duplicate Gin option: ++" .. name)
-      options[name] = value
+      -- The upstream JavaScript option pattern uses a dot without the s flag.
+      options[name] = value:gsub("[\r\n].*", ""):gsub("\226\128[\168\169].*", "")
     else
       residue[#residue + 1] = arg
     end

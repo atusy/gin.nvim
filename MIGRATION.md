@@ -1864,3 +1864,10 @@ Git fixture covers default UTF-8 and explicit UTF-8/UTF-16LE/UTF-16BE encodings,
 keeps an interior U+FEFF character, and checks that returned stdout retains the
 original bytes. This addresses final display, not incremental indicator decoding
 or the complete set of TextDecoder encoding aliases.
+
+Shared Gin option parsing now stops values at LF, CR, U+2028 and U+2029,
+matching the non-dotAll expression used by the pinned denops argument parser.
+A real Git test passes each terminator after a valid explicit worktree and
+checks staged contents, rather than allowing the ignored suffix to become part
+of the repository path. This truncation applies only to recognized options;
+ordinary Git arguments and arguments following `--` retain their contents.

@@ -108,6 +108,17 @@ T["bare worktree options use the current repository"] = function()
   vim.cmd("Gin ++wait ++worktree add -- file")
   MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
 end
+T["Gin option values stop at ECMAScript line terminators"] = function()
+  for i, separator in ipairs({ "\n", "\r", "\226\128\168", "\226\128\169" }) do
+    local content = "version " .. i .. "\n"
+    vim.fn.writefile({ "version " .. i }, root .. "/file")
+    require("gin.command").execute({
+      fargs = { "++wait", "++worktree=" .. root .. separator .. "ignored", "add", "--", "file" },
+      smods = {},
+    })
+    MiniTest.expect.equality(H.git(root, "show", ":file"), content)
+  end
+end
 T["duplicate Gin options fail before executing Git"] = function()
   vim.fn.writefile({ "literal" }, root .. "/file")
   MiniTest.expect.error(function()
