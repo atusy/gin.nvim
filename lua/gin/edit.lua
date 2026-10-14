@@ -1,6 +1,7 @@
 local git = require("gin.git")
 local uri = require("gin.uri")
 local buffer = require("gin.buffer")
+local unicode = require("gin.unicode")
 local M = {}
 
 ---GinEdit's relative paths are relative to the repository, as in Git tree objects.
@@ -25,7 +26,9 @@ end
 
 function M.decode(data, options)
   local encoding = options.enc or options.encoding or "utf-8"
-  if encoding ~= "utf-8" and encoding ~= "utf8" then
+  if unicode.supports(encoding) then
+    data = unicode.decode(data, encoding)
+  elseif encoding ~= "utf-8" and encoding ~= "utf8" then
     data = vim.fn.iconv(data, encoding, "utf-8")
   end
   local bomb = data:sub(1, 3) == "\239\187\191"
@@ -90,11 +93,16 @@ function M.encode(buf)
   then
     data = data .. separator
   end
-  if vim.bo[buf].bomb then
+  local encoding = vim.bo[buf].fileencoding
+  if
+    vim.bo[buf].bomb
+    and (unicode.supports(encoding) or encoding == "" or encoding == "utf-8" or encoding == "utf8")
+  then
     data = "\239\187\191" .. data
   end
-  local encoding = vim.bo[buf].fileencoding
-  if encoding ~= "" and encoding ~= "utf-8" and encoding ~= "utf8" then
+  if unicode.supports(encoding) then
+    data = unicode.encode(data, encoding)
+  elseif encoding ~= "" and encoding ~= "utf-8" and encoding ~= "utf8" then
     data = vim.fn.iconv(data, "utf-8", encoding)
   end
   return data

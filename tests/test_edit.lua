@@ -398,4 +398,66 @@ T["index writes preserve symlink mode and leave the working link and target unto
   MiniTest.expect.equality(vim.uv.fs_readlink(root .. "/link"), "target")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/target"), { "target content" })
 end
+for _, encoding in ipairs({
+  "utf-8",
+  "latin1",
+  "utf-16le",
+  "utf-16",
+  "ucs-2le",
+  "ucs-2",
+  "ucs-4le",
+  "ucs-4",
+}) do
+  T["bomb writes match native behavior for " .. encoding] = function()
+    local content = encoding == "latin1" and "content" or "content 日本語"
+    if encoding:find("utf-16", 1, true) or encoding:find("ucs-4", 1, true) then
+      content = content .. "😀"
+    end
+    vim.fn.writefile({ content }, root .. "/bom-input")
+    H.git(root, "add", "bom-input")
+    vim.cmd.edit(root .. "/bom-input")
+    vim.bo.fileencoding, vim.bo.bomb = encoding, true
+    vim.cmd("write " .. vim.fn.fnameescape(root .. "/native-bom"))
+    local native = assert(io.open(root .. "/native-bom", "rb"))
+    local expected = native:read("*a")
+    native:close()
+    vim.cmd("GinEdit bom-input")
+    vim.bo.fileencoding, vim.bo.bomb = encoding, true
+    vim.cmd.write()
+    MiniTest.expect.equality(
+      require("gin.git").run({ "show", ":bom-input" }, { cwd = root }).stdout,
+      expected
+    )
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/bom-input", "b"), { content, "" })
+    vim.cmd("GinEdit ++enc=" .. encoding .. " bom-input")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { content })
+    MiniTest.expect.equality(vim.bo.bomb, encoding ~= "latin1")
+  end
+end
+T["UTF-16 index buffers preserve embedded NUL"] = function()
+  local bytes = "\255\254a\0\0\0b\0\n\0"
+  local file = assert(io.open(root .. "/nul-utf16", "wb"))
+  file:write(bytes)
+  file:close()
+  H.git(root, "add", "nul-utf16")
+  vim.cmd("GinEdit ++enc=utf-16le nul-utf16")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "a\0b" })
+  vim.cmd.write()
+  MiniTest.expect.equality(
+    require("gin.git").run({ "show", ":nul-utf16" }, { cwd = root }).stdout,
+    bytes
+  )
+end
+T["unrepresentable UCS-2 writes preserve the index and unsaved edits"] = function()
+  vim.cmd("GinEdit sub/file.lua")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "😀" })
+  vim.bo.fileencoding = "ucs-2"
+  MiniTest.expect.error(function()
+    vim.cmd.write()
+  end, "Character cannot be encoded as UCS%-2")
+  MiniTest.expect.equality(vim.bo.modified, true)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "😀" })
+  MiniTest.expect.equality(H.git(root, "show", ":sub/file.lua"), "index\n")
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file.lua"), { "working" })
+end
 return T

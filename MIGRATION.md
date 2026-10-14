@@ -3048,3 +3048,25 @@ then edits the index target and verifies its exact lowercase bytes and mode.
 The working symlink and its target file remain unchanged. The fixture disables
 fixendofline explicitly to retain the link blob's no-EOL representation. Before
 the fix, the written target was incorrectly uppercased.
+
+## Unicode encoding and BOM write-back
+
+The BOM audit found two write defects: Latin-1 received an unwanted converted
+BOM, and vim.fn.iconv did not convert UTF-16LE data at all on the supported
+runtime, leaving UTF-8 bytes in the index. A Vimscript string conversion is not
+a reliable transport for encodings containing NUL bytes.
+
+GinEdit now uses an explicit Lua codec for UTF-16, UCS-2 and UCS-4 in big- and
+little-endian forms, including UTF-16 surrogate pairs and embedded NUL. Generic
+big-endian formats recognize a little-endian BOM on read. BOM insertion is
+limited to the supported Unicode encodings; Latin-1 keeps its content without
+a prefix. Other existing encodings continue through iconv.
+
+Eight native-write comparisons cover UTF-8, Latin-1 and all six new codec
+formats, using Japanese text and non-BMP characters where representable. The
+tests compare raw file bytes with the index blob and read it back through
+GinEdit. Separate cases verify an embedded NUL round trip and that an
+unrepresentable UCS-2 write leaves the index, working file and unsaved buffer
+intact. The codec rejects incomplete code units and invalid scalar/surrogate
+sequences; this is explicit failure rather than a claim of native malformed-byte
+replacement parity. No external converter or new runtime dependency is required.
