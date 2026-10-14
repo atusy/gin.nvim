@@ -1907,3 +1907,10 @@ variants, both worktree input stages, and both cancellation forms. Each case
 checks that refs, worktree registration, working-tree/index status and cwd
 remain unchanged. This covers cancellation feedback rather than the full
 Denops helper message scheduling and silent-state behavior.
+
+Orphan worktree prompts now retain slash-separated branch names in the default
+path, matching worktree_new.ts: feature/orphan defaults to
+.worktrees/feature/orphan. Ordinary worktree creation continues to replace
+slashes with underscores. A real Git test accepts the offered defaults in both
+paths and checks cwd, symbolic HEAD, regular branch ancestry and contents,
+and the orphan's empty index and absent tracked file.

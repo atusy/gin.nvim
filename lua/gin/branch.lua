@@ -283,7 +283,7 @@ function M.read(buf, name)
         local parent = vim.fs.dirname(vim.fs.normalize(common))
         vim.ui.input({
           prompt = "Worktree path (for " .. branch .. "): ",
-          default = parent .. "/.worktrees/" .. branch:gsub("[/\\]", "_"),
+          default = parent .. "/.worktrees/" .. (orphan and branch or branch:gsub("[/\\]", "_")),
           completion = "dir",
         }, function(path)
           if not path or path == "" then

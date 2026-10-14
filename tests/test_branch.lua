@@ -419,6 +419,52 @@ T["worktree creates a named branch from the selection and changes cwd"] = functi
   vim.cmd.cd(root)
   H.git(root, "worktree", "remove", root .. "/new tree")
 end
+T["default worktree paths distinguish ordinary and orphan branch names"] = function()
+  for _, orphan in ipairs({ false, true }) do
+    vim.cmd("GinBranch topic")
+    local branch = orphan and "feature/orphan" or "feature/regular"
+    local expected = vim.uv.fs_realpath(root)
+      .. "/.worktrees/"
+      .. (orphan and branch or "feature_regular")
+    local input, offered, prompts = vim.ui.input, nil, 0
+    vim.ui.input = function(options, done)
+      prompts = prompts + 1
+      if prompts == 1 then
+        done(branch)
+      else
+        offered = options.default
+        done(offered)
+      end
+    end
+    local ok, err = pcall(
+      require("gin.action").call,
+      vim.api.nvim_get_current_buf(),
+      orphan and "worktree:orphan" or "worktree",
+      { 1, 1 }
+    )
+    vim.ui.input = input
+    assert(ok, err)
+    MiniTest.expect.equality(prompts, 2)
+    MiniTest.expect.equality(offered, expected)
+    MiniTest.expect.equality(vim.fn.getcwd(), expected)
+    MiniTest.expect.equality(
+      H.git(expected, "symbolic-ref", "HEAD"),
+      "refs/heads/" .. branch .. "\n"
+    )
+    if orphan then
+      MiniTest.expect.equality(H.git(expected, "ls-files"), "")
+      MiniTest.expect.equality(vim.fn.filereadable(expected .. "/file"), 0)
+    else
+      MiniTest.expect.equality(
+        H.git(expected, "rev-parse", "HEAD"),
+        H.git(root, "rev-parse", "topic")
+      )
+      MiniTest.expect.equality(vim.fn.readfile(expected .. "/file"), { "base" })
+    end
+    vim.cmd.cd(root)
+    H.git(root, "worktree", "remove", expected)
+  end
+end
 T["cancelling the worktree path creates neither branch nor directory"] = function()
   vim.cmd("GinBranch topic")
   worktree_action("worktree", "cancelled", nil)
