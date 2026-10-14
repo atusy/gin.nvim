@@ -233,6 +233,29 @@ T["branch deletion changes refs and reloads the view"] = function()
   H.drain()
   MiniTest.expect.equality(#vim.b.gin_branches, 1)
 end
+T["failed unmerged branch deletion refreshes a successfully removed worktree"] = function()
+  local linked = root .. "/linked"
+  H.git(root, "worktree", "add", linked, "topic")
+  vim.fn.writefile({ "unmerged" }, linked .. "/file")
+  H.git(linked, "commit", "-am", "unmerged change")
+  local commit = H.git(root, "rev-parse", "topic")
+  vim.cmd("GinBranch topic")
+  MiniTest.expect.equality(vim.b.gin_branches[1].worktree ~= nil, true)
+  MiniTest.expect.error(function()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  end, "git exited")
+  MiniTest.expect.equality(vim.fn.isdirectory(linked), 0)
+  MiniTest.expect.equality(H.git(root, "rev-parse", "topic"), commit)
+  MiniTest.expect.equality(
+    H.git(root, "worktree", "list", "--porcelain"):find("refs/heads/topic", 1, true),
+    nil
+  )
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "base" })
+  MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  H.drain()
+  MiniTest.expect.equality(vim.b.gin_branches[1].worktree, nil)
+  MiniTest.expect.equality(vim.b.gin_branches[1].branch, "topic")
+end
 T["multiline branch formats preserve NULs and deduplicate deletion targets"] = function()
   vim.cmd("GinBranch --format=%(refname:short)%00%0a%(subject)")
   vim.cmd.edit()

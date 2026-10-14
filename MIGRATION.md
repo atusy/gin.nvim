@@ -1979,3 +1979,10 @@ calls that could emit a delayed event after eventignore was restored. Twelve
 real-Git cases cover normal and suppressed completion across six views, with
 index/ref/stash assertions in addition to event counts. The specialized Status
 staging path retains its previously verified per-operation suppression.
+
+Branch deletion now sends successful linked-worktree removal through the
+shared command completion path. If the subsequent branch deletion rejects an
+unmerged branch, the view still refreshes to remove the obsolete worktree path.
+The regression uses a real clean linked worktree with an unmerged commit and
+checks worktree removal, retained branch SHA, unchanged main worktree/index,
+and updated candidate metadata after the deferred completion event.

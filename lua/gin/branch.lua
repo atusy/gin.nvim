@@ -207,7 +207,7 @@ function M.read(buf, name)
               args[#args + 1] = "--force"
             end
             vim.list_extend(args, { "--", row.worktree })
-            git.run(args, { cwd = parsed.root, progress = "both" })
+            run(args)
           end
           run({ "branch", force and "-D" or "-d", "--", row.branch })
         end
