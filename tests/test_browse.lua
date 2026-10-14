@@ -179,6 +179,41 @@ T["GinBrowse rejects repeated remote flags before opening or yanking"] = functio
   vim.ui.open = open
   assert(ok, err)
 end
+for _, host in ipairs({ "github.com", "gitlab.com", "bitbucket.org" }) do
+  T["GinBrowse accepts path line suffixes for " .. host] = function()
+    H.git(root, "remote", "set-url", "origin", "https://" .. host .. "/owner/repo.git")
+    local base = "https://" .. host .. "/owner/repo/"
+    local route = host == "github.com" and "blob/"
+      or host == "gitlab.com" and "-/blob/"
+      or "annotate/"
+    local path = "sub/space%20%23%20file.md"
+    for _, case in ipairs({
+      { ":0", "", "" },
+      { ":1", "?plain=1#L1", "#lines-1" },
+      { ":01:002", host == "github.com" and "?plain=1#L1-L2" or "?plain=1#L1-2", "#lines-1:2" },
+      { ":1:2", host == "github.com" and "?plain=1#L1-L2" or "?plain=1#L1-2", "#lines-1:2" },
+      { ":2:2", host == "github.com" and "?plain=1#L2-L2" or "?plain=1#L2-2", "#lines-2:2" },
+    }) do
+      require("gin.browse").command({
+        fargs = { "--no-browser", "++yank=a", "HEAD", "sub/space # file.md" .. case[1] },
+        range = 0,
+      })
+      MiniTest.expect.equality(
+        vim.fn.getreg("a"),
+        base
+          .. (host == "bitbucket.org" and case[1] == ":0" and "src/" or route)
+          .. "main/"
+          .. path
+          .. (host == "bitbucket.org" and case[3] or case[2])
+      )
+    end
+    local tree = host == "github.com" and "tree/" or host == "gitlab.com" and "-/tree/" or "src/"
+    MiniTest.expect.equality(
+      require("gin.browse").url(root, "HEAD", { path = "sub:1:2" }),
+      base .. tree .. "main/sub"
+    )
+  end
+end
 T["GinBrowse zero address omits the line fragment"] = function()
   vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/space # file.md"))
   vim.cmd("0GinBrowse --no-browser ++yank=a")

@@ -2639,3 +2639,19 @@ as well as cached 1.1.6 providers. Pinned vim-gin declares a ^1.0.1 dependency,
 not an exact transitive version; the current registry did not resolve exact
 1.0.1, so its GitHub tag source was inspected directly. Newer-only provider
 features and other URL parsing edge cases remain outside this verification.
+
+## Browse path line suffixes
+
+GinBrowse now recognizes the upstream `path:line` and `path:start:end` forms.
+Previously the suffix was embedded in the URL's filename. Parsing precedes Git
+object classification, so directory ranges are ignored; a single zero omits the
+line link, while explicit two-endpoint ranges retain both endpoints even when
+equal. Ex command ranges are formatted into the same path representation as in
+the pinned browse command. The Lua URL helper still accepts its separate range
+option for callers already using that API.
+
+The reference is deno-git-browse v1.0.1
+[object URL parsing](https://github.com/lambdalisue/deno-git-browse/blob/v1.0.1/object_url.ts)
+and the pinned command's `formatPath`. Real repository cases cover all three
+providers, single and paired lines, equal endpoints, leading zeroes, single zero,
+and directory ranges. Existing Ex-range and permalink tests remain in the suite.

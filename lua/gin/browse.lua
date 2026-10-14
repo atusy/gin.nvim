@@ -103,6 +103,21 @@ function M.url(root, revision, options)
     ref = hash
   end
   local path = options.path or "."
+  local range, explicit_pair = options.range, false
+  if not range then
+    local file, first, last = path:match("^(.-):(%d+):(%d+)$")
+    if file then
+      path, range, explicit_pair = file, { tonumber(first), tonumber(last) }, true
+    else
+      file, first = path:match("^(.-):(%d+)$")
+      if file then
+        path = file
+        if tonumber(first) ~= 0 then
+          range = { tonumber(first), tonumber(first) }
+        end
+      end
+    end
+  end
   if path ~= "." then
     path = require("gin.edit").path(root, path)
   end
@@ -113,11 +128,12 @@ function M.url(root, revision, options)
       == "tree"
   local route = tree and "tree" or "blob"
   local suffix = ""
-  local range = not tree and options.range
+  range = not tree and range
+  local include_end = range and (explicit_pair or range[2] ~= range[1])
   if provider == "bitbucket.org" then
     route = range and path:match("%.md$") and "annotate" or "src"
     if range then
-      suffix = "#lines-" .. range[1] .. (range[2] ~= range[1] and ":" .. range[2] or "")
+      suffix = "#lines-" .. range[1] .. (include_end and ":" .. range[2] or "")
     end
   else
     if provider == "gitlab.com" then
@@ -126,7 +142,7 @@ function M.url(root, revision, options)
     if range then
       suffix = "?plain=1#L"
         .. range[1]
-        .. (range[2] ~= range[1] and (provider == "github.com" and "-L" or "-") .. range[2] or "")
+        .. (include_end and (provider == "github.com" and "-L" or "-") .. range[2] or "")
     end
   end
   return base
@@ -172,7 +188,10 @@ function M.command(opts)
     options.path = path == root and "." or path
     -- The pinned command uses <count> (the last address), so zero means no range.
     if opts.range and opts.range > 0 and opts.line2 ~= 0 then
-      options.range = { opts.line1, opts.line2 }
+      options.path = options.path
+        .. ":"
+        .. opts.line1
+        .. (opts.line2 ~= opts.line1 and ":" .. opts.line2 or "")
     end
   end
   local url = M.url(root, positional[1] or "HEAD", options)

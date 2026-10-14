@@ -102,6 +102,8 @@ COMMANDS                                                        *gin-commands*
     --permalink, --remote={name}, ++repository and ++worktree. GitHub, GitLab
     and Bitbucket routes are supported. --pr finds GitHub PR URLs from merge
     messages and local ancestry, using remote HEAD or main as fallback.
+    A path may end with :line or :start:end to select lines. An explicit
+    two-number suffix preserves both endpoints, even when equal.
     Use -- before literal paths beginning with - or ++, for example:
         :GinBrowse --no-browser HEAD -- -notes.md
 
