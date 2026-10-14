@@ -214,7 +214,7 @@ function M.setup(buf, gather, target_field, echo_gather)
     M.define(buf, "echo", function(target, range)
       local selected = (echo_gather or gather)(target, range)
       local output = #selected == 0 and "[]" or pretty_json(vim.json.encode(selected))
-      vim.api.nvim_echo({ { output, "None" } }, true, {})
+      vim.api.nvim_echo({ { output, "None" } }, false, {})
     end)
   end
   M.define(buf, "choice", function(target, range, from_mapping)
@@ -239,7 +239,7 @@ function M.setup(buf, gather, target_field, echo_gather)
   end)
   for _, name in ipairs({ "help", "help:all" }) do
     M.define(buf, name, function(target)
-      vim.api.nvim_echo({ { M.help(target, name == "help"), "None" } }, true, {})
+      vim.api.nvim_echo({ { M.help(target, name == "help"), "None" } }, false, {})
     end)
   end
   M.define(buf, "repeat", function(target, range)

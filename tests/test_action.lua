@@ -439,4 +439,22 @@ T["native Plug aliases report failures without leaking editor errors"] = functio
   MiniTest.expect.equality(vim.v.errmsg, "")
   MiniTest.expect.equality(vim.api.nvim_exec2("messages", { output = true }).output, "")
 end
+for _, name in ipairs({ "echo", "help", "help:all" }) do
+  T[name .. " displays without adding to message history"] = function()
+    local action = require("gin.action")
+    local buf = vim.api.nvim_get_current_buf()
+    action.setup(buf, function()
+      return { { path = "selected.txt" } }
+    end)
+    vim.cmd("messages clear")
+    vim.cmd("redir => g:gin_action_output")
+    local ok, err = pcall(action.call, buf, name, { 1, 1 })
+    vim.cmd("redir END")
+    assert(ok, err)
+    local expected = name == "echo" and "selected.txt" or "<Plug>(gin-action-"
+    MiniTest.expect.equality(vim.g.gin_action_output:find(expected, 1, true) ~= nil, true)
+    MiniTest.expect.equality(vim.api.nvim_exec2("messages", { output = true }).output, "")
+    vim.g.gin_action_output = nil
+  end
+end
 return T
