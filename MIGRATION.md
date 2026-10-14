@@ -1559,3 +1559,10 @@ executes the four locked upstream parsers and checks their editor-facing JSON
 against Lua results. It includes missing/empty captures, blank/duplicate rows,
 Unicode, NUL's getbufline conversion and invalid/overflowing stash indices.
 The generator rejects a mismatched upstream HEAD or modified parser sources.
+
+Navigation reload now also restores a paired blame file that still exists but
+has no window, reusing the missing-buffer recovery path. A real Git/Neovim test
+retains the file with `bufhidden=hide`, closes its pane, commits new content and
+reloads the navigation pane. It verifies the same file buffer, refreshed content
+and attribution/detail, restored three-pane layout and window pinning. This is
+a Lua recovery regression check, not an upstream runtime parity claim.

@@ -248,6 +248,35 @@ T["reloading either blame pane updates the existing three windows"] = function()
     )
   end
 end
+T["navigation reload restores a hidden paired file"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local navwin = vim.api.nvim_get_current_win()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  local detail = vim.b[nav].gin_blame_detail_bufnr
+  local name = vim.api.nvim_buf_get_name(file)
+  vim.bo[file].bufhidden = "hide"
+  vim.api.nvim_win_close(vim.fn.bufwinid(file), true)
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_buf_is_loaded(file), true)
+  MiniTest.expect.equality(vim.fn.bufwinid(file), -1)
+  vim.fn.writefile({ "restored" }, root .. "/sub/file.lua")
+  H.git(root, "commit", "-am", "restore hidden blame")
+  local commit = vim.trim(H.git(root, "rev-parse", "HEAD"))
+  vim.api.nvim_set_current_win(navwin)
+  vim.cmd.edit()
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_get_current_win(), navwin)
+  MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 3)
+  MiniTest.expect.equality(vim.b[nav].gin_blame_file_bufnr, file)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(file), name)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(file, 0, -1, false), { "", "restored" })
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[2].commitSha, commit)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. commit })
+  for _, target in ipairs({ nav, file }) do
+    MiniTest.expect.equality(vim.wo[vim.fn.bufwinid(target)].winfixbuf, true)
+  end
+end
 T["legacy navigation reload resolves its paired file by name"] = function()
   local suffix = "://" .. root .. ";commitish=" .. first .. "#sub/file.lua"
   vim.cmd.tabnew()

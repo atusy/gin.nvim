@@ -460,7 +460,8 @@ function M.read_nav(buf)
     "Cannot reload ginblamenav: associated ginblame buffer not found"
   )
   local file = vim.fn.bufnr(name)
-  if file == -1 then
+  local win = file ~= -1 and vim.fn.bufwinid(file) or -1
+  if win == -1 then
     local navwin = vim.fn.bufwinid(buf)
     assert(navwin ~= -1, "GinBlame navigation window is missing")
     vim.api.nvim_win_call(navwin, function()
@@ -487,8 +488,6 @@ function M.read_nav(buf)
     return
   end
   assert(vim.api.nvim_buf_is_valid(file), "GinBlame file buffer is missing")
-  local win = vim.fn.bufwinid(file)
-  assert(win ~= -1, "GinBlame file window is missing")
   vim.api.nvim_win_call(win, function()
     M.read(file, read_name)
   end)
