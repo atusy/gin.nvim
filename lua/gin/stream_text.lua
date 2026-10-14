@@ -1,6 +1,55 @@
 local M = {}
 local csi = require("gin.csi")
 
+-- ECMAScript WhiteSpace and LineTerminator characters used by String.trim().
+local whitespace = {}
+for _, cp in ipairs({
+  9,
+  10,
+  11,
+  12,
+  13,
+  32,
+  0xA0,
+  0x1680,
+  0x2028,
+  0x2029,
+  0x202F,
+  0x205F,
+  0x3000,
+  0xFEFF,
+}) do
+  whitespace[vim.fn.nr2char(cp)] = true
+end
+for cp = 0x2000, 0x200A do
+  whitespace[vim.fn.nr2char(cp)] = true
+end
+
+function M.trim(text)
+  local first, last = 1, #text
+  while first <= last do
+    local width = 1
+    while width <= 3 and not whitespace[text:sub(first, first + width - 1)] do
+      width = width + 1
+    end
+    if width > 3 then
+      break
+    end
+    first = first + width
+  end
+  while last >= first do
+    local width = 1
+    while width <= 3 and not whitespace[text:sub(last - width + 1, last)] do
+      width = width + 1
+    end
+    if width > 3 then
+      break
+    end
+    last = last - width
+  end
+  return text:sub(first, last)
+end
+
 function M.decoder()
   local pending = ""
   return function(data)

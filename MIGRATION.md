@@ -1871,3 +1871,10 @@ A real Git test passes each terminator after a valid explicit worktree and
 checks staged contents, rather than allowing the ignored suffix to become part
 of the repository path. This truncation applies only to recognized options;
 ordinary Git arguments and arguments following `--` retain their contents.
+
+Progress indicators now use the ECMAScript whitespace set when trimming decoded
+chunks, matching the pinned IndicatorStream's String.trim(). Tests exercise all
+25 whitespace/line-terminator characters, preserve interior whitespace and
+non-whitespace U+0085/U+180E/U+200B, and verify Unicode-only chunks still reach
+custom backends as an empty line. Raw process output is unaffected. This does
+not establish complete TextDecoder parity for malformed or split byte sequences.

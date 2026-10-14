@@ -80,6 +80,21 @@ T["custom indicators receive whitespace chunks as an empty line"] = function()
   MiniTest.expect.equality(events[#events], { "close", events[1][2] })
 end
 
+T["custom indicators trim Unicode whitespace while preserving interior text"] = function()
+  local space = vim.fn.nr2char(0xA0) .. vim.fn.nr2char(0x3000) .. vim.fn.nr2char(0xFEFF)
+  local stream = require("gin.indicator").stream("gin_test")
+  stream.write(nil, space .. "first" .. space .. "last" .. space)
+  stream.write(nil, space)
+  stream.write(nil, nil)
+  H.drain()
+  stream.close()
+  local events = vim.g.gin_test_indicator_events
+  MiniTest.expect.equality(#events, 4)
+  MiniTest.expect.equality(events[2], { "write", events[1][2], { "first" .. space .. "last" } })
+  MiniTest.expect.equality(events[3], { "write", events[1][2], { "" } })
+  MiniTest.expect.equality(events[4], { "close", events[1][2] })
+end
+
 T["custom indicators receive completed ANSI-only output without EOF writes"] = function()
   local sequence = "\27[31m"
   for split = 1, #sequence do

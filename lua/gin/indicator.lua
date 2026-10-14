@@ -1,4 +1,5 @@
 local M = {}
+local stream_text = require("gin.stream_text")
 local active, generation = 0, 0
 local saved
 local serial = 0
@@ -29,12 +30,12 @@ function M.open(options)
     end, 500)
   end
   local function stream()
-    local decode = require("gin.stream_text").decoder()
+    local decode = stream_text.decoder()
     return vim.schedule_wrap(function(_, data)
       if closed then
         return
       end
-      local text = vim.trim(decode(data))
+      local text = stream_text.trim(decode(data))
       if text == "" then
         return
       end
@@ -79,7 +80,7 @@ function M.stream(name)
     pcall(call, "close")
     error(err, 0)
   end
-  local decode = require("gin.stream_text").decoder()
+  local decode = stream_text.decoder()
   local failure, closed
   return {
     write = vim.schedule_wrap(function(stream_error, data)
@@ -92,7 +93,8 @@ function M.stream(name)
       end
       local text, emitted = decode(data)
       if emitted then
-        local ok, message = pcall(call, "write", vim.split(vim.trim(text), "\n", { plain = true }))
+        local ok, message =
+          pcall(call, "write", vim.split(stream_text.trim(text), "\n", { plain = true }))
         if not ok then
           failure = message
         end

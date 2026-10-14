@@ -21,6 +21,29 @@ local function capture(write)
   return output
 end
 
+T["progress trims ECMAScript whitespace only at chunk boundaries"] = function()
+  local spaces =
+    { 9, 10, 11, 12, 13, 32, 0xA0, 0x1680, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF }
+  for cp = 0x2000, 0x200A do
+    spaces[#spaces + 1] = cp
+  end
+  for _, cp in ipairs(spaces) do
+    local space = vim.fn.nr2char(cp)
+    local output = capture(function(indicator)
+      indicator.write(nil, space .. "first" .. space .. "last" .. space)
+    end)
+    MiniTest.expect.equality(output, { "first" .. space .. "last" })
+  end
+  for _, cp in ipairs({ 0x85, 0x180E, 0x200B }) do
+    local text = vim.fn.nr2char(cp) .. "text" .. vim.fn.nr2char(cp)
+    MiniTest.expect.equality(
+      capture(function(indicator)
+        indicator.write(nil, text)
+      end),
+      { text }
+    )
+  end
+end
 T["progress preserves UTF-8 and ANSI sequences split across chunks"] = function()
   local output = capture(function(indicator)
     indicator.write(nil, "\27[3")
