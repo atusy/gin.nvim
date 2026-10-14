@@ -1082,9 +1082,11 @@ against actual parent/current file contents and immutable GinEdit revisions.
 The shared `++option` parser now stops extracting options at `--`, preserving
 that separator and subsequent arguments. This matches denops std v7's
 `argument/opts.ts`, used by the pinned command handlers. A real Git fixture
-stages files named `++unknown`, `++wait` and `++worktree=elsewhere`, checking the
+stages files named `++unknown` and `++worktree=elsewhere`, checking the
 exact NUL-delimited index paths. Filename placeholder expansion remains active
 after the separator, as upstream normalizes arguments before parsing options.
+The earlier claim that this also preserves bare `++wait` in `:Gin` was incorrect:
+its Vimscript wrapper strips that token before the shared parser runs (see below).
 
 Repeated `++option` names now fail before executing Git, matching denops std
 v7's option parser. This also applies when a persistent option collides with
@@ -1741,3 +1743,12 @@ context still uses the view's root; an explicit `%` can select a nested reposito
 containing the expanded file. A real nested Git repository exercises both public
 APIs across native and legacy GinEdit/GinDiff/GinLog URI formats. This shared
 resolver also handles explicit worktree options supplied by command handlers.
+
+`:Gin` now removes every exact `++wait` token before ordinary option parsing,
+matching the pinned `plugin/gin.vim` wrapper. Repetition enables waiting without
+a duplicate-option error, including occurrences after `--`. A real Git fixture
+checks that only the requested ordinary file is staged, leaving a file named
+`++wait` untouched; three placements were also checked against the pinned wrapper
+with a stubbed Denops request boundary. Other duplicate options still fail.
+The previous tests and help incorrectly generalized the shared option parser's
+rules to this wrapper-level token and have been corrected.

@@ -73,8 +73,17 @@ function M.post_pending()
 end
 
 function M.execute(opts)
+  local wait, raw_args = false, {}
+  for _, arg in ipairs(opts.fargs) do
+    if arg == "++wait" then
+      wait = true
+    else
+      raw_args[#raw_args + 1] = arg
+    end
+  end
   local options, args =
-    M.parse(opts.fargs, { "wait", "worktree", "processor", "enc", "encoding", "ff", "fileformat" })
+    M.parse(raw_args, { "worktree", "processor", "enc", "encoding", "ff", "fileformat" })
+  options.wait = wait
   options.eventignore_all = vim.tbl_contains(vim.split(vim.o.eventignore, ","), "all")
   local root = require("gin.worktree").current(options.worktree)
   local completed, failure, cancelled, running

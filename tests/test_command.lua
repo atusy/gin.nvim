@@ -72,18 +72,27 @@ T["Gin expands current file and respects silent"] = function()
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
 end
 T["Gin treats plus-prefixed paths after the separator as literal arguments"] = function()
-  local paths = { "++unknown", "++wait", "++worktree=elsewhere" }
+  local paths = { "++unknown", "++worktree=elsewhere" }
   for _, path in ipairs(paths) do
     vim.fn.writefile({ "literal" }, root .. "/" .. path)
   end
   vim.cmd("Gin ++wait add -- " .. table.concat(paths, " "))
   MiniTest.expect.equality(H.git(root, "ls-files", "-z"), table.concat(paths, "\0") .. "\0")
 end
+T["Gin consumes every bare wait token before parsing options"] = function()
+  for _, args in ipairs({ "++wait ++wait", "++wait", "" }) do
+    H.git(root, "read-tree", "--empty")
+    vim.fn.writefile({ "literal" }, root .. "/file")
+    vim.fn.writefile({ "literal" }, root .. "/++wait")
+    vim.cmd("Gin " .. args .. " add -- file ++wait")
+    MiniTest.expect.equality(H.git(root, "ls-files"), "file\n")
+  end
+end
 T["duplicate Gin options fail before executing Git"] = function()
   vim.fn.writefile({ "literal" }, root .. "/file")
   MiniTest.expect.error(function()
-    vim.cmd("Gin ++wait ++wait add -- file")
-  end, "Duplicate Gin option: %+%+wait")
+    vim.cmd("Gin ++wait ++worktree=. ++worktree=. add -- file")
+  end, "Duplicate Gin option: %+%+worktree")
   MiniTest.expect.equality(H.git(root, "ls-files"), "")
   MiniTest.expect.equality(events, 0)
 end
