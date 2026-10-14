@@ -50,9 +50,15 @@ T["terminal Git inherits the editor proxy at plugin startup"] = function()
   MiniTest.expect.equality(H.git(root, "log", "-1", "--format=%s"), "terminal commit\n")
   MiniTest.expect.equality(H.git(root, "show", "HEAD:file"), "content\n")
 end
-T["terminal Git inherits askpass without a Gin command"] = function()
-  child.cmd("runtime plugin/gin-proxy.lua")
-  child.lua([[
+for _, restart in ipairs({ false, true }) do
+  T[restart and "terminal askpass follows a listener recreated by Gin" or "terminal Git inherits askpass without a Gin command"] = function()
+    child.cmd("runtime plugin/gin-proxy.lua")
+    if restart then
+      child.lua("vim.fn.serverstop(vim.env.GIN_EDITOR_ADDRESS)")
+      child.cmd("runtime plugin/gin.lua")
+      child.cmd("silent Gin ++wait status --short")
+    end
+    child.lua([[
     _G.gin_prompts = {}
     vim.fn.inputsecret = function(prompt)
       table.insert(_G.gin_prompts, prompt)
@@ -67,20 +73,33 @@ T["terminal Git inherits askpass without a Gin command"] = function()
       on_exit = function(_, code) _G.gin_terminal_exit = code end,
     })
   ]])
-  MiniTest.expect.equality(
-    vim.wait(5000, function()
-      return child.lua_get("_G.gin_terminal_exit ~= nil")
-    end, 10),
-    true
-  )
-  MiniTest.expect.equality(child.lua_get("_G.gin_terminal_exit"), 0)
-  local prompts = child.lua_get("_G.gin_prompts")
-  MiniTest.expect.equality(#prompts, 2)
-  MiniTest.expect.equality(prompts[1]:find("Username", 1, true) ~= nil, true)
-  MiniTest.expect.equality(prompts[2]:find("Password", 1, true) ~= nil, true)
-  local output = child.lua_get("_G.gin_terminal_output")
-  MiniTest.expect.equality(output:find("username=terminal-user", 1, true) ~= nil, true)
-  MiniTest.expect.equality(output:find("password=terminal-password", 1, true) ~= nil, true)
+    MiniTest.expect.equality(
+      vim.wait(5000, function()
+        return child.lua_get("_G.gin_terminal_exit ~= nil")
+      end, 10),
+      true
+    )
+    MiniTest.expect.equality(child.lua_get("_G.gin_terminal_exit"), 0)
+    local prompts = child.lua_get("_G.gin_prompts")
+    MiniTest.expect.equality(#prompts, 2)
+    MiniTest.expect.equality(prompts[1]:find("Username", 1, true) ~= nil, true)
+    MiniTest.expect.equality(prompts[2]:find("Password", 1, true) ~= nil, true)
+    local output = child.lua_get("_G.gin_terminal_output")
+    MiniTest.expect.equality(output:find("username=terminal-user", 1, true) ~= nil, true)
+    MiniTest.expect.equality(output:find("password=terminal-password", 1, true) ~= nil, true)
+  end
+end
+
+T["listener recovery preserves a separately configured process address"] = function()
+  child.cmd("runtime plugin/gin-proxy.lua")
+  child.lua([[
+    local old = vim.env.GIN_EDITOR_ADDRESS
+    vim.fn.serverstop(old)
+    vim.env.GIN_EDITOR_ADDRESS = 'separate-listener'
+    local env = require('gin.editor').environment()
+    assert(vim.tbl_contains(vim.fn.serverlist(), env.GIN_EDITOR_ADDRESS))
+  ]])
+  MiniTest.expect.equality(child.lua_get("vim.env.GIN_EDITOR_ADDRESS"), "separate-listener")
 end
 
 for _, editor in ipairs({ false, true }) do

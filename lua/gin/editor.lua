@@ -31,7 +31,12 @@ function M.environment()
     return nil
   end
   if not address or not vim.tbl_contains(vim.fn.serverlist(), address) then
+    local previous = address
     address = vim.fn.serverstart()
+    if previous and vim.env.GIN_EDITOR_ADDRESS == previous then
+      -- Keep later terminal jobs on the listener restarted for a Gin command.
+      vim.env.GIN_EDITOR_ADDRESS = address
+    end
   end
   local command = {}
   for _, arg in ipairs({

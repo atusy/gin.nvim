@@ -3558,3 +3558,24 @@ or claim the remaining proxy/API audit is complete.
 
 Validation: all 1,312 mini.test cases in 49 groups pass. All six isolated proxy
 startup cases also pass on Neovim 0.10.0. `make check` and `git diff --check` pass.
+
+## Exported proxy address after listener recovery
+
+The existing per-command environment builder restarts its RPC listener if it
+was stopped. After process-wide startup export was added, this left the global
+`GIN_EDITOR_ADDRESS` pointing at the old socket: Gin recovered, but a subsequent
+terminal `git credential fill` failed with exit 128. The new regression test
+stops the exported listener, runs a synchronous Gin status command to trigger
+recovery, then runs a terminal credential query without injecting an environment.
+Both credential prompts and the resulting fields now succeed.
+
+Listener recreation updates the exported address only if it still equals the
+previous Gin address. A separate test confirms that a subsequently configured
+process address is left intact while Gin obtains a live per-command listener.
+This supports newly launched terminal jobs after recovery; it does not mutate
+the environment of already-running shells or add automatic restart without a
+new Gin environment request.
+
+Validation: all 1,314 mini.test cases across 49 groups pass. The 26 proxy
+startup/askpass cases pass on Neovim 0.10.0. `make check` and `git diff --check`
+pass.
