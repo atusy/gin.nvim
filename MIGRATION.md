@@ -2147,3 +2147,22 @@ Nine invalid-setting regressions verify that no URL is opened and the requested
 register remains unchanged. Normal fixtures cover an explicit empty dictionary
 and custom domains aliased to all three supported providers, preserving the
 custom hostname and checking encoded paths, immutable refs and line ranges.
+
+## Default and persistent argument setting audit
+
+The pinned command entrypoints contain 12 calls to `fillCmdArgs`, covering 11
+setting families (22 globals): branch, browse, chaperon, diff, edit, log, reflog,
+patch, stash, status and tag. GinBlame and GinEdit both use the edit family.
+`tests/test_argument_config.lua` extracts this binding directly from each pinned
+`command/*/main.ts`, checks the inventory count and shared edit binding, then
+invokes every corresponding Neovim command with an invalid default or persistent
+setting. All 24 cases reject the setting before parsing explicit command options
+or changing the current window/buffer. Skipping default-setting validation when
+explicit arguments are present makes all 12 default-setting cases fail.
+
+Existing Status fixtures exercise default replacement, persistent prepending,
+worktree selection and nonmutation of configured arrays; Blame also exercises
+the shared edit defaults and persistent settings. Destination-command tests
+cover configured edit/diff/log/patch/chaperon/browse actions. This audit verifies
+all setting-name bindings and validation entry paths; it does not establish
+every command-specific interaction between valid persistent arguments and flags.
