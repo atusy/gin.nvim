@@ -25,6 +25,11 @@ function M.parse(args, allowed)
   local options, residue = {}, {}
   local separated = false
   for _, arg in ipairs(args) do
+    if arg:match("^[%%#]") then
+      arg = require("gin.util").expand(arg)
+    else
+      arg = arg:gsub("^\\([%%#])", "%1")
+    end
     local name, value
     if not separated then
       name, value = arg:match("^%+%+([^=]+)=(.*)$")
@@ -41,11 +46,6 @@ function M.parse(args, allowed)
       assert(options[name] == nil, "Duplicate Gin option: ++" .. name)
       options[name] = value
     else
-      if arg:match("^[%%#]") then
-        arg = require("gin.util").expand(arg)
-      else
-        arg = arg:gsub("^\\([%%#])", "%1")
-      end
       residue[#residue + 1] = arg
     end
   end

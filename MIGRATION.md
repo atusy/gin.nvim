@@ -1752,3 +1752,11 @@ checks that only the requested ordinary file is staged, leaving a file named
 with a stubbed Denops request boundary. Other duplicate options still fail.
 The previous tests and help incorrectly generalized the shared option parser's
 rules to this wrapper-level token and have been corrected.
+
+Shared command argument normalization now precedes option and separator
+recognition, following the pinned handlers' `parseOpts(await normCmdArgs(...))`
+ordering. A real Git test opens a file named `--` and uses `%:t` as the separator
+when staging `++unknown`; the resulting index contains exactly that literal
+path. Previously the separator appeared only after classification, and the next
+argument was incorrectly rejected as an unknown Gin option. The separate bare
+`:Gin ++wait` filtering still happens before filename expansion, as upstream.

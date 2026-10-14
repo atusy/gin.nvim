@@ -71,6 +71,13 @@ T["Gin expands current file and respects silent"] = function()
   vim.cmd("silent Gin ++wait add -- %:p")
   MiniTest.expect.equality(H.git(root, "diff", "--cached", "--name-only"), "file\n")
 end
+T["Gin recognizes separators produced by filename expansion"] = function()
+  vim.fn.writefile({ "separator" }, root .. "/--")
+  vim.fn.writefile({ "literal" }, root .. "/++unknown")
+  vim.cmd.edit(root .. "/--")
+  vim.cmd("Gin ++wait add %:t ++unknown")
+  MiniTest.expect.equality(H.git(root, "ls-files", "-z"), "++unknown\0")
+end
 T["Gin treats plus-prefixed paths after the separator as literal arguments"] = function()
   local paths = { "++unknown", "++worktree=elsewhere" }
   for _, path in ipairs(paths) do
