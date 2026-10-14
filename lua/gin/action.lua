@@ -149,6 +149,9 @@ function M.call(buf, name, range)
     mode = mode:sub(1, 1)
   end
   local mapping = vim.fn.maparg(plug, mode, false, true)
+  if name == "" and not next(mapping) then
+    return
+  end
   assert(next(mapping), "Unknown Gin action: " .. name)
   local previous = range_internal
   range_internal = vim.deepcopy(range)
@@ -220,7 +223,7 @@ function M.setup(buf, gather, target_field)
     vim.ui.input(
       { prompt = "action: ", completion = "customlist,v:lua.require'gin.action'.complete" },
       function(name)
-        if not name or name == "" or not vim.api.nvim_buf_is_valid(target) then
+        if not name or not vim.api.nvim_buf_is_valid(target) then
           return
         end
         vim.b[target].denops_action_previous = name

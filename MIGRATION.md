@@ -1769,3 +1769,11 @@ expression confirms Visual/Select dispatch and Normal dispatch when called from
 operator-pending mode. The test sends Escape only after dispatch, since queued
 keys run before the upstream's appended action keys. Existing Normal callback,
 expression-mapping, alias and range-restoration tests remain in place.
+
+Accepting an empty action choice now records the empty string, clearing the
+previous repeat action. Cancellation still leaves the record untouched. The
+pinned action core only skips null input, and denops std v7's Neovim input helper
+preserves an accepted empty string while returning null for cancellation. A
+regression test proves that repeat no longer re-executes the previous callback
+after an empty choice. An unmapped empty action is a no-op, while a user-defined
+empty-name mapping can still be dispatched.

@@ -26,6 +26,26 @@ T["choice captures the range and repeat uses the new selection"] = function()
   action.call(buf, "repeat", { 6, 6 })
   MiniTest.expect.equality(calls, { { 2, 4 }, { 6, 6 } })
 end
+T["accepting an empty choice clears the previous repeat action"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  local calls = 0
+  action.setup(buf)
+  action.define(buf, "capture", function()
+    calls = calls + 1
+  end)
+  vim.b.denops_action_previous = "capture"
+  local input = vim.ui.input
+  vim.ui.input = function(_, callback)
+    callback("")
+  end
+  local ok, err = pcall(action.call, buf, "choice", { 1, 1 })
+  vim.ui.input = input
+  assert(ok, err)
+  action.call(buf, "repeat", { 1, 1 })
+  MiniTest.expect.equality(calls, 0)
+  MiniTest.expect.equality(vim.b.denops_action_previous, "")
+end
 T["aliases dispatch the target and help shows user mappings"] = function()
   local action = require("gin.action")
   local buf = vim.api.nvim_get_current_buf()
