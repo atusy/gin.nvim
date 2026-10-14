@@ -45,7 +45,8 @@ function M.text()
   local parsed = name:match("^gin[%w]*://") and require("gin.uri").parse(name)
     or { params = {}, param_order = {} }
   local prefixes = require("gin.diffjump").prefixes(parsed.params, parsed.param_order)
-  local old, new = path(lines[1]:sub(5), prefixes.old), path(lines[2]:sub(5), prefixes.new)
+  local old = path((lines[1] or ""):match("^%-%-%- (.*)") or "", prefixes.old)
+  local new = path((lines[2] or ""):match("^%+%+%+ (.*)") or "", prefixes.new)
   local kind, label = "modified", new
   if old == "/dev/null" then
     kind = "added"

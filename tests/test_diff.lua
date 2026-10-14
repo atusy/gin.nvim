@@ -92,6 +92,22 @@ T["legacy foldtext works in Gin views and ordinary diff buffers"] = function()
     MiniTest.expect.equality(vim.fn.foldtextresult(3), "[.] sub/file (+1 -1)")
   end
 end
+T["foldtext only extracts paths from matching diff headers"] = function()
+  vim.cmd.enew({ bang = true })
+  vim.wo.foldmethod = "manual"
+  vim.wo.foldtext = "gin#difffold#foldtext()"
+  for _, case in ipairs({
+    { { "diff --git a/file b/file", "index 123..456", "-old", "+new" }, "[.]  (+1 -1)" },
+    { { "not a header", "+++ b/file", "+new" }, "[/]  -> file (+1)" },
+    { { "--- a/file", "not a header", "-old" }, "[/] file ->  (-1)" },
+  }) do
+    vim.cmd("normal! zE")
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, case[1])
+    vim.api.nvim_cmd({ cmd = "fold", range = { 1, #case[1] } }, {})
+    vim.cmd("normal! zM")
+    MiniTest.expect.equality(vim.fn.foldtextresult(1), case[2])
+  end
+end
 T["GinDiff compares an explicit revision range"] = function()
   H.git(root, "commit", "-m", "second")
   vim.cmd("GinDiff HEAD^..HEAD -- sub/file")

@@ -1721,3 +1721,10 @@ are emitted only with verbose enabled. Fault injection covers discovery, branch
 and traffic launch failures (including launches from scheduled callbacks), then
 restores Git execution and verifies a subsequent real branch change refreshes
 successfully. This does not change how ordinary nonzero Git exits are handled.
+
+The public diff foldtext function now extracts paths only from matching `--- `
+and `+++ ` headers. Manually folding a whole diff (including its `diff --git` and
+`index` lines) no longer invents a rename from those metadata lines. Three cases
+cover both missing headers and either missing header; their expected strings
+were also verified by executing the pinned upstream foldtext function in an
+isolated Neovim. Existing custom-prefix and quoted-path decoding is preserved.
