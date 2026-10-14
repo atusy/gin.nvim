@@ -308,7 +308,7 @@ ACTIONS                                                           *gin-actions*
 
 In status, branch, tag, log, reflog and stash views:
     a       Choose an action, with completion.
-    .       Repeat the chosen action on the current selection.
+    .       Repeat the last action chosen through a, on the current selection.
     ?       Show action help.
 
                                                    *<Plug>(gin-action-choice)*
@@ -322,6 +322,27 @@ Actions use <Plug>(gin-action-{name}) mappings. Available actions depend on the
 view. help:all lists detailed variants. echo prints selected candidate metadata
 as JSON. Normal mode selects the current line; visual mode selects a range.
 User-defined global and buffer-local action mappings appear in discovery.
+Repeating uses the action name saved for that buffer by the choice prompt;
+invoking an action directly through another mapping does not replace it.
+
+Default keys require |filetype-plugin-on|. Use a FileType autocmd to customize
+keys for a view; its filetype is gin-status, gin-branch, gin-tag, gin-log,
+gin-reflog or gin-stash. For example: >lua
+    vim.api.nvim_create_autocmd('FileType', {
+      pattern = 'gin-status',
+      callback = function(event)
+        vim.keymap.set({ 'n', 'x' }, '<Leader>s',
+          '<Plug>(gin-action-stage)', { buffer = event.buf, remap = true })
+        vim.keymap.set('n', '<Leader>?',
+          '<Plug>(gin-action-help:all)', { buffer = event.buf, remap = true })
+      end,
+    })
+<
+The visual mapping acts on the selected candidates. Default keys in list views
+are installed once per filetype initialization; refreshing the view preserves
+custom mappings. Set the corresponding disable flag before opening a view to
+start with your own keys only (see |gin-configuration|). The <Plug> actions
+remain available even when defaults or filetype plugins are disabled.
 
 Lua callers can use: >lua
     local action = require('gin.action')
@@ -337,7 +358,8 @@ Treat other module internals as subject to change during the migration.
                                                                *gin-variables*
 CONFIGURATION                                               *gin-configuration*
 
-Set globals before opening a view. Argument settings are lists of strings:
+Set globals before opening a view. Argument settings are lists of strings;
+both default and persistent arguments default to an empty list ({} in Lua):
                                                    *g:gin_branch_default_args*
                                                    *g:gin_browse_default_args*
                                                  *g:gin_chaperon_default_args*
@@ -348,6 +370,7 @@ Set globals before opening a view. Argument settings are lists of strings:
                                                    *g:gin_reflog_default_args*
                                                     *g:gin_stash_default_args*
                                                    *g:gin_status_default_args*
+                                                     *g:gin_tag_default_args*
                                                    *gin-commands-default-args*
     g:gin_{kind}_default_args       Used when no explicit arguments are given.
                                                 *g:gin_branch_persistent_args*
@@ -360,6 +383,7 @@ Set globals before opening a view. Argument settings are lists of strings:
                                                 *g:gin_reflog_persistent_args*
                                                  *g:gin_stash_persistent_args*
                                                 *g:gin_status_persistent_args*
+                                                  *g:gin_tag_persistent_args*
                                                 *gin-commands-persistent-args*
     g:gin_{kind}_persistent_args    Prepended to default or explicit arguments.
 
@@ -370,7 +394,10 @@ persistent arguments.
 
 Kinds: branch, browse, chaperon, diff, edit, log, reflog, patch, stash, status,
 and tag. GinBlame shares the edit settings, matching the pinned upstream.
-Both settings are validated even when explicit arguments are given.
+Both settings are validated even when explicit arguments are given. Passing
+any argument, including a ++option, replaces the entire default argument list;
+persistent arguments are still prepended. These settings do not apply to bare
+Gin, GinBuffer, GinCd, GinLcd or GinTcd.
 Example: >lua
     vim.g.gin_status_default_args = { '--short' }
     vim.g.gin_browse_persistent_args = { '--no-browser' }
@@ -384,8 +411,11 @@ Example: >lua
                                        *g:gin_reflog_disable_default_mappings*
                                         *g:gin_stash_disable_default_mappings*
                                        *g:gin_status_disable_default_mappings*
+                                        *g:gin_blame_disable_default_mappings*
+                                          *g:gin_tag_disable_default_mappings*
 Set g:gin_{kind}_disable_default_mappings = 1 to disable default keys for status,
 branch, tag, log, reflog, stash, diff, buffer, blame, patch or chaperon.
+These flags default to 0 (default keys enabled).
 Patch and Chaperon accept boolean or numeric flags; other types are rejected
 before opening panes. Disabling default keys retains the <Plug> actions.
 
