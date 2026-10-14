@@ -55,7 +55,7 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-104-case corpus passes, including the initial cases that reject the C candidate
+138-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
 references), class context, octal digit limits and quantifier binding on
@@ -70,8 +70,27 @@ Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 This is not an adopted runtime backend and no Gin action calls it. Its output is
 a list of UTF-16 capture arrays (full match first, unmatched groups null), not
 the strings needed by action parsers. Known unimplemented areas include
-non-ASCII/escaped capture names and duplicate-name rules. Some valid JavaScript
+duplicate-name rules and inline modifier groups. Some valid JavaScript
 patterns therefore raise an unsupported-syntax error. Input encoding edge cases, large patterns/inputs,
 recursion limits, resource bounds and a broader differential corpus must also be
 audited before integration. Passing the initial corpus does not establish full
 ECMAScript compatibility.
+
+Capture names use checked-in Unicode 17.0 `ID_Start` / `ID_Continue` ranges
+generated from Node v26.8.2, plus ECMAScript's dollar/underscore/joiner rules.
+The candidate decodes literal code points, four-digit Unicode escapes, braced
+escapes and escaped surrogate pairs into a common name key. Names are not
+Unicode-normalized. These tables are test-only and add no runtime dependency.
+Regenerate or verify them separately:
+
+```sh
+node scripts/regex-identifiers.mjs --write
+node scripts/regex-identifiers.mjs --check
+```
+
+A changed Node Unicode database can change this output; review changes before
+regenerating. The name parser also follows the observed V8 treatment of escaped
+`>` as a name terminator, confirmed on Node v26.8.2 and Deno 2.9.6
+(V8 15.0.245.2-rusty). For example, `(?<a\u003e>b)` captures `>b` under
+name `a`. This compatibility behavior is covered explicitly, rather than
+inferred from the ECMAScript identifier grammar.

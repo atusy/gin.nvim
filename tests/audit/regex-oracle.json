@@ -1836,5 +1836,421 @@
     "expected": {
       "status": "compile-error"
     }
+  },
+  {
+    "name": "named-unicode-escaped-reference",
+    "pattern": "^(?<名前>a)\\k<\\u540d\\u524d>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-escaped-declaration",
+    "pattern": "^(?<\\u0061>b)\\k<a>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-escaped-both",
+    "pattern": "^(?<\\u0061>b)\\k<\\u{61}>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-forward",
+    "pattern": "^\\k<名前>(?<\\u540d\\u524d>a)$",
+    "input": "a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-astral",
+    "pattern": "^(?<𐐀>a)\\k<𐐀>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-astral-escape",
+    "pattern": "^(?<\\u{10400}>a)\\k<𐐀>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-surrogate-escape",
+    "pattern": "^(?<\\uD801\\uDC00>a)\\k<\\u{10400}>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-continuation",
+    "pattern": "^(?<á١>b)\\k<á١>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-joiners",
+    "pattern": "^(?<a‌‍>b)\\k<a‌‍>$",
+    "input": "bb",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-other-id-start",
+    "pattern": "^(?<℘>a)\\k<℘>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-dollar-underscore",
+    "pattern": "^(?<$_1>a)\\k<\\u0024\\u005f1>$",
+    "input": "aa",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          97
+        ],
+        [
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-not-normalized",
+    "pattern": "^(?<é>a)(?<é>b)\\k<é>\\k<é>$",
+    "input": "abab",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          97,
+          98
+        ],
+        [
+          97
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-combining-start-invalid",
+    "pattern": "^(?<́a>b)$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-digit-start-invalid",
+    "pattern": "^(?<١a>b)$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-joiner-start-invalid",
+    "pattern": "^(?<‌a>b)$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-space-invalid",
+    "pattern": "^(?<a b>c)$",
+    "input": "c",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-symbol-invalid",
+    "pattern": "^(?<😀>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-unassigned-invalid",
+    "pattern": "^(?<\\u0378>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-surrogate-invalid",
+    "pattern": "^(?<\\uD801>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-trailing-surrogate-invalid",
+    "pattern": "^(?<\\uDC00>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-braced-surrogates-invalid",
+    "pattern": "^(?<\\u{D801}\\u{DC00}>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-out-of-range-invalid",
+    "pattern": "^(?<\\u{110000}>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-empty-escape-invalid",
+    "pattern": "^(?<\\u{}>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-short-escape-invalid",
+    "pattern": "^(?<\\u061>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-nonhex-escape-invalid",
+    "pattern": "^(?<\\u00GG>a)$",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-nonunicode-escape-invalid",
+    "pattern": "^(?<\\x61>b)$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-escaped-delimiter-no-match",
+    "pattern": "^(?<a\\u003e>b)$",
+    "input": "b",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "named-unicode-duplicate-escaped-invalid",
+    "pattern": "^(?<a>b)(?<\\u0061>c)$",
+    "input": "bc",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-reference-invalid-start",
+    "pattern": "^(?<a>b)\\k<\\u0031>$",
+    "input": "b",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-escaped-delimiter-match",
+    "pattern": "^(?<a\\u003e>b)\\k<a>$",
+    "input": ">b>b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          62,
+          98,
+          62,
+          98
+        ],
+        [
+          62,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-braced-delimiter-match",
+    "pattern": "^(?<a\\u{3e}>b)$",
+    "input": ">b",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          62,
+          98
+        ],
+        [
+          62,
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-reference-escaped-delimiter",
+    "pattern": "^(?<a>b)\\k<a\\u003e>$",
+    "input": "bb>",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          98,
+          98,
+          62
+        ],
+        [
+          98
+        ]
+      ]
+    }
+  },
+  {
+    "name": "named-unicode-empty-escaped-delimiter",
+    "pattern": "^(?<\\u003e>a)$",
+    "input": ">a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "named-unicode-escaped-name-unclosed",
+    "pattern": "^(?<\\u0061",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
   }
 ]

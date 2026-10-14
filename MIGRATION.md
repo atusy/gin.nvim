@@ -1489,3 +1489,12 @@ Node-oracle cases cover forward references, missing/empty names, class errors
 with named groups, and literal fallback without them. The capture pre-scan also
 excludes ordinary `<` text, lookbehind and escaped/class parentheses from named
 group detection. The candidate passes 104 cases and remains test-only.
+
+The test-only regex candidate now reads Unicode and escaped capture names,
+including non-BMP letters, combining continuations and escaped surrogate pairs.
+A reproducible Unicode 17.0 identifier table validates initial and continuation
+characters; literal and escaped forms share keys without normalization. Thirty-
+four added Node-oracle cases bring the corpus to 138. An escaped `>` name
+terminator follows observed Node/Deno V8 behavior, with explicit tests. Duplicate
+name rules, inline modifiers, resource/encoding limits and real action
+integration still require work.

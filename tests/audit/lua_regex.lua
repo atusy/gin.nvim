@@ -1,5 +1,25 @@
 -- Experimental no-flags ECMAScript candidate; not used by Gin actions.
 local M = {}
+local identifiers = require("tests.audit.unicode_identifiers")
+local function identifier_char(cp, first)
+  if cp == 36 or cp == 95 or not first and (cp == 0x200C or cp == 0x200D) then
+    return true
+  end
+  local ranges = first and identifiers.ID_Start or identifiers.ID_Continue
+  local low, high = 1, #ranges
+  while low <= high do
+    local middle = math.floor((low + high) / 2)
+    local range = ranges[middle]
+    if cp < range[1] then
+      high = middle - 1
+    elseif cp > range[2] then
+      low = middle + 1
+    else
+      return true
+    end
+  end
+  return false
+end
 local function units(text)
   local result = {}
   for index, part in ipairs(vim.split(text, "\0", { plain = true })) do
@@ -118,6 +138,64 @@ function M.compile(pattern)
   local function literal(value)
     return { kind = "literal", value = value }
   end
+  local function hex4()
+    local digits = ""
+    for _ = 1, 4 do
+      assert(peek():match("^%x$"), "Invalid regular expression: name Unicode escape")
+      digits = digits .. peek()
+      cursor = cursor + 1
+    end
+    return tonumber(digits, 16)
+  end
+  local function name_codepoint()
+    local cp
+    if take("\\") then
+      expect("u")
+      if take("{") then
+        local digits = ""
+        while peek():match("^%x$") do
+          digits = digits .. peek()
+          cursor = cursor + 1
+        end
+        expect("}")
+        cp = tonumber(digits, 16)
+        assert(cp and cp <= 0x10FFFF, "Invalid regular expression: name code point")
+        return cp
+      end
+      cp = hex4()
+      -- Only adjacent four-digit escapes form an escaped surrogate pair.
+      if cp >= 0xD800 and cp <= 0xDBFF and peek() == "\\" and ascii(source[cursor + 1]) == "u" then
+        cursor = cursor + 2
+        local trail = hex4()
+        assert(trail >= 0xDC00 and trail <= 0xDFFF, "Invalid regular expression: name surrogate")
+        return 0x10000 + (cp - 0xD800) * 0x400 + trail - 0xDC00
+      end
+    else
+      cp = assert(source[cursor], "Invalid regular expression: unclosed name")
+      cursor = cursor + 1
+      local trail = source[cursor]
+      if cp >= 0xD800 and cp <= 0xDBFF and trail and trail >= 0xDC00 and trail <= 0xDFFF then
+        cursor = cursor + 1
+        return 0x10000 + (cp - 0xD800) * 0x400 + trail - 0xDC00
+      end
+    end
+    return cp
+  end
+  local function capture_name()
+    local codepoints = {}
+    while source[cursor] do
+      local cp = name_codepoint()
+      -- V8 (Node and Deno) also accepts an escaped > as the name terminator.
+      if cp == 62 then
+        assert(#codepoints > 0, "Invalid regular expression: empty capture name")
+        -- Numeric keys equate literal and escaped names without normalization.
+        return table.concat(codepoints, ",")
+      end
+      assert(identifier_char(cp, #codepoints == 0), "Invalid regular expression: capture name")
+      codepoints[#codepoints + 1] = cp
+    end
+    error("Invalid regular expression: unclosed name")
+  end
   local function escape(in_class)
     local cp = assert(source[cursor], "Invalid regular expression: trailing escape")
     cursor = cursor + 1
@@ -157,14 +235,7 @@ function M.compile(pattern)
     if char == "k" and has_named then
       assert(not in_class, "Invalid regular expression: named reference in class")
       expect("<")
-      local name = ""
-      while source[cursor] and peek() ~= ">" do
-        assert(peek() ~= "", "Unsupported regular expression: non-ASCII capture name")
-        name = name .. peek()
-        cursor = cursor + 1
-      end
-      expect(">")
-      return { kind = "reference", name = name }
+      return { kind = "reference", name = capture_name() }
     end
     if char:match("^[0-9]$") then
       if not in_class and char ~= "0" then
@@ -256,17 +327,8 @@ function M.compile(pattern)
           elseif take("!") then
             kind, direction, positive = "look", -1, false
           else
-            name = ""
-            while source[cursor] and peek() ~= ">" do
-              assert(peek() ~= "", "Unsupported regular expression: non-ASCII capture name")
-              name = name .. peek()
-              cursor = cursor + 1
-            end
-            expect(">")
-            assert(
-              name:match("^[A-Za-z_$][A-Za-z0-9_$]*$") and not names[name],
-              "Unsupported or invalid capture name"
-            )
+            name = capture_name()
+            assert(not names[name], "Unsupported or invalid duplicate capture name")
           end
         else
           error("Invalid regular expression: group prefix")
