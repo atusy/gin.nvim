@@ -228,10 +228,10 @@ byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
 include ASCII case and whitespace normalization. Separate cases cover ordered
 candidate selection, fallback UTF-8 replacement and BOM metadata.
 
-This is preparatory library coverage, not complete encoding parity. The two remaining
-multibyte families (GBK and gb18030)
-are registered but have no decoder yet. The library is not connected to buffer
-encoding selection until those implementations are available. The Unicode corpus
+This is preparatory library coverage, not complete encoding parity. All 39
+Deno-supported encoding families now have strict candidate decoders. The library
+is not yet connected to buffer encoding selection, and explicit nonfatal decoding
+remains under audit. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
 oracle, so exhaustive byte tests verify the Lua lookup path, not Deno itself.
 
@@ -271,3 +271,32 @@ adjacent-escape rejection, truncated escapes, state isolation and candidate orde
 The strict decoder fails immediately on malformed input; explicit nonfatal
 TextDecoder behavior remains a separate compatibility task. Runtime shares the
 JIS0208 table with EUC-JP and maintains all mode state within one decode call.
+
+GBK and GB18030 share a decoder after comparing all single bytes, byte pairs and
+structurally valid four-byte candidates in Deno. Generate/check their separate
+assets with:
+
+```sh
+deno run --allow-read --allow-write --allow-run --allow-env scripts/gb18030-oracle.mjs --check
+```
+
+Use `--write` to regenerate. The script checks the pinned vim-gin HEAD and records
+Deno's version. The runtime uses 23,940 mapped byte pairs and 209 contiguous
+four-byte ranges. It rejects unmapped pointers and invalid structural bytes.
+The regular `tests/test_gb18030.lua` suite covers every byte pair for both names,
+all labels, single bytes, range boundaries, all single-position byte mutations
+of selected four-byte sequences, truncation and mixed longer input. The reference
+fixture contains 4,793 non-matrix cases shared by both aliases.
+
+An optional exhaustive mini.nvim audit compares the runtime's output for all
+1,587,600 structurally valid four-byte candidates with a SHA256 digest generated
+directly from Deno output (Unicode codepoint or -1, one decimal record per line):
+
+```sh
+env -u NVIM -u NVIM_LISTEN_ADDRESS nvim --headless --clean -u tests/minimal_init.lua \
+  -c "lua MiniTest.config.collect.find_files = function() return {'tests/audit/gb18030.lua'} end; MiniTest.run()"
+```
+
+The expected digest is independent of the compressed runtime tables. Deno accepts
+1,087,996 of these candidates. This exhaustive four-byte audit does not establish
+arbitrary-length/nonfatal decoding parity or view integration.

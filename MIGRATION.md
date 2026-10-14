@@ -3758,3 +3758,26 @@ Oracle generation, `make check` and `git diff --check` pass. The full suite
 passes all 3,214 cases across 55 groups (`/tmp/gin-iso-2022-jp-full.log`).
 GBK/gb18030 and view-level automatic encoding selection remain;
 explicit nonfatal decoding still needs a separate compatibility audit.
+
+## Strict GBK and GB18030 candidates
+
+GBK and GB18030 now use a common strict decoder with lazy tables: 23,940 mapped
+byte pairs and 209 contiguous four-byte ranges. ASCII/NUL and the single-byte
+Euro sign are handled directly. A binary search resolves four-byte pointers;
+invalid lead/trail bytes, truncated sequences and unmapped pointers reject the
+candidate. The initial GBK four-byte regression failed with the missing-decoder
+error before implementation.
+
+The separate Deno generator verifies equality of GBK/GB18030 over every single
+byte, byte pair and all 1,587,600 structurally valid four-byte inputs. Regular
+mini.nvim tests cover all byte pairs for both labels plus 4,793 boundary,
+mutation, truncation and mixed-input cases per label. All 603 targeted cases pass
+on current Neovim and Neovim 0.10.0. An optional mini.nvim exhaustive four-byte
+audit also passes against the Deno-generated SHA256 digest, independent of the
+compressed production tables. See `tests/audit/README.md` for reproduction.
+
+All 39 Deno-supported families now have strict candidate decoders. This completes
+the decoder prerequisite only: automatic view encoding selection is not wired,
+and explicit nonfatal decoding remains under audit. The full suite passes all
+3,733 cases across 56 groups (`/tmp/gin-gb18030-full.log`). `make check`,
+`git diff --check` and the GB18030 oracle regeneration check pass.

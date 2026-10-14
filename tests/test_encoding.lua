@@ -77,4 +77,10 @@ T["ISO-2022-JP switches between Roman, kana, JIS and ASCII"] = function()
   local bytes = string.char(27, 40, 74, 92, 126, 27, 40, 73, 38, 27, 36, 66, 36, 34, 27, 40, 66, 65)
   MiniTest.expect.equality(require("gin.encoding").decode(bytes, "iso-2022-jp"), "¥‾ｦあA")
 end
+T["GBK accepts GB18030 four-byte characters"] = function()
+  MiniTest.expect.equality(
+    require("gin.encoding").decode(string.char(129, 48, 129, 48), "gbk"),
+    vim.fn.nr2char(128)
+  )
+end
 return T
