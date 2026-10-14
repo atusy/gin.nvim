@@ -2887,3 +2887,16 @@ an insertion/deletion boundary need not behave like replacing the same numbered
 lines in another buffer. The tests establish range propagation across separated
 changes, not arbitrary line replacement within a diff block; help now states
 that boundary. No production-code change was needed for these tests.
+
+## Patch opener window identity
+
+The pinned Patch command retains the window ID returned by its index opener.
+Lua instead looked up the first window displaying that buffer. If GinEdit
+already displayed the index, a botright split/vsplit could open a new window
+but configure diff mode and restore focus in the old one.
+
+Patch now retains the current window when the opener makes the index current,
+using the buffer lookup only when the opened buffer is not current. Regression
+cases for horizontal and vertical splits verify that the new window is focused
+and diff-enabled while the original window remains outside diff mode. Both
+side panes are omitted in these fixtures to isolate the opener's window choice.

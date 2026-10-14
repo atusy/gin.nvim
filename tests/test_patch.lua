@@ -291,4 +291,17 @@ for _, method in ipairs({ "get", "put" }) do
     end
   end
 end
+for _, opener in ipairs({ "split", "vsplit" }) do
+  T[opener .. " opener focuses the new index window when the buffer is already visible"] = function()
+    vim.cmd("GinEdit sub/file")
+    local original = vim.api.nvim_get_current_win()
+    local index = vim.api.nvim_get_current_buf()
+    vim.cmd("botright GinPatch ++opener=" .. opener .. " ++no-head ++no-worktree file")
+    MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), 2)
+    MiniTest.expect.equality(vim.api.nvim_get_current_buf(), index)
+    MiniTest.expect.equality(vim.api.nvim_get_current_win() ~= original, true)
+    MiniTest.expect.equality(vim.wo[original].diff, false)
+    MiniTest.expect.equality(vim.wo.diff, true)
+  end
+end
 return T
