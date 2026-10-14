@@ -34,10 +34,10 @@ the globals listed in doc/gin.txt:
 
 | Setting | Pinned source | Lua status |
 | --- | --- | --- |
-| `g:gin_log_parse_pattern` | `command/log/edit.ts`, `gatherCandidates` | Not implemented; candidates are parsed from displayed commit headers. |
-| `g:gin_reflog_parse_pattern` | `command/reflog/edit.ts`, `gatherCandidates` | Not implemented; shares the Lua log candidate parser. |
-| `g:gin_tag_parse_pattern` | `command/tag/edit.ts`, `gatherCandidates` | Not implemented; candidate refs come from structured Git metadata. |
-| `g:gin_stash_parse_pattern` | `command/stash/edit.ts`, `gatherCandidates` | Not implemented; candidate refs come from structured Git metadata. |
+| `g:gin_log_parse_pattern` | `command/log/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidates are parsed from displayed commit headers. |
+| `g:gin_reflog_parse_pattern` | `command/reflog/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; shares the Lua log candidate parser. |
+| `g:gin_tag_parse_pattern` | `command/tag/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidate refs come from structured Git metadata. |
+| `g:gin_stash_parse_pattern` | `command/stash/edit.ts`, `gatherCandidates` | Type validation implemented; custom matching not implemented; candidate refs come from structured Git metadata. |
 
 Each upstream override is validated as a string and passed to JavaScript
 `new RegExp`. Supporting arbitrary display formats through structured metadata
@@ -1335,3 +1335,11 @@ the pinned parser/formatter's otherwise surprising -2 -1 limit precedence.
 Real log and reflog fixtures verify two selected commits through native command
 URIs, legacy numeric-parameter URIs, reloads and :read insertion. The shared
 ordering excludes leading-zero names and the non-index value 4294967295.
+
+
+The four custom parser globals now reject non-string, non-null values during
+candidate gathering with the pinned setting-specific error. Real Git fixtures
+exercise log/reflog yank, tag deletion and stash dropping with number, boolean
+and table settings; rejection leaves refs, working/index state and the register
+unchanged. This implements the type-validation boundary only. String-valued
+JavaScript regex matching is still unimplemented and remains a migration gap.

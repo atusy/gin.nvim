@@ -6,6 +6,11 @@ local git = require("gin.git")
 local action = require("gin.action")
 
 local function candidates(buf, range)
+  local pattern = vim.g.gin_tag_parse_pattern
+  assert(
+    pattern == nil or pattern == vim.NIL or type(pattern) == "string",
+    "g:gin_tag_parse_pattern must be string"
+  )
   local rows, selected, seen = vim.b[buf].gin_tags or {}, {}, {}
   for i = math.max(1, range[1]), math.min(#rows, range[2]) do
     if not seen[rows[i].tag] then

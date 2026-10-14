@@ -7,6 +7,12 @@ local action = require("gin.action")
 function M.candidates(buf, range)
   local result = {}
   local reflog = vim.api.nvim_buf_get_name(buf):match("^ginreflog://") ~= nil
+  local setting = reflog and "gin_reflog_parse_pattern" or "gin_log_parse_pattern"
+  local pattern = vim.g[setting]
+  assert(
+    pattern == nil or pattern == vim.NIL or type(pattern) == "string",
+    "g:" .. setting .. " must be string"
+  )
   for _, line in
     ipairs(
       vim.api.nvim_buf_get_lines(
