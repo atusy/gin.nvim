@@ -4416,3 +4416,25 @@ captured-query helper includes a status prefix and Browse's external URL helper
 also produces custom messages. Further alignment must identify the execution
 path instead of assuming every string with a Git exit prefix is raw executor
 stderr. This does not affect the whitespace-preservation change under test.
+
+
+### Empty successful command output
+
+command.finish now echoes even when decoded output is empty, matching the
+pinned bare-command display path. The initial real-Git regression observed no
+echo at all; the fix emits an empty non-history message. Six cases cover normal,
+silent and silent! in both waiting and asynchronous modes, checking the final
+echo and one success event. All 86 command tests pass on current Neovim and
+0.10.0. The fresh six-case live comparison (empty success and Git failure across
+modifiers) agrees on display, history, return behavior and events.
+Formatting and diff checks pass. Validation logs:
+`/tmp/gin-empty-output-green.log`, `/tmp/gin-empty-output-nvim010.log`.
+
+The user requested faster parallel worktree integration. Independent Browse,
+action UI and help/config work now start from 9302eeb in separate worktrees;
+only the foreground main owner cherry-picks. Contributors run scoped tests and
+leave shared dependencies/goldens unchanged. Fixed-port tests and the final full
+suite are owned by the foreground integrator. The previous full suite passed
+4,650 cases at 9302eeb; a new full suite will run on the integrated changes rather
+than on each small intermediate commit. This empty-output change currently has
+targeted validation, not a new full-suite result.

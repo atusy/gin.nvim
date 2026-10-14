@@ -266,7 +266,7 @@ function M.finish(result, options, mods)
   if output:find("\0", 1, true) then
     output = vim.fn.string(output)
   end
-  if output ~= "" and not mods.silent then
+  if not mods.silent then
     vim.api.nvim_echo({ { output, "None" } }, false, {})
   end
   if not options.eventignore_all then

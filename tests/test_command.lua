@@ -39,6 +39,32 @@ local function expect_command_error(command, pattern)
   MiniTest.expect.equality(message:find(pattern) ~= nil, true)
 end
 
+for _, modifier in ipairs({ "", "silent ", "silent! " }) do
+  for _, wait in ipairs({ false, true }) do
+    T["Gin empty output " .. modifier .. " wait=" .. tostring(wait)] = function()
+      local echo, messages = vim.api.nvim_echo, {}
+      vim.api.nvim_echo = function(chunks, history)
+        messages[#messages + 1] = { chunks = chunks, history = history }
+      end
+      local ok, err = pcall(function()
+        vim.cmd(modifier .. "Gin " .. (wait and "++wait " or "") .. "-c alias.empty=!true empty")
+        assert(
+          vim.wait(5000, function()
+            return events == 1
+          end, 10),
+          "Empty command did not complete"
+        )
+      end)
+      vim.api.nvim_echo = echo
+      assert(ok, err)
+      MiniTest.expect.equality(
+        messages,
+        modifier == "" and { { chunks = { { "", "None" } }, history = false } } or {}
+      )
+      MiniTest.expect.equality(events, 1)
+    end
+  end
+end
 T["successful command bursts publish one deferred completion event"] = function()
   local command = require("gin.command")
   for _ = 1, 3 do
