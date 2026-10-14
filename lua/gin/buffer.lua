@@ -2,7 +2,8 @@ local M = {}
 
 function M.open(name, opts)
   local opener = opts.opener or "edit"
-  if not vim.tbl_contains({ "edit", "split", "vsplit", "tabedit", "pedit" }, opener) then
+  local valid = pcall(vim.api.nvim_parse_cmd, opener, {})
+  if not valid then
     error("Unsupported Gin opener: " .. opener, 0)
   end
   local args = {}
@@ -12,22 +13,15 @@ function M.open(name, opts)
       args[#args + 1] = "++" .. spec[1] .. "=" .. vim.fn.fnameescape(value)
     end
   end
-  if #args > 0 then
-    -- nvim_cmd does not parse ++opt arguments; let Ex parse the escaped command.
-    args[#args + 1] = vim.fn.fnameescape(name)
-    vim.api.nvim_cmd({
-      cmd = "execute",
-      args = {
-        vim.fn.string(opener .. (opts.bang and "!" or "") .. " " .. table.concat(args, " ")),
-      },
-      mods = opts.smods,
-    }, {})
-  else
-    vim.api.nvim_cmd(
-      { cmd = opener, args = { vim.fn.fnameescape(name) }, bang = opts.bang, mods = opts.smods },
-      {}
-    )
-  end
+  -- Let Ex interpret opener modifiers and ++opts, as the upstream opener does.
+  args[#args + 1] = vim.fn.fnameescape(name)
+  vim.api.nvim_cmd({
+    cmd = "execute",
+    args = {
+      vim.fn.string(opener .. (opts.bang and "!" or "") .. " " .. table.concat(args, " ")),
+    },
+    mods = opts.smods,
+  }, {})
   local buf, win = vim.fn.bufnr(name), vim.api.nvim_get_current_win()
   if opener == "pedit" then
     for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
