@@ -154,6 +154,61 @@ T["default branch colors match Git configuration across reload"] = function()
   MiniTest.expect.equality(H.git(root, "config", "color.branch"), "never\n")
   H.git(root, "worktree", "remove", root .. "/linked")
 end
+for _, operation in ipairs({ "rebase", "bisect" }) do
+  T["branch listings preserve " .. operation .. " state across reload"] = function()
+    vim.fn.writefile({ "main change" }, root .. "/file")
+    H.git(root, "commit", "-am", "main change")
+    if operation == "rebase" then
+      H.git(root, "checkout", "topic")
+      vim.fn.writefile({ "topic change" }, root .. "/file")
+      H.git(root, "commit", "-am", "topic change")
+      H.git(root, "checkout", "main")
+    else
+      vim.fn.writefile({ "latest change" }, root .. "/file")
+      H.git(root, "commit", "-am", "latest change")
+    end
+    local original = H.git(root, "rev-parse", "HEAD")
+    local original_lines = vim.fn.readfile(root .. "/file")
+    if operation == "rebase" then
+      local result = vim.system({ "git", "rebase", "topic" }, { cwd = root, text = true }):wait()
+      MiniTest.expect.equality(result.code, 1)
+      MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-merge"), 1)
+    else
+      H.git(root, "bisect", "start", "HEAD", "HEAD~2")
+      MiniTest.expect.equality(vim.fn.filereadable(root .. "/.git/BISECT_START"), 1)
+    end
+    local current = H.git(root, "rev-parse", "--short", "HEAD"):gsub("\n$", "")
+    local before = H.git(root, "status", "--porcelain=v1")
+    for _, flags in ipairs({ "--no-color", "--no-color --no-verbose", "--no-color --abbrev=12" }) do
+      vim.cmd("GinBranch " .. flags)
+      for _ = 1, 2 do
+        local native = H.git(root, "branch", "--list", "-vv", unpack(vim.split(flags, " ")))
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        MiniTest.expect.equality(table.concat(lines, "\n") .. "\n", native)
+        local row
+        for n, line in ipairs(lines) do
+          if line:sub(1, 2) == "* " then
+            row = n
+          end
+        end
+        MiniTest.expect.equality(type(row), "number")
+        MiniTest.expect.equality(
+          lines[row]:find(operation == "rebase" and "rebasing main" or "bisect", 1, true) ~= nil,
+          true
+        )
+        require("gin.action").call(vim.api.nvim_get_current_buf(), "yank:commit", { row, row })
+        MiniTest.expect.equality(vim.fn.getreg('"'):sub(1, #current), current)
+        MiniTest.expect.equality(H.git(root, "status", "--porcelain=v1"), before)
+        vim.cmd.edit()
+      end
+    end
+    H.git(root, operation, operation == "rebase" and "--abort" or "reset")
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), original)
+    MiniTest.expect.equality(H.git(root, "symbolic-ref", "--short", "HEAD"), "main\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), original_lines)
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain=v1"), "")
+  end
+end
 T["detached branch listings honor commit abbreviation flags"] = function()
   H.git(root, "config", "core.abbrev", "9")
   H.git(root, "checkout", "--detach", "HEAD")

@@ -2518,3 +2518,19 @@ Cancel, rejected quit, and two consecutive rewords both asynchronously and with
 visibility. A separate case commits through synchronous GinBuffer. All 19 cases
 pass on Neovim 0.10. Nested commands and other synchronous mutation workflows are
 not covered by this evidence; the overall migration checklist remains open.
+
+
+## Branch views during rebase and bisect
+
+Two real-repository cases cover the previously unaudited operation labels: a
+rebase stopped by a content conflict and bisect stopped at an intermediate
+commit. GinBranch output must exactly equal native `git branch --list -vv` with
+no color, no verbosity, and a custom abbreviation length, both on first read and
+reload. The active row must retain the operation label; yank:commit must select
+the actual detached HEAD. Reading and selecting must preserve index/worktree
+status, and abort/reset must restore the original main branch, commit and file.
+
+Both cases pass without changing the implementation. Replacing the operation
+labels with plain HEAD makes both fail on the displayed output. This closes the
+rebase/bisect display and commit-selection evidence gap; it does not validate
+mutating branch actions against detached operation rows.
