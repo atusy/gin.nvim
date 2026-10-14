@@ -64,7 +64,7 @@ for _, value in ipairs({ "true", vim.NIL, {} }) do
     local index = H.git(root, "ls-files", "--stage")
     local windows = vim.api.nvim_tabpage_list_wins(0)
     vim.g.gin_chaperon_disable_default_mappings = value
-    MiniTest.expect.error(function()
+    require("tests.helpers").command_error(function()
       vim.cmd("GinChaperon file")
     end, "g:gin_chaperon_disable_default_mappings must be a boolean or number")
     MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
@@ -102,7 +102,7 @@ for _, name in ipairs({ "gin_chaperon_supplement_disable", "gin_chaperon_supplem
       local index = H.git(root, "ls-files", "--stage")
       local windows = vim.api.nvim_tabpage_list_wins(0)
       vim.g[name] = value
-      MiniTest.expect.error(function()
+      require("tests.helpers").command_error(function()
         vim.cmd("GinChaperon file")
       end, "g:" .. name .. " must be a number")
       MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)

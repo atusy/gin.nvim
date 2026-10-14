@@ -3,7 +3,9 @@ if vim.g.loaded_gin_blame ~= nil then
 end
 vim.g.loaded_gin_blame = 1
 vim.api.nvim_create_user_command("GinBlame", function(opts)
-  require("gin.blame").command(opts)
+  require("gin.command").friendly(function()
+    require("gin.blame").command(opts)
+  end, opts.smods)
 end, { nargs = "*", bar = true, bang = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_blame", { clear = true }),

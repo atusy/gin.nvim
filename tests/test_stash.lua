@@ -45,7 +45,7 @@ T["stash command groups flags without accepting positional arguments"] = functio
   end
   local name = vim.api.nvim_buf_get_name(0)
   for _, arg in ipairs({ "HEAD", "-- file", "-- --max-count=1" }) do
-    MiniTest.expect.error(function()
+    require("tests.helpers").command_error(function()
       vim.cmd("GinStash " .. arg)
     end, "GinStash does not accept positional arguments")
     MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), name)

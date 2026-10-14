@@ -73,22 +73,36 @@ function M.post_pending()
   return post_timer ~= nil
 end
 
+local function report_error(message, mods, result)
+  if mods.emsg_silent then
+    return
+  end
+  if result then
+    message = require("gin.csi").strip(require("gin.stream_text").utf8(result.stderr or ""))
+  else
+    message = tostring(message):gsub("^.-:%d+: ", "")
+  end
+  message = "[gin]: " .. message
+  if message:find("\0", 1, true) then
+    message = vim.fn.string(message)
+  end
+  vim.api.nvim_echo({ { message, "ErrorMsg" } }, false, {})
+end
+
+---Catch errors only at a user-command boundary, leaving internal APIs strict.
+function M.friendly(callback, mods)
+  local ok, result = pcall(callback)
+  if not ok then
+    report_error(result, mods)
+    return
+  end
+  return result
+end
+
 ---User-command errors are friendly messages; execute retains strict API errors.
 function M.command(opts)
   local function report(message, result)
-    if opts.smods.emsg_silent then
-      return
-    end
-    if result then
-      message = require("gin.csi").strip(require("gin.stream_text").utf8(result.stderr or ""))
-    else
-      message = tostring(message):gsub("^.-:%d+: ", "")
-    end
-    message = "[gin]: " .. message
-    if message:find("\0", 1, true) then
-      message = vim.fn.string(message)
-    end
-    vim.api.nvim_echo({ { message, "ErrorMsg" } }, false, {})
+    report_error(message, opts.smods, result)
   end
   local ok, err = pcall(
     M.execute,

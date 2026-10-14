@@ -4285,3 +4285,61 @@ and BufReadCmd/BufWriteCmd failure propagation. Any fix must retain those
 boundaries and update tests that currently expect a user-command exception to
 observe notifications and unchanged state instead. Evidence:
 `/tmp/gin-all-view-errors.lua`, `/tmp/gin-all-view-errors-{upstream,lua}.json`.
+
+
+### View-command friendly boundary implementation
+
+All thirteen view-command entrypoints now call a shared friendly boundary that
+catches synchronous failures and displays an ErrorMsg without message history.
+Twelve respect silent!; Browse deliberately passes no suppression because the
+pinned dispatcher omits ensureSilent. The bare Gin wrapper shares the same
+reporting function while retaining its asynchronous result handling. Direct Lua
+command APIs and read/write autocmd handlers are unchanged.
+
+The first GinEdit invalid-option regression failed with an exception, then
+passed after adding the boundary. The new suite covers all 39 command/modifier
+combinations with notification, history, event and unchanged-window assertions,
+plus thirteen checks that direct command APIs still throw. Existing invalid
+configuration and argument tests now observe friendly errors while retaining
+their Git/buffer/window/register assertions. All 157 command, configuration and
+boundary cases pass. The live 39-case parser-error probe agrees with upstream on
+return behavior, notification visibility, history and events; diagnostic wording
+still differs. Formatting and diff checks pass. The first full run reached 4,641 cases and
+found 23 remaining assertions expecting user-command exceptions, in encoding,
+status configuration and native browser failure tests. Updated these to assert
+friendly errors, retaining their state checks. All 337 cases in those three
+files now pass (`/tmp/gin-view-errors-adjusted.log`); the 157 boundary/command/
+configuration cases also pass on Neovim 0.10.0. The full rerun passes all 4,641 cases across 60 groups
+(`/tmp/gin-view-errors-full-recheck.log`).
+
+A second probe reaches errors inside BufReadCmd (including missing revisions in
+an empty repository). The new boundary catches these, but their exception text
+contains Neovim's nested callback context and traceback. Cleaning that text and
+comparing Git-failure diagnostics remain open; the parser-error comparison does
+not establish complete error-message parity. Evidence:
+`/tmp/gin-view-git-errors.lua`, `/tmp/gin-view-git-errors-lua.json`.
+
+The Git-failure probe was also run against upstream. GinEdit and GinBlame show
+only Git stderr in the friendly error, including its final newline; Lua retains
+its internal exit-code prefix and nested callback traceback. In an empty
+repository Browse also discovers a different first error (upstream missing HEAD
+versus Lua missing origin), which is separate from notification presentation.
+Reference results: `/tmp/gin-view-git-errors-upstream.json`.
+
+
+### Nested callback diagnostic prototype
+
+Captured view-command Git failures on both current Neovim and 0.10.0. Current
+Neovim labels nested exceptions "Lua callback:", while 0.10 uses "Error executing
+lua callback:". The first prototype matched zero old-version cases; added an
+explicit nonzero coverage assertion and support for both forms. A temporary
+unwrapper now extracts the original message from all 18 captured nested errors
+on each version. It only unwraps messages beginning with an nvim API context and
+preserves traceback-like text within the message by removing the final actual
+stack suffix. Direct messages containing such text remain unchanged.
+
+This is preparation, not an applied runtime fix. Prototype files:
+`/tmp/gin-error-unwrapping{,-nvim010}.lua`; old-version capture:
+`/tmp/gin-view-git-errors-nvim010-lua.json`. Removing the internal Git exit-code
+prefix and preserving raw stderr's trailing whitespace still requires separate
+handling; the prototype only removes callback context and the traceback.

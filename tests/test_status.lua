@@ -550,10 +550,11 @@ T["invalid default arguments fail even when explicit arguments are supplied"] = 
   local previous = vim.g.gin_status_default_args
   vim.g.gin_status_default_args = "--short"
   local buf = vim.api.nvim_get_current_buf()
-  local ok, err = pcall(vim.cmd, "GinStatus --untracked-files=all")
+  local ok, err = pcall(H.command_error, function()
+    vim.cmd("GinStatus --untracked-files=all")
+  end, "g:gin_status_default_args")
   vim.g.gin_status_default_args = previous
-  MiniTest.expect.equality(ok, false)
-  MiniTest.expect.equality(tostring(err):find("g:gin_status_default_args", 1, true) ~= nil, true)
+  assert(ok, err)
   MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
 end
 for _, case in ipairs({
@@ -565,13 +566,11 @@ for _, case in ipairs({
     local previous = vim.g.gin_status_persistent_args
     vim.g.gin_status_persistent_args = case.value
     local buf = vim.api.nvim_get_current_buf()
-    local ok, err = pcall(vim.cmd, "GinStatus")
+    local ok, err = pcall(H.command_error, function()
+      vim.cmd("GinStatus")
+    end, "g:gin_status_persistent_args")
     vim.g.gin_status_persistent_args = previous
-    MiniTest.expect.equality(ok, false)
-    MiniTest.expect.equality(
-      tostring(err):find("g:gin_status_persistent_args", 1, true) ~= nil,
-      true
-    )
+    assert(ok, err)
     MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
   end
 end
@@ -703,7 +702,7 @@ T["status preserves upstream flag grouping through URI reload"] = function()
     MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 1, -1, false), case[2])
   end
   -- Git must see earlier repeated values too, including an invalid one.
-  MiniTest.expect.error(function()
+  require("tests.helpers").command_error(function()
     vim.cmd("GinStatus --renames=invalid --renames")
   end, "takes no value")
   MiniTest.expect.equality(vim.fn.readfile(root .. "/new/file"), { "nested" })

@@ -43,7 +43,7 @@ for _, value in ipairs({
       opened[#opened + 1] = url
     end
     local ok, err = pcall(function()
-      MiniTest.expect.error(function()
+      require("tests.helpers").command_error(function()
         vim.cmd("GinBrowse ++yank=a --home")
       end, "g:gin_browse_aliases must be a dictionary of strings")
       MiniTest.expect.equality(vim.fn.getreg("a"), "keep me")
@@ -218,7 +218,7 @@ for _, outcome in ipairs({ "success", "missing handler", "spawn failure" }) do
       if outcome == "success" then
         browse()
       else
-        MiniTest.expect.error(
+        H.command_error(
           browse,
           outcome == "missing handler" and "browser handler unavailable" or "browser spawn failure"
         )
@@ -279,7 +279,7 @@ T["GinBrowse rejects repeated remote flags before opening or yanking"] = functio
   end
   vim.fn.setreg("a", "unchanged")
   local ok, err = pcall(function()
-    MiniTest.expect.error(function()
+    require("tests.helpers").command_error(function()
       vim.cmd("GinBrowse ++yank=a --remote=origin --remote=origin --home")
     end, "REMOTE in %-%-remote={REMOTE} must be string")
     MiniTest.expect.equality(vim.fn.getreg("a"), "unchanged")

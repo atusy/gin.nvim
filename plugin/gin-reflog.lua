@@ -3,7 +3,9 @@ if vim.g.loaded_gin_reflog ~= nil then
 end
 vim.g.loaded_gin_reflog = 1
 vim.api.nvim_create_user_command("GinReflog", function(opts)
-  require("gin.log").command(opts, "reflog")
+  require("gin.command").friendly(function()
+    require("gin.log").command(opts, "reflog")
+  end, opts.smods)
 end, { nargs = "*", bar = true, bang = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_reflog", { clear = true }),

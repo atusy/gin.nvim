@@ -110,7 +110,7 @@ for _, command in ipairs({ "GinLog", "GinReflog" }) do
       vim.cmd.edit()
     end
     local name = vim.api.nvim_buf_get_name(0)
-    MiniTest.expect.error(function()
+    require("tests.helpers").command_error(function()
       vim.cmd(command .. " main main")
     end)
     MiniTest.expect.equality(vim.api.nvim_buf_get_name(0), name)

@@ -3,7 +3,9 @@ if vim.g.loaded_gin_edit ~= nil then
 end
 vim.g.loaded_gin_edit = 1
 vim.api.nvim_create_user_command("GinEdit", function(opts)
-  require("gin.edit").command(opts)
+  require("gin.command").friendly(function()
+    require("gin.edit").command(opts)
+  end, opts.smods)
 end, { nargs = "*", bar = true, bang = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_edit", { clear = true }),

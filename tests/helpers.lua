@@ -63,4 +63,23 @@ function M.cleanup(root)
   vim.fn.delete(root, "rf")
 end
 
+-- User commands report errors without throwing; direct APIs still throw.
+function M.command_error(callback, pattern)
+  local echo, messages = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks, history)
+    if chunks[1][2] == "ErrorMsg" then
+      messages[#messages + 1] = chunks[1][1]
+      MiniTest.expect.equality(history, false)
+    end
+  end
+  local ok, err = pcall(callback)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(#messages, 1)
+  MiniTest.expect.equality(messages[1]:match("^%[gin%]: ") ~= nil, true)
+  if pattern then
+    MiniTest.expect.equality(messages[1]:find(pattern) ~= nil, true)
+  end
+end
+
 return M

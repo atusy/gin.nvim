@@ -336,8 +336,9 @@ for _, encoding in ipairs({ "gbk", "gb18030" }) do
 end
 T["GinEdit rejects unsupported native UCS-2LE read label"] = function()
   stage("A\0")
-  local ok = pcall(vim.cmd, "GinEdit ++enc=ucs-2le file")
-  MiniTest.expect.equality(ok, false)
+  H.command_error(function()
+    vim.cmd("GinEdit ++enc=ucs-2le file")
+  end, "Unsupported encoding")
 end
 for _, encoding in ipairs({
   "ucs-2le",
@@ -354,9 +355,9 @@ for _, encoding in ipairs({
       local bytes = "A\0"
       stage(bytes)
       local suffix = command == "GinBuffer" and " show :file" or " file"
-      local ok, err = pcall(vim.cmd, command .. " ++enc=" .. encoding .. suffix)
-      MiniTest.expect.equality(ok, false)
-      MiniTest.expect.equality(tostring(err):find("Unsupported encoding", 1, true) ~= nil, true)
+      H.command_error(function()
+        vim.cmd(command .. " ++enc=" .. encoding .. suffix)
+      end, "Unsupported encoding")
       MiniTest.expect.equality(
         require("gin.git").run({ "show", ":file" }, { cwd = root }).stdout,
         bytes

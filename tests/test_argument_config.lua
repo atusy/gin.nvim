@@ -22,7 +22,7 @@ for command, kind in pairs(commands) do
       local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
       vim.g[name] = "not a list"
       local ok, err = pcall(function()
-        MiniTest.expect.error(function()
+        require("tests.helpers").command_error(function()
           -- If configuration is skipped, parsing fails without opening a view.
           vim.cmd(command .. " ++audit-invalid-option")
         end, "g:" .. name .. " must be a list of strings")

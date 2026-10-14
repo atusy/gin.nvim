@@ -14,7 +14,9 @@ vim.api.nvim_create_user_command("Gin", function(opts)
   require("gin.command").command(opts)
 end, { nargs = "*", bar = true })
 vim.api.nvim_create_user_command("GinBuffer", function(opts)
-  require("gin.buffer").command(opts)
+  require("gin.command").friendly(function()
+    require("gin.buffer").command(opts)
+  end, opts.smods)
 end, { nargs = "*", bar = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_buffer", { clear = true }),

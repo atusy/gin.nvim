@@ -3,7 +3,9 @@ if vim.g.loaded_gin_stash ~= nil then
 end
 vim.g.loaded_gin_stash = 1
 vim.api.nvim_create_user_command("GinStash", function(opts)
-  require("gin.stash").command(opts)
+  require("gin.command").friendly(function()
+    require("gin.stash").command(opts)
+  end, opts.smods)
 end, { nargs = "*", bar = true, bang = true })
 vim.api.nvim_create_autocmd("BufReadCmd", {
   group = vim.api.nvim_create_augroup("gin_stash", { clear = true }),

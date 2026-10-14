@@ -50,7 +50,7 @@ for _, value in ipairs({ "true", vim.NIL, {} }) do
     local index = H.git(root, "ls-files", "--stage")
     local windows = vim.api.nvim_tabpage_list_wins(0)
     vim.g.gin_patch_disable_default_mappings = value
-    MiniTest.expect.error(function()
+    require("tests.helpers").command_error(function()
       vim.cmd("GinPatch file")
     end, "g:gin_patch_disable_default_mappings must be a boolean or number")
     MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
