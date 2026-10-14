@@ -184,3 +184,24 @@ embedded newlines at the getbufline boundary before upstream parsing.
 suite and checks that every candidate remains an object, even when all captures
 are missing. An actual echo-action test also verifies `[{}, {}]` formatting
 instead of the accidental `[[], []]` produced by untyped empty Lua tables.
+
+## Branch action registration oracle
+
+```sh
+node --experimental-vm-modules scripts/action-oracle.mjs --check
+node --experimental-vm-modules scripts/action-oracle.mjs --write
+```
+
+This optional Node script (verified with v26.8.2) executes the pinned Branch
+initializer and its action modules, capturing mapping names and alias targets.
+It checks the upstream commit and rejects changes to the executed source tree.
+Type-only names from the older TypeScript imports are removed after stripping
+types. Batch/buffer callbacks run directly; buffer rendering, event binding,
+flag formatting and filetype setting are stubbed. No action callback is run.
+Unexpected editor calls fail. Node reports experimental API warnings for its
+VM modules and TypeScript stripping; these are tooling-only dependencies.
+
+The regular mini.nvim Branch suite compares the captured registrations with
+real Lua buffer mappings. This establishes the 44-name Branch action surface
+and aliases, not mapping attributes, execution semantics or other views.
+Those require their separate integration and mapping tests.

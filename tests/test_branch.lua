@@ -21,6 +21,21 @@ local T = MiniTest.new_set({
     end,
   },
 })
+T["branch action registrations match the pinned initialization oracle"] = function()
+  local oracle =
+    vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/tests/audit/action-oracle.json"), "\n"))
+  local lock = vim.json.decode(table.concat(vim.fn.readfile(cwd .. "/deps-lock.json"), "\n"))
+  MiniTest.expect.equality(oracle.commit, lock["vim-gin"].commit)
+  vim.cmd.GinBranch()
+  local mappings = {}
+  for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, "n")) do
+    local name = map.lhs:match("^<Plug>%(gin%-action%-(.*)%)$")
+    if name then
+      mappings[name] = (map.rhs or ""):match("^<Plug>%(gin%-action%-(.*)%)$") or vim.NIL
+    end
+  end
+  MiniTest.expect.equality(mappings, oracle.branch)
+end
 T["branch view lists refs and switches the selected branch"] = function()
   vim.cmd.GinBranch()
   MiniTest.expect.equality(vim.bo.filetype, "gin-branch")

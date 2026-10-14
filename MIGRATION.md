@@ -1926,3 +1926,10 @@ with ErrorMsg, matching the pinned rebase action. A matrix exercises both
 actions in Branch, Log and Reflog with dismissal and empty input. It verifies
 unchanged refs, staged/unstaged diffs and absence of both rebase state
 directories, covering cancellation before synchronous or interactive execution.
+
+Branch's action registration surface is now checked against an executable
+pinned-source oracle: all 44 action names and alias targets match the Lua
+buffer. scripts/action-oracle.mjs executes the pinned Branch/action initializers
+with editor registration stubs; mini.nvim checks the resulting JSON against
+real buffer mappings. This closes the Branch name/alias inventory check only;
+callback semantics and other view inventories remain separate requirements.
