@@ -21,7 +21,7 @@ scope, not proof of complete upstream parity.
 - [ ] GinBlame: blame navigation, history and detail.
 - [x] GinBrowse: remote URL generation and opening (functional scope audited below).
 - [x] GinCd, GinLcd, GinTcd and worktree context.
-- [ ] Shared actions: choice, repeat, help, range handling and Plug mappings.
+- [x] Shared actions: choice, repeat, help, range handling and Plug mappings (functional scope audited below).
 - [ ] Editor/askpass proxies, commit/rebase integration.
 - [x] Branch/traffic/worktree components and component events (functional scope audited below).
 - [ ] Help, syntax, highlights, options and default mappings in Lua.
@@ -2733,3 +2733,29 @@ systemopen; request lookup uses git-browse 1.1.6 and local remote HEAD/main;
 nested GitLab repository paths and literal filename handling retain the Lua
 implementation's extensions. The URL tests establish the supported remote forms,
 not complete WHATWG canonicalization. Other migration checklist items remain open.
+
+
+## Shared action functional-scope completion audit
+
+The pinned action/core.ts responsibilities are covered by gin.action: action
+registration, aliases, discovery/completion, dispatch with a captured range,
+choice, repeat and reduced/full help. Existing action tests verify global/local
+mapping precedence, user aliases and callbacks, expression/Ex mappings, range
+restoration after errors, saved-action validation, empty choices, help filtering
+and JSON echo. View-specific registration oracles inventory the available Plug
+names; they are not substitutes for each view's behavior tests.
+
+New child-Neovim interaction cases exercise the default status mappings through
+real keyboard input. A Visual selection invokes choice with `a`, completes
+`stag<Tab>` to stage, and stages exactly the two selected files. Repeat at a new
+cursor stages only the remaining file. A second case cancels native input with
+Ctrl-C, preserves the prior action and empty index, then repeats at a new row.
+Both cases inspect Git's index; the successful workflow also verifies staged and
+working-file content. Synchronization waits for the refreshed status content as
+well as the post event, avoiding reads during the scheduled reload. Removing
+choice completion makes the first case fail.
+
+This closes the shared-action functional checklist. Native vim.ui.input supports
+replacement UIs; help columns use display widths rather than JavaScript string
+lengths. Neither change introduces a Denops dependency. View-specific mutation
+semantics and the broader command/URI audit remain separate checklist items.
