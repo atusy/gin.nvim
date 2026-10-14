@@ -608,6 +608,46 @@ T["worktree creates a named branch from the selection and changes cwd"] = functi
   vim.cmd.cd(root)
   H.git(root, "worktree", "remove", root .. "/new tree")
 end
+T["forced worktree creation permits an already checked out branch"] = function()
+  local linked, duplicate = root .. "/linked", root .. "/duplicate"
+  H.git(root, "worktree", "add", linked, "topic")
+  local refs = H.git(root, "show-ref")
+  vim.cmd("GinBranch topic")
+  MiniTest.expect.error(function()
+    worktree_action("worktree", "topic", duplicate)
+  end, "git exited")
+  MiniTest.expect.equality(vim.fn.isdirectory(duplicate), 0)
+  MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(root))
+  worktree_action("worktree:force", "topic", duplicate)
+  MiniTest.expect.equality(vim.fn.getcwd(), vim.uv.fs_realpath(duplicate))
+  for _, path in ipairs({ linked, duplicate }) do
+    MiniTest.expect.equality(H.git(path, "branch", "--show-current"), "topic\n")
+    MiniTest.expect.equality(vim.fn.readfile(path .. "/file"), { "base" })
+  end
+  MiniTest.expect.equality(H.git(root, "show-ref"), refs)
+  vim.cmd.cd(root)
+  H.git(root, "worktree", "remove", duplicate)
+  H.git(root, "worktree", "remove", linked)
+end
+T["forced branch deletion removes a dirty linked worktree after ordinary refusal"] = function()
+  local linked = root .. "/linked"
+  H.git(root, "worktree", "add", linked, "topic")
+  vim.fn.writefile({ "unsaved on disk" }, linked .. "/file")
+  local head = H.git(root, "rev-parse", "HEAD")
+  vim.cmd("GinBranch topic")
+  MiniTest.expect.error(function()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "delete", { 1, 1 })
+  end, "git exited")
+  MiniTest.expect.equality(vim.fn.readfile(linked .. "/file"), { "unsaved on disk" })
+  MiniTest.expect.equality(H.git(root, "rev-parse", "topic"), head)
+  require("gin.action").call(vim.api.nvim_get_current_buf(), "delete:force", { 1, 1 })
+  H.drain()
+  MiniTest.expect.equality(vim.fn.isdirectory(linked), 0)
+  MiniTest.expect.equality(H.git(root, "branch", "--list", "topic"), "")
+  MiniTest.expect.equality(vim.b.gin_branches, {})
+  MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), head)
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "base" })
+end
 T["default worktree paths distinguish ordinary and orphan branch names"] = function()
   for _, orphan in ipairs({ false, true }) do
     vim.cmd("GinBranch topic")

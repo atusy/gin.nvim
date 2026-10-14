@@ -167,19 +167,21 @@ Git-state tests. Audit every pinned command, option, mapping, event and componen
 before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
-actions, plus branch/worktree creation and moves. Browse and interactive rebase actions,
-complete option/display compatibility remain pending. Branch views refresh after
+actions, plus branch/worktree creation and moves. Interactive rebase and merge
+editor integration have real Git tests below. Complete option/display compatibility
+and direct branch/tag browse-consumer verification remain pending. Branch views refresh after
 GinCommandPost while preserving the current view.
 
 Worktree creation supplies `-b` when the requested branch differs from the
 selected starting ref; the pinned implementation omits it and fails that case.
 
-Branch merge actions now support ff/no-ff/ff-only. Tests bypass the commit editor
-using a fixture-local configuration; editor proxy integration remains pending.
+Branch merge actions support ff/no-ff/ff-only. Later tests exercise message
+editing through the editor proxy as well as cancellation and ff-only rejection.
 
 GinTag now provides listing, show/delete/switch/yank actions and command-driven
-refresh. Browse/echo, emoji show variants, custom format/parser options, encoding and
-emoji handling still require implementation or compatibility checks.
+refresh. Custom formats, parsing, decoding and emoji handling have dedicated
+regressions below. The remaining ref-view functional audit includes direct
+browse/echo consumer coverage and show variants.
 
 GinLog now displays history with revision/path filters, show/yank actions and
 command-driven refresh. Other commit actions, custom parsing, emoji/color and
@@ -3233,3 +3235,29 @@ forced deletion failed the second-ref assertion before the change.
 
 Validation: all 45 branch cases pass on minimum Neovim 0.10.0. `make check`
 and the integrated full suite pass (1,268 cases in 48 groups).
+
+
+## Forced worktree and tag-switch boundaries
+
+The pinned `action/worktree_new.ts` distinguishes ordinary creation from
+`worktree:force` by its force flag; `action/branch_delete.ts` similarly forces
+worktree removal and branch deletion only for `delete:force`.
+
+New real Git cases verify both boundaries. Creating another checkout of an
+already checked-out branch fails ordinarily without changing cwd or creating
+the requested directory. The force action creates that checkout, enters it,
+and preserves the branch refs and the contents of both worktrees. Deleting a
+branch with a dirty linked worktree ordinarily reports failure and preserves
+the dirty file/ref; forced deletion removes that worktree and branch, refreshes
+the view, and preserves the main worktree's HEAD and file.
+
+A separate GinTag case confirms that ordinary `switch` on an annotated tag
+reports Git's rejection while preserving the attached branch, HEAD, index and
+working file. Only the existing `switch:detach` action requests detachment;
+the ordinary action is not silently converted to it.
+
+All 68 branch/tag cases pass on minimum Neovim 0.10.0. These cases strengthen
+the ref-action audit without completing the remaining browse/show consumer
+checks or the broad option/API compatibility checklist.
+
+Validation: `make check` and all 1,271 integrated full-suite cases pass.
