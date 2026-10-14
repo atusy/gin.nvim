@@ -3207,3 +3207,29 @@ Git-state assertion; an intermediate fail-fast loop fails when the first tag
 is locked. Minimum Neovim 0.10.0 passes all 20 tag cases after the final change.
 
 Validation: `make check` and all 1,266 full-suite cases in 48 groups pass.
+
+
+## Branch deletion continues through selected commands
+
+The pinned `action/branch_delete.ts` dispatches each remote deletion, worktree
+removal and local branch deletion separately through the normal-mode command
+wrapper. Like tag deletion, a reported command failure does not terminate the
+selection loop. The Lua action previously propagated the first failure before
+attempting subsequent selected branches.
+
+Both `delete` and `delete:force` now collect command failures while continuing
+through the selected operations, then return those errors together. Successful
+commands retain their existing completion notifications and view refreshes.
+Symbolic aliases remain skipped, and the existing protection against removing
+the current worktree remains in place. Worktree removal still precedes local
+branch deletion, including Git's own refusal to delete a checked-out branch
+when worktree removal fails.
+
+Real Git regressions select the current branch followed by an ordinary merged
+branch. They require deletion of the second branch despite rejection of the
+first, an error result, unchanged HEAD/current branch/working file/index, and
+a refreshed listing containing only the retained branch. Both ordinary and
+forced deletion failed the second-ref assertion before the change.
+
+Validation: all 45 branch cases pass on minimum Neovim 0.10.0. `make check`
+and the integrated full suite pass (1,268 cases in 48 groups).

@@ -225,9 +225,16 @@ function M.read(buf, name)
   for _, force in ipairs({ false, true }) do
     action.define(buf, force and "delete:force" or "delete", function(target, range)
       local rows = M.candidates(target, range)
+      local errors = {}
+      local function attempt(args)
+        local ok, err = pcall(run, args)
+        if not ok then
+          errors[#errors + 1] = tostring(err)
+        end
+      end
       for _, row in ipairs(rows) do
         if row.kind == "remote" then
-          run({ "push", "--delete", row.remote, row.branch })
+          attempt({ "push", "--delete", row.remote, row.branch })
         elseif row.kind ~= "alias" then
           if row.worktree and row.head ~= "*" then
             local args = { "worktree", "remove" }
@@ -235,10 +242,13 @@ function M.read(buf, name)
               args[#args + 1] = "--force"
             end
             vim.list_extend(args, { "--", row.worktree })
-            run(args)
+            attempt(args)
           end
-          run({ "branch", force and "-D" or "-d", "--", row.branch })
+          attempt({ "branch", force and "-D" or "-d", "--", row.branch })
         end
+      end
+      if #errors > 0 then
+        error(table.concat(errors, "\n"), 0)
       end
     end)
   end

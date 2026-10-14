@@ -361,6 +361,29 @@ T["branch deletion changes refs and reloads the view"] = function()
   H.drain()
   MiniTest.expect.equality(#vim.b.gin_branches, 1)
 end
+for _, name in ipairs({ "delete", "delete:force" }) do
+  T["branch deletion continues after the current branch refuses " .. name] = function()
+    local head = H.git(root, "rev-parse", "HEAD")
+    vim.cmd.GinBranch()
+    MiniTest.expect.equality(vim.b.gin_branches[1].branch, "main")
+    MiniTest.expect.equality(vim.b.gin_branches[2].branch, "topic")
+    MiniTest.expect.error(function()
+      require("gin.action").call(vim.api.nvim_get_current_buf(), name, { 1, 2 })
+    end, "git exited")
+    MiniTest.expect.equality(H.git(root, "branch", "--list", "topic"), "")
+    MiniTest.expect.equality(H.git(root, "rev-parse", "HEAD"), head)
+    MiniTest.expect.equality(H.git(root, "branch", "--show-current"), "main\n")
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "base" })
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+    H.drain()
+    MiniTest.expect.equality(
+      vim.tbl_map(function(row)
+        return row.branch
+      end, vim.b.gin_branches),
+      { "main" }
+    )
+  end
+end
 T["failed unmerged branch deletion refreshes a successfully removed worktree"] = function()
   local linked = root .. "/linked"
   H.git(root, "worktree", "add", linked, "topic")
