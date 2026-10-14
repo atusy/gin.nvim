@@ -2,7 +2,7 @@ local M = {}
 
 function M.open(name, opts)
   local opener = opts.opener or "edit"
-  local valid = pcall(vim.api.nvim_parse_cmd, opener, {})
+  local valid, parsed = pcall(vim.api.nvim_parse_cmd, opener, {})
   if not valid then
     error("Unsupported Gin opener: " .. opener, 0)
   end
@@ -23,7 +23,7 @@ function M.open(name, opts)
     mods = opts.smods,
   }, {})
   local buf, win = vim.fn.bufnr(name), vim.api.nvim_get_current_win()
-  if opener == "pedit" then
+  if parsed.cmd == "pedit" then
     for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
       if vim.wo[candidate].previewwindow and vim.api.nvim_win_get_buf(candidate) == buf then
         win = candidate
