@@ -33,7 +33,9 @@ function M.decode(data, options, buf)
   else
     if unicode.supports(encoding) then
       data = unicode.decode(data, encoding)
-    elseif encoding ~= "utf-8" and encoding ~= "utf8" then
+    elseif encoding == "utf-8" or encoding == "utf8" then
+      data = require("gin.stream_text").utf8(data)
+    else
       data = vim.fn.iconv(data, encoding, "utf-8")
     end
     bomb = data:sub(1, 3) == "\239\187\191"

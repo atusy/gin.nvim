@@ -3813,3 +3813,27 @@ The first Latin-1 automatic-view test failed before wiring the library. The
 31 of them plus existing fileformat/edit/buffer coverage, also passing. Formatting
 and diff checks pass. The full integrated suite passes all 3,767 cases across
 57 groups (`/tmp/gin-auto-encoding-full.log`).
+
+## Explicit UTF-8 replacement decoding
+
+Explicit `++enc=utf-8`/`utf8` previously left invalid byte sequences in buffer
+text. The read path now uses the complete UTF-8 replacement decoder already
+used by automatic fallback, before the existing BOM/line-format processing.
+The initial GinEdit regression failed by comparing raw 0xFF with U+FFFD; the
+terminal rendered both similarly, so the byte-level string assertion matters.
+
+Thirteen Deno-checked inputs cover invalid leads, incomplete prefixes, invalid
+continuations, surrogate encodings, overlong sequences, values above U+10FFFF,
+valid astral/boundary characters, literal U+FFFD, NUL and BOMs. Both commands and
+both UTF-8 spellings are tested while automatic candidates prefer Latin-1, plus
+addressed reads through both URI schemes. Source index bytes and destination
+encoding remain unchanged. All 54 new cases and the existing edit/buffer suites
+pass on Neovim 0.10.0 (122 cases total). Formatting and diff checks pass.
+
+The live pinned-upstream GinEdit probe now agrees on decoded bytes and encoding
+for invalid/truncated explicit UTF-8. It still reports endofline=true for these
+unterminated inputs, while Lua preserves endofline=false; this existing metadata
+difference is separate from decoding parity. UTF-16, legacy single-byte aliases
+and multibyte nonfatal decoding still need fixes. Full-suite validation for this
+UTF-8 change passes all 3,821 cases across 58 groups
+(`/tmp/gin-explicit-utf8-full.log`).
