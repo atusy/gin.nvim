@@ -2670,3 +2670,18 @@ also preserving a double-encoded remote repository name. The downloaded v1.0.1
 URL base formatter was executed separately and confirmed both remote escape
 expectations. Malformed escape sequences and other URL canonicalization details
 remain outside this check.
+
+## Browse remote URL component normalization
+
+Remote parsing now separates scheme, authority and repository path. HTTP(S)
+hostnames are case-normalized, userinfo is removed from the authority, and query
+and fragment components are excluded from the repository path. A trailing slash
+is removed before the `.git` suffix; URI schemes containing plus signs are also
+recognized. Existing scp-style remotes and percent-escape handling are retained.
+
+Seven cases failed before the change: uppercase HTTPS/hostname, trailing slash,
+query, fragment, userinfo plus query/fragment, an SSH port plus query/fragment,
+and git+ssh. Real repositories now produce the expected home and commit URLs
+without rewriting their fetch configuration. The expectations were checked by
+executing the v1.0.1 URL-base formatter with native URL parsing. This covers the
+listed representations; full WHATWG URL canonicalization is not claimed.

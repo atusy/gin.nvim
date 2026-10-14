@@ -46,17 +46,20 @@ function M.url(root, revision, options)
     or containing_remote(root, options.home and "HEAD" or revision)
     or "origin"
   local fetch = vim.trim(git.run({ "remote", "get-url", remote }, { cwd = root }).stdout)
-  local host, repository = fetch:match("^%w+://[^/]-@([^/]+)/(.+)$")
-  if not host then
-    host, repository = fetch:match("^%w+://([^/]+)/(.+)$")
-  end
-  if not host then
+  local scheme, authority, repository = fetch:match("^([%a][%w+.-]*)://([^/]+)/(.+)$")
+  local host
+  if scheme then
+    host = authority:gsub("^.*@", "")
+    if scheme:lower() == "http" or scheme:lower() == "https" then
+      host = host:lower()
+    end
+  else
     host, repository = fetch:match("^[^@]+@([^:]+):(.+)$")
   end
   assert(host and repository, "Unsupported remote URL: " .. fetch)
   -- A Git transport port is not part of the hosting-service or web hostname.
   host = host:gsub(":%d+$", "")
-  repository = repository:gsub("%.git$", ""):gsub("/$", "")
+  repository = repository:gsub("[?#].*$", ""):gsub("/$", ""):gsub("%.git$", "")
   local provider = aliases[host] or host
   assert(
     vim.tbl_contains({ "github.com", "gitlab.com", "bitbucket.org" }, provider),

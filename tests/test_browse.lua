@@ -116,6 +116,26 @@ T["browse still escapes literal percent bytes in Git filenames"] = function()
     "https://github.com/owner/repo%2520name/blob/main/sub/file%2520name.md"
   )
 end
+for _, remote in ipairs({
+  "HTTPS://GitHub.COM/owner/repo.git",
+  "https://github.com/owner/repo.git/",
+  "https://github.com/owner/repo.git?transport=value",
+  "https://github.com/owner/repo.git#anchor",
+  "https://reader:unused@github.com/owner/repo.git?transport=value#anchor",
+  "ssh://git@github.com:2222/owner/repo.git?transport=value#anchor",
+  "git+ssh://git@github.com/owner/repo.git",
+}) do
+  T["browse normalizes remote URL components " .. remote] = function()
+    H.git(root, "remote", "set-url", "origin", remote)
+    local base = "https://github.com/owner/repo"
+    MiniTest.expect.equality(require("gin.browse").url(root, "HEAD", { home = true }), base)
+    MiniTest.expect.equality(
+      require("gin.browse").url(root, "HEAD", { commit = true }),
+      base .. "/commit/" .. hash
+    )
+    MiniTest.expect.equality(H.git(root, "remote", "get-url", "origin"), remote .. "\n")
+  end
+end
 T["browse builds encoded file ranges and immutable permalinks"] = function()
   local url = require("gin.browse").url(
     root,
