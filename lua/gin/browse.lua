@@ -155,7 +155,8 @@ function M.command(opts)
       or (vim.bo.buftype == "" and vim.api.nvim_buf_get_name(0) or vim.fn.getcwd())
     path = vim.fn.fnamemodify(path, ":p"):gsub("/$", "")
     options.path = path == root and "." or path
-    if opts.range and opts.range > 0 then
+    -- The pinned command uses <count> (the last address), so zero means no range.
+    if opts.range and opts.range > 0 and opts.line2 ~= 0 then
       options.range = { opts.line1, opts.line2 }
     end
   end

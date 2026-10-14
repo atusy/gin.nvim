@@ -1589,3 +1589,9 @@ plugin defines no completion providers. This found and corrected two declaration
 differences: GinBuffer does not accept bang, and GinBrowse defaults its range to
 zero. This audit covers command declarations, not the command handlers' complete
 behavior or the Denops transport.
+
+GinBrowse's zero address now follows the pinned wrapper's `<count>` check:
+`:0GinBrowse` omits the line range instead of generating a `#L0` URL. A real
+repository test checks the yanked URL through the Ex command; the existing
+positive-range test continues to exercise line fragments. The command uses the
+last address to distinguish a zero range, matching the upstream wrapper.

@@ -54,6 +54,14 @@ T["GinBrowse no-browser yanks a current-file URL with a range"] = function()
     "https://github.com/owner/repo/blob/main/sub/space%20%23%20file.md?plain=1#L1-L2"
   )
 end
+T["GinBrowse zero address omits the line fragment"] = function()
+  vim.cmd.edit(vim.fn.fnameescape(root .. "/sub/space # file.md"))
+  vim.cmd("0GinBrowse --no-browser ++yank=a")
+  MiniTest.expect.equality(
+    vim.fn.getreg("a"),
+    "https://github.com/owner/repo/blob/main/sub/space%20%23%20file.md"
+  )
+end
 T["browse selects a containing remote and prefers origin when both contain"] = function()
   H.git(root, "remote", "add", "upstream", "https://github.com/upstream/repo.git")
   H.git(root, "update-ref", "refs/remotes/upstream/main", hash)
