@@ -1,10 +1,15 @@
+                                                                     *gin.txt*
+                                                                     *vim-gin*
 *gin.nvim*  Lua Git integration for Neovim
 
+                                                            *gin-introduction*
+                                                            *gin-requirements*
 Requires Neovim 0.10+ and Git. No Deno or Denops runtime is required.
 This rewrite is in progress. Its reference is vim-gin commit
 24cce091cfa32c013bc53cf4ff8f721d6690cf24. See MIGRATION.md in the repository
 for implemented behavior, validation evidence, and remaining compatibility work.
 
+                                                                *gin-contents*
 Contents ~
     Commands           |gin-commands|
     Arguments          |gin-arguments|
@@ -16,8 +21,11 @@ Contents ~
     Limitations        |gin-limitations|
 
 ==============================================================================
+                                                               *gin-interface*
+                                                                   *gin-usage*
 COMMANDS                                                        *gin-commands*
 
+                                                         *gin-commands-silent*
 :Gin [++wait] [++worktree={path}] {git-arguments}                       *:Gin*
     Execute Git asynchronously and display live output. :silent suppresses the
     final success message; progress remains visible as in the pinned upstream.
@@ -77,6 +85,9 @@ COMMANDS                                                        *gin-commands*
     updates the index while preserving the working file. Supports ++worktree,
     ++opener, ++enc and ++ff.
 
+                                                    *<Plug>(gin-diffjump-new)*
+                                                    *<Plug>(gin-diffjump-old)*
+                                                  *<Plug>(gin-diffjump-smart)*
 :GinDiff [options] [flags] [commitish] [-- paths...]               *:GinDiff*
     Display a comparison; --cached compares the index. Revision ranges are
     supported. Paths are repository-relative. <CR> jumps to the matching side
@@ -84,6 +95,10 @@ COMMANDS                                                        *gin-commands*
     zc/zo close/open file folds. Supports ++worktree, ++opener, ++processor,
     ++enc and ++ff.
 
+                                                         *<Plug>(gin-diffget)*
+                                                       *<Plug>(gin-diffget-l)*
+                                                       *<Plug>(gin-diffget-r)*
+                                                         *<Plug>(gin-diffput)*
 :GinPatch [++no-head] [++no-worktree] [path]                      *:GinPatch*
     Open HEAD, index and working-file diff panes, focusing the index. Path is
     relative to cwd and defaults to the current file. In the index pane, dol
@@ -132,6 +147,7 @@ COMMANDS                                                        *gin-commands*
 ==============================================================================
 ARGUMENTS                                                       *gin-arguments*
 
+                                                                *gin-worktree*
 Commands locate the repository from the current buffer, then cwd.
 ++worktree={path} explicitly selects a repository where supported.
 Use Vim command argument syntax: escape spaces with backslashes. %:p expands
@@ -145,6 +161,7 @@ Example: >
     :GinDiff --cached -- src/main.lua
     :GinBuffer ++opener=split log --oneline -10
 <
+                                                               *gin-functions*
 require('gin.util').reload([bufnr])                           *gin-util-reload*
 gin#util#reload([bufnr])                                     *gin#util#reload()*
     Schedule :edit for the specified buffer (default or 0: current buffer).
@@ -156,6 +173,7 @@ gin#util#reload([bufnr])                                     *gin#util#reload()*
     Listing views use this deferred reload after GinCommandPost; GinStatus also
     uses it after file writes. Hidden views refresh on their next entry.
 
+                                                           *gin-commands-file*
 require('gin.util').expand(expr)                              *gin-util-expand*
 gin#util#expand(expr)                                       *gin#util#expand()*
     Expand a Vim filename expression. For GinEdit, GinDiff and file-filtered
@@ -172,6 +190,17 @@ gin#util#worktree([path])                                 *gin#util#worktree()*
 
 The Vimscript utility functions delegate to the Lua implementations above.
 
+                                                         *gin-buffer-name-gin*
+                                                    *gin-buffer-name-ginblame*
+                                                   *gin-buffer-name-ginbranch*
+                                                     *gin-buffer-name-gindiff*
+                                                     *gin-buffer-name-ginedit*
+                                                      *gin-buffer-name-ginlog*
+                                                   *gin-buffer-name-ginreflog*
+                                                    *gin-buffer-name-ginstash*
+                                                   *gin-buffer-name-ginstatus*
+                                                      *gin-buffer-name-gintag*
+                                                            *gin-buffer-names*
 GinEdit also reads upstream buffer names using semicolon parameters, such as
 ginedit:///path/to/repo;commitish=HEAD#file.lua. Index URIs use an empty commitish
 and support normal write-back. New buffers continue using Lua's URI format.
@@ -185,6 +214,7 @@ GinTag accepts upstream display flags and its dollar-terminated pattern list.
 GinStash accepts upstream display and filtering flags from URI parameters.
 GinBranch accepts upstream flags and its dollar-terminated branch pattern list.
 
+                                                        *gin-commands-options*
 Supported openers are edit, split, vsplit, tabedit and pedit. Availability and
 pane layout depend on the command. ++enc/++encoding and ++ff/++fileformat select
 decoding on commands that support them. ++processor accepts a command with its
@@ -214,6 +244,7 @@ the destination buffer's encoding or fileformat. URI compatibility is still
 being audited; avoid constructing URIs by hand.
 
 ==============================================================================
+                                                                  *gin-action*
 ACTIONS                                                           *gin-actions*
 
 In status, branch, tag, log, reflog and stash views:
@@ -221,6 +252,13 @@ In status, branch, tag, log, reflog and stash views:
     .       Repeat the chosen action on the current selection.
     ?       Show action help.
 
+                                                   *<Plug>(gin-action-choice)*
+                                                     *<Plug>(gin-action-echo)*
+                                                     *<Plug>(gin-action-help)*
+                                                 *<Plug>(gin-action-help:all)*
+                                                   *<Plug>(gin-action-repeat)*
+                                                          *gin-action-mapping*
+                                                                *gin-mappings*
 Actions use <Plug>(gin-action-{name}) mappings. Available actions depend on the
 view. help:all lists detailed variants. echo prints selected candidate metadata
 as JSON. Normal mode selects the current line; visual mode selects a range.
@@ -237,10 +275,33 @@ The callback receives (buf, range). action.range() returns a copy of the current
 Treat other module internals as subject to change during the migration.
 
 ==============================================================================
+                                                               *gin-variables*
 CONFIGURATION                                               *gin-configuration*
 
 Set globals before opening a view. Argument settings are lists of strings:
+                                                   *g:gin_branch_default_args*
+                                                   *g:gin_browse_default_args*
+                                                 *g:gin_chaperon_default_args*
+                                                     *g:gin_diff_default_args*
+                                                     *g:gin_edit_default_args*
+                                                      *g:gin_log_default_args*
+                                                    *g:gin_patch_default_args*
+                                                   *g:gin_reflog_default_args*
+                                                    *g:gin_stash_default_args*
+                                                   *g:gin_status_default_args*
+                                                   *gin-commands-default-args*
     g:gin_{kind}_default_args       Used when no explicit arguments are given.
+                                                *g:gin_branch_persistent_args*
+                                                *g:gin_browse_persistent_args*
+                                              *g:gin_chaperon_persistent_args*
+                                                  *g:gin_diff_persistent_args*
+                                                  *g:gin_edit_persistent_args*
+                                                   *g:gin_log_persistent_args*
+                                                 *g:gin_patch_persistent_args*
+                                                *g:gin_reflog_persistent_args*
+                                                 *g:gin_stash_persistent_args*
+                                                *g:gin_status_persistent_args*
+                                                *gin-commands-persistent-args*
     g:gin_{kind}_persistent_args    Prepended to default or explicit arguments.
 
 Repeated ++option names are errors, including duplicates introduced by
@@ -255,16 +316,28 @@ Example: >lua
     vim.g.gin_status_default_args = { '--short' }
     vim.g.gin_browse_persistent_args = { '--no-browser' }
 <
+                                       *g:gin_branch_disable_default_mappings*
+                                       *g:gin_buffer_disable_default_mappings*
+                                     *g:gin_chaperon_disable_default_mappings*
+                                         *g:gin_diff_disable_default_mappings*
+                                          *g:gin_log_disable_default_mappings*
+                                        *g:gin_patch_disable_default_mappings*
+                                       *g:gin_reflog_disable_default_mappings*
+                                        *g:gin_stash_disable_default_mappings*
+                                       *g:gin_status_disable_default_mappings*
 Set g:gin_{kind}_disable_default_mappings = 1 to disable default keys for status,
 branch, tag, log, reflog, stash, diff, buffer, blame, patch or chaperon.
 Patch and Chaperon accept boolean or numeric flags; other types are rejected
 before opening panes. Disabling default keys retains the <Plug> actions.
 
                                              *g:gin_difffold_prefixes*
+                                                                *gin-difffold*
 Customize fold labels with added, deleted, modified and renamed keys. Missing
 keys use ASCII defaults. Presets are available in Lua: >lua
     vim.g.gin_difffold_prefixes = require('gin.difffold').presets.nerdfont
 <
+                                               *g:gin#difffold#prefixes_ascii*
+                                            *g:gin#difffold#prefixes_nerdfont*
 The plugin also publishes g:gin#difffold#prefixes_ascii and
 g:gin#difffold#prefixes_nerdfont. Vimscript references autoload these presets
 even before plugin initialization, so they can be used in startup settings.
@@ -274,10 +347,13 @@ gin#difffold#foldtext()                              *gin#difffold#foldtext()*
     Works with Gin diff views and ordinary unified diff buffers whose folds
     start at the ---/+++ file headers. Uses g:gin_difffold_prefixes above.
 
+                                           *g:gin_chaperon_supplement_disable*
 Set g:gin_chaperon_supplement_disable = 1 to hide supporting commit logs.
+                                            *g:gin_chaperon_supplement_height*
 g:gin_chaperon_supplement_height controls their height (default 10).
 Both supplement settings require numbers. Invalid types are rejected before
 opening panes or changing the conflict buffer.
+                                                        *g:gin_browse_aliases*
 g:gin_browse_aliases is a dictionary mapping custom hostnames to hosting services
 such as "github.com". All values must be strings. To set an explicit empty
 dictionary from Lua, use vim.empty_dict().
@@ -293,9 +369,13 @@ Gin commands open Git editor requests in a new tab. Buffer-local
 :Apply writes the file and continues Git; :Cancel rejects the request. Quitting
 asks whether to apply. Git credential prompts use masked Neovim input.
 
+                                                   *g:gin_proxy_editor_opener*
     g:gin_proxy_editor_opener            Choose another supported opener.
+                                                  *g:gin_proxy_disable_editor*
     g:gin_proxy_disable_editor           Set to 1 to retain Git's editor.
+                                                 *g:gin_proxy_disable_askpass*
     g:gin_proxy_disable_askpass          Set to 1 to retain Git's askpass.
+                                           *g:gin_proxy_apply_without_confirm*
     g:gin_proxy_apply_without_confirm    Set to 1 to apply on quit directly.
 
 The gin_proxy_disable_editor and gin_proxy_disable_askpass flags accept booleans
@@ -304,6 +384,7 @@ strings, lists and dictionaries are rejected before starting Git.
 
 With filetype plugins enabled, gitcommit/gitrebase buffers get :Accept (:wq)
 and :Cancel (:cq) aliases unless already defined. Disable them with
+                               *g:gin_proxy_disable_accept_and_cancel_aliases*
 g:gin_proxy_disable_accept_and_cancel_aliases = 1. Proxy buffers retain their
 request-specific :Apply and :Cancel. ++wait services proxy requests and keyboard
 input during editor requests.
@@ -354,12 +435,19 @@ queries retain their last published values; enable 'verbose' to see diagnostics.
 A subsequent refresh retries the query.
 
 Existing Vimscript statusline expressions can use these Lua-backed wrappers:
+                                                *gin#component#branch#ascii()*
+                                              *gin#component#branch#unicode()*
     gin#component#branch#ascii() / gin#component#branch#unicode()
+                                               *gin#component#traffic#ascii()*
+                                             *gin#component#traffic#unicode()*
     gin#component#traffic#ascii() / gin#component#traffic#unicode()
+                                               *gin#component#worktree#full()*
+                                               *gin#component#worktree#name()*
     gin#component#worktree#name() / gin#component#worktree#full()
 They share the same asynchronous cache and events as the Lua functions.
 
 ==============================================================================
+                                                                *gin-autocmds*
 EVENTS                                                             *gin-events*
 
                                                         *GinCommandPost*

@@ -4194,3 +4194,20 @@ The lookup check resolves real paths because macOS canonicalizes /tmp to
 /private/tmp. This documentation fix remains to be applied after the current
 runtime change is committed. Temporary preparation and verification:
 `/tmp/gin-help-tags.py`, `/tmp/gin-help-tag-check.lua`.
+
+
+### Restored upstream help lookups
+
+Applied the 88 missing compatibility tags to doc/gin.txt, next to the existing
+explanations for settings, functions, mappings and sections. All 115 tags from
+the pinned upstream now resolve to their exact tag line in the local help file.
+The check uses a byte-identical temporary copy with generated helptags, leaving
+no generated tags file in the repository. Current Neovim and Neovim 0.10.0 pass.
+The initial 0.10 run encountered an unrelated system vimdoc parser ABI mismatch;
+repeating with filetype plugins disabled isolates and verifies help navigation.
+Diff checks pass. This documentation-only change follows the 4,587-case runtime
+suite at 537faa6; the runtime suite was not repeated for tag additions.
+
+These aliases restore navigation, not proof of complete prose coverage. In
+particular, per-scheme buffer-name aliases currently lead to the shared URI
+compatibility explanation; a complete URI grammar/content audit remains open.
