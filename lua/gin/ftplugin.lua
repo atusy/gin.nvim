@@ -102,6 +102,11 @@ function M.jump_mappings(buf, kind)
 end
 
 function M.blame_mappings(target)
+  local previous = vim.b[target]._gin_blame_mappings
+  if previous == vim.bo[target].filetype then
+    return
+  end
+  vim.b[target]._gin_blame_mappings = vim.bo[target].filetype
   vim.keymap.set("n", "<Plug>(gin-blame-switch-commit)", function()
     require("gin.blame").switch_commit()
   end, { buffer = target, silent = true })
@@ -127,7 +132,7 @@ function M.blame_mappings(target)
       vim.keymap.set("n", key, plug, { buffer = target, remap = true, silent = true })
     end
   end
-  local undo = "setlocal winfixbuf<"
+  local undo = "unlet! b:_gin_blame_mappings| setlocal winfixbuf<"
   for _, key in ipairs({
     "<CR>",
     "<C-O>",

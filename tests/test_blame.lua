@@ -117,6 +117,38 @@ T["changing blame filetypes removes their mappings and window pinning"] = functi
     MiniTest.expect.equality(vim.wo.winfixbuf, vim.go.winfixbuf)
   end
 end
+T["blame content refresh preserves remapped and removed navigation keys"] = function()
+  vim.cmd("GinBlame file.lua")
+  local nav = vim.api.nvim_get_current_buf()
+  local file = vim.b[nav].gin_blame_file_bufnr
+  for _, buf in ipairs({ nav, file }) do
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    local filetype = vim.bo[buf].filetype
+    vim.keymap.set("n", "<CR>", "user-blame-enter", { buffer = buf })
+    vim.keymap.del("n", "<C-O>", { buffer = buf })
+    vim.keymap.set("n", "<Plug>(gin-blame-switch-commit)", "user-blame-switch", { buffer = buf })
+    if buf == nav then
+      require("gin.blame").read_nav(buf)
+    else
+      require("gin.blame").read(buf, vim.api.nvim_buf_get_name(buf))
+    end
+    H.drain()
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), "user-blame-enter")
+    MiniTest.expect.equality(vim.fn.maparg("<C-O>", "n"), "")
+    MiniTest.expect.equality(
+      vim.fn.maparg("<Plug>(gin-blame-switch-commit)", "n"),
+      "user-blame-switch"
+    )
+    vim.bo[buf].filetype = "text"
+    vim.bo[buf].filetype = filetype
+    vim.cmd.edit()
+    H.drain()
+    vim.api.nvim_set_current_win(vim.fn.bufwinid(buf))
+    MiniTest.expect.equality(vim.fn.maparg("<CR>", "n"), "<Plug>(gin-blame-switch-commit)")
+    MiniTest.expect.equality(vim.fn.maparg("<C-O>", "n"), "<Plug>(gin-blame-navigate-older)")
+  end
+end
 T["legacy blame paths survive reload and history navigation"] = function()
   local path = "sub/space + 日本語$.lua"
   H.git(root, "mv", "sub/file.lua", path)

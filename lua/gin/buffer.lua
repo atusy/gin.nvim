@@ -21,7 +21,9 @@ function M.replace(buf, lines, root, filetype)
   vim.bo[buf].bufhidden = "unload"
   vim.bo[buf].swapfile = false
   vim.b[buf].gin_worktree = root
-  vim.bo[buf].filetype = filetype
+  if vim.bo[buf].filetype ~= filetype then
+    vim.bo[buf].filetype = filetype
+  end
 end
 
 function M.lines(output)

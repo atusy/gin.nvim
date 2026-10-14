@@ -1644,3 +1644,12 @@ compound-filetype support. A FileType lifecycle test checks both entrypoints
 and cleanup; the runtime guard matrix automatically includes both new files.
 The read path still reinstalls mappings, so user overrides across blame reloads
 and plugin-disabled initialization remain separate lifecycle audit items.
+
+Blame content refresh now preserves remapped or removed navigation keys for the
+same filetype. Buffer replacement avoids redundantly setting an unchanged
+filetype, and blame mapping initialization is guarded until undo_ftplugin resets
+its marker. Both navigation and compound file panes are covered with real Git
+content, custom Enter/Plug mappings, removed older-history keys and FileType
+exit/re-entry. This is distinct from `:edit`, where Neovim itself reruns the
+ftplugin lifecycle and may restore defaults. The test fails against the previous
+commit and passes with the change; plugin-disabled setup remains under audit.
