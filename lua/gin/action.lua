@@ -234,10 +234,11 @@ function M.setup(buf, gather, target_field)
   end
   M.define(buf, "repeat", function(target, range)
     local name = vim.b[target].denops_action_previous
-    if not name or name == "" then
+    if not name or name == vim.NIL or name == 0 or name == "" then
       vim.api.nvim_echo({ { "[gin] Nothing to repeat", "None" } }, false, {})
       return
     end
+    assert(type(name) == "string", "b:denops_action_previous must be a string")
     M.call(target, name, range)
   end)
 end

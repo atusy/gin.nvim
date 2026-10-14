@@ -1885,3 +1885,10 @@ The regression test accepts an undefined choice, checks that it is remembered,
 repeats it, and verifies unchanged buffer contents and restored action range.
 A native execution of the pinned feedkeys expression also leaves the buffer
 unchanged. Existing callback and mapped-alias dispatch tests remain in place.
+
+The repeat action now treats false, zero, null and an empty saved name as
+"Nothing to repeat", matching the pinned core's falsy-value check. Other
+non-string values are rejected before dispatch with a buffer-variable type
+error. Tests verify that numeric zero cannot dispatch the action named "0",
+while the string "0" remains a valid repeat target, and cover boolean/list
+validation as well as null handling.

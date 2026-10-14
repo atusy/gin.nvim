@@ -66,6 +66,42 @@ T["undefined action choices and repeats follow unmapped Plug behavior"] = functi
   )
   MiniTest.expect.equality(action.range(), { 1, 1 })
 end
+T["repeat distinguishes empty saved values from invalid action names"] = function()
+  local action = require("gin.action")
+  local buf = vim.api.nvim_get_current_buf()
+  action.setup(buf)
+  local calls = 0
+  for _, name in ipairs({ "0", "1" }) do
+    action.define(buf, name, function()
+      calls = calls + 1
+    end)
+  end
+  local echo, output = vim.api.nvim_echo, {}
+  vim.api.nvim_echo = function(chunks)
+    output[#output + 1] = chunks[1][1]
+  end
+  local ok, err = pcall(function()
+    for i, value in ipairs({ false, 0, vim.NIL, "" }) do
+      vim.b.denops_action_previous = value
+      action.call(buf, "repeat", { 1, 1 })
+      MiniTest.expect.equality(#output, i)
+      MiniTest.expect.equality(output[i], "[gin] Nothing to repeat")
+    end
+    MiniTest.expect.equality(#output, 4)
+    for _, value in ipairs({ 1, true, {}, { "0" } }) do
+      vim.b.denops_action_previous = value
+      MiniTest.expect.error(function()
+        action.call(buf, "repeat", { 1, 1 })
+      end, "b:denops_action_previous must be a string")
+    end
+    MiniTest.expect.equality(calls, 0)
+    vim.b.denops_action_previous = "0"
+    action.call(buf, "repeat", { 1, 1 })
+    MiniTest.expect.equality(calls, 1)
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+end
 T["aliases dispatch the target and help shows user mappings"] = function()
   local action = require("gin.action")
   local buf = vim.api.nvim_get_current_buf()
