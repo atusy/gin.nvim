@@ -52,8 +52,7 @@ function M.open(root, path, options)
   local disabled = mapping.disabled("chaperon")
   local edit = require("gin.edit")
   path = edit.path(root, path)
-  local worktree = require("gin.buffer").open(root .. "/" .. path, options)
-  local worktree_win = vim.fn.bufwinid(worktree)
+  local worktree, worktree_win = require("gin.buffer").open(root .. "/" .. path, options)
   local windows = { worktree_win }
   local theirs, ours
   if not options["no-theirs"] then

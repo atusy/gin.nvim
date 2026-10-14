@@ -30,6 +30,7 @@ local T = MiniTest.new_set({
     post_case = function()
       vim.cmd("silent! tabonly!")
       vim.cmd("silent! only!")
+      vim.wo.previewwindow = false
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(old_cwd)
       H.cleanup(root)
@@ -206,5 +207,30 @@ T["GinChaperon defaults to current file and can omit theirs"] = function()
     vim.api.nvim_buf_get_lines(0, 0, -1, false),
     { "before", "ours", "after" }
   )
+end
+for _, opener in ipairs({ "split", "vsplit", "pedit" }) do
+  for _, sides in ipairs({ false, true }) do
+    T[opener .. " uses the opened conflict window, sides=" .. tostring(sides)] = function()
+      vim.cmd.edit("file")
+      local original = vim.api.nvim_get_current_win()
+      local file = vim.api.nvim_get_current_buf()
+      vim.cmd(
+        "botright GinChaperon ++opener="
+          .. opener
+          .. (sides and " file" or " ++no-ours ++no-theirs file")
+      )
+      MiniTest.expect.equality(#vim.api.nvim_tabpage_list_wins(0), sides and 4 or 2)
+      MiniTest.expect.equality(vim.api.nvim_get_current_buf(), file)
+      MiniTest.expect.equality(vim.api.nvim_get_current_win() ~= original, true)
+      MiniTest.expect.equality(vim.wo[original].diff, false)
+      MiniTest.expect.equality(vim.wo.diff, true)
+      MiniTest.expect.equality(vim.wo.previewwindow, opener == "pedit")
+      MiniTest.expect.equality(
+        vim.api.nvim_buf_get_lines(file, 0, -1, false),
+        { "before", "after" }
+      )
+      MiniTest.expect.equality(H.git(root, "ls-files", "--unmerged") ~= "", true)
+    end
+  end
 end
 return T

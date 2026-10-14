@@ -2910,3 +2910,18 @@ ordinary openers return the window they entered. Patch uses that result instead
 of reconstructing it from the buffer. Tests cover both creation and reuse of a
 preview window while a normal window already displays the same index, preserving
 the original window's non-diff state. Existing split/vsplit tests remain in place.
+
+## Chaperon opener window identity
+
+The same buffer-to-window lookup also affected Chaperon when the working file
+was already visible. Chaperon now consumes the shared opener's returned window
+ID, matching the pinned command's infoWorktree.winid flow. Horizontal split,
+vertical split and preview tests reproduce the old focus error and verify the
+newly opened conflict window is selected and diff-enabled while the original
+window stays outside diff mode.
+
+Each opener is exercised with both side panes present and with both omitted.
+The fixtures also verify conflict markers/content are stripped from the shared
+working buffer and Git's index remains unmerged. As with Patch, test cleanup
+clears previewwindow after retaining a single window, preventing preview state
+from leaking into later cases.
