@@ -2069,3 +2069,34 @@ Removing the unchanged-value guard makes this new regression fail, with the
 other component cases still passing. This verifies change-only notification and
 publication before callbacks; it does not establish upstream TTL-cache parity
 or behavior of overlapping notification timers under every scheduling order.
+
+## Public autoload API inventory
+
+The pinned `autoload/gin` tree defines 13 non-internal public functions. The
+following table accounts for every declaration, its Lua destination and existing
+behavioral evidence. `tests/test_public_api.lua` discovers the pinned declarations
+and compares required/variadic arity with the functions actually loaded into
+Neovim. Temporarily adding a required argument to the echo write wrapper makes
+that audit fail. This is a declaration-compatibility check, not a substitute for
+the behavior tests listed below; `gin#internal#*` and script-local functions are
+excluded from this public API inventory.
+
+| Public function | Lua destination | Behavioral tests |
+| --- | --- | --- |
+| `gin#util#reload(...)` | `gin.util.reload` | `test_util_reload.lua`: current, explicit, hidden, modified and wiped buffers |
+| `gin#util#expand(expr)` | `gin.util.expand` | `test_util.lua`: filename modifiers, Gin URIs and literal path contents |
+| `gin#util#worktree(...)` | `gin.util.worktree` | `test_worktree.lua`: explicit and current context, errors, links and worktrees |
+| `gin#difffold#foldtext()` | `gin.difffold.text` | `test_diff.lua`: real folds, prefixes and header parsing |
+| `gin#component#branch#ascii()` | `gin.component.branch.ascii` | `test_component.lua`: tracking, detached/unborn branches, refresh and errors |
+| `gin#component#branch#unicode()` | `gin.component.branch.unicode` | `test_component.lua`: Unicode upstream arrow and legacy wrappers |
+| `gin#component#traffic#ascii()` | `gin.component.traffic.ascii` | `test_component.lua`: diverged, one-sided, synchronized and error states |
+| `gin#component#traffic#unicode()` | `gin.component.traffic.unicode` | `test_component.lua`: both arrows and one-sided counts |
+| `gin#component#worktree#full()` | `gin.component.worktree.full` | `test_component.lua`, `test_worktree.lua`: repository context and canonical paths |
+| `gin#component#worktree#name()` | `gin.component.worktree.name` | `test_component.lua`: basename and trailing spaces |
+| `gin#indicator#echo#open(id)` | `gin.indicator.echo.open` | `test_indicator.lua`: legacy/native lifecycle and shared display settings |
+| `gin#indicator#echo#write(id, chunk)` | `gin.indicator.echo.write` | `test_indicator.lua`: synchronous line arrays and unopened handles |
+| `gin#indicator#echo#close(id)` | `gin.indicator.echo.close` | `test_indicator.lua`: restoration after the last active indicator closes |
+
+All 13 declarations have a Lua-backed entrypoint and behavioral coverage in the
+listed scopes. This inventory does not close the broader command, configuration,
+URI or exact asynchronous cache compatibility audits.
