@@ -13,7 +13,8 @@ scope, not proof of complete upstream parity.
 - [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
 - [x] GinBranch, GinTag: parsed views and ref actions (functional scope audited below).
-- [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
+- [ ] GinLog, GinReflog: parsed views, navigation and commit actions.
+- [x] GinStash: parsed view and stash actions (functional scope audited below).
 - [x] GinEdit: revision and index buffers with write-back; working files via edit actions (functional scope audited below).
 - [x] GinDiff: revision selection, read and unified-diff navigation/folding (functional scope audited below).
 - [x] GinPatch: staging/unstaging partial changes (functional scope audited below).
@@ -208,8 +209,9 @@ with separate default/persistent arguments and mapping settings. Its remaining
 commit-action, format and UI audits follow GinLog.
 
 GinStash now lists saved changes with apply/pop/drop, show/yank and automatic
-refresh. Browse/echo, custom formatting, emoji/encoding and combined-diff show
-navigation still need implementation or compatibility checks.
+refresh. Its functional audit covers browse/echo, selected refs, custom formatting
+and emoji/encoding below. Combined-diff show navigation remains outside the
+ordinary unified-diff navigation supported by the pinned parser.
 
 Shared echo actions now expose each implemented view’s selected candidate
 metadata as compact JSON. Upstream uses indented JSON; exact field/display
@@ -3297,4 +3299,33 @@ Validation: all 105 browse/tag/show cases pass on minimum Neovim 0.10.0. The
 preceding worktree-boundary audit also verified all 68 branch/tag cases there.
 
 The integrated full suite passes all 1,277 cases in 48 groups; `make check`
+also passes.
+
+
+## Stash functional completion audit
+
+Pinned `command/stash/edit.ts` initializes browse, echo, show, apply, drop, pop
+and stash-reference yank actions. `action/stash_{apply,pop,drop}.ts` deliberately
+select only the first candidate, including a multi-line selection. The Lua
+implementation in `lua/gin/stash.lua` follows that rule; it does not copy the
+multi-delete behavior of Branch or Tag.
+
+| Functional scope | Evidence |
+| --- | --- |
+| Listing and refs | `test_stash.lua` checks native/legacy flag grouping, filtering, reload, custom and multiline/NUL formats, encoding and emojify while retaining the selected stash reference. |
+| Apply/pop variants | Four new real Git cases store different index and working contents for the same file and select all three visible stashes. Ordinary apply/pop restores working content with the base index; `:index` restores the saved index too. Apply retains all stash hashes; pop removes only the first selected stash and retains the other hashes in order. Refreshed row counts are checked. |
+| Drop and failure | Existing cases drop only the first selected stash despite index shifting, and verify that a conflicted pop retains all stash hashes while exposing unmerged index entries. |
+| Browse/echo/yank | Echo exposes stashRef/index/commit fields; multiline yank returns the selected reflog reference. A new no-browser case generates the commit URL for an older selected stash despite an opaque display format. |
+| Show | Selected stash show verifies its saved URI target and combined-diff content. `test_show.lua` exercises all emojify openers and reload for GinStash. |
+| Shared interaction/read/events | Per-view Visual choice/repeat, addressed legacy URI insertion and successful/suppressed action completion are covered by existing fixtures. |
+
+This establishes the functional stash operations, not navigation within all
+Git show output forms. Stash show normally emits combined hunks, which the
+pinned diffjump parser does not support; displaying them is covered separately
+from ordinary unified-diff navigation. The broader command/options/API audit,
+including all pretty formats and parser-expression compatibility, remains open.
+
+Validation: all 17 stash cases pass on minimum Neovim 0.10.0.
+
+The integrated full suite passes all 1,282 cases in 48 groups; `make check`
 also passes.

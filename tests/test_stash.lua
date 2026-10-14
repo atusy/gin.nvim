@@ -203,4 +203,43 @@ T["multiline stash formats retain metadata through embedded NUL bytes"] = functi
   MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "older" })
   MiniTest.expect.equality(H.git(root, "stash", "list", "--format=%s"), "On main: newer\n")
 end
+for _, variant in ipairs({ "apply", "apply:index", "pop", "pop:index" }) do
+  T["stash " .. variant .. " restores staged and unstaged content from only the first selection"] = function()
+    vim.fn.writefile({ "staged" }, root .. "/file")
+    H.git(root, "add", "file")
+    vim.fn.writefile({ "working" }, root .. "/file")
+    H.git(root, "stash", "push", "-m", "split state")
+    local before = H.git(root, "stash", "list", "--format=%H")
+    local older = H.git(root, "stash", "list", "--format=%H", "--skip=1")
+    vim.cmd.GinStash()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), variant, { 1, 3 })
+    H.drain()
+    MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "working" })
+    MiniTest.expect.equality(
+      H.git(root, "show", ":file"),
+      variant:find(":index", 1, true) and "staged\n" or "base\n"
+    )
+    MiniTest.expect.equality(
+      H.git(root, "stash", "list", "--format=%H"),
+      variant:match("^pop") and older or before
+    )
+    MiniTest.expect.equality(#vim.b.gin_stashes, variant:match("^pop") and 2 or 3)
+  end
+end
+T["stash browse resolves the selected reflog entry independently of display"] = function()
+  H.git(root, "remote", "add", "origin", "git@github.com:owner/repo.git")
+  local selected = vim.trim(H.git(root, "rev-parse", "stash@{1}"))
+  vim.cmd("GinStash --format=display-only")
+  local previous = vim.g.gin_browse_persistent_args
+  vim.g.gin_browse_persistent_args = { "--no-browser" }
+  local ok, err = pcall(function()
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:commit:yank", { 2, 2 })
+    MiniTest.expect.equality(
+      vim.fn.getreg('"'),
+      "https://github.com/owner/repo/commit/" .. selected
+    )
+  end)
+  vim.g.gin_browse_persistent_args = previous
+  assert(ok, err)
+end
 return T
