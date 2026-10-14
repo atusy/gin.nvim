@@ -73,4 +73,8 @@ T["EUC-JP decodes JIS text, halfwidth kana and supplementary characters"] = func
   local bytes = string.char(198, 252, 203, 220, 184, 236, 142, 166, 143, 162, 175)
   MiniTest.expect.equality(require("gin.encoding").decode(bytes, "euc-jp"), "日本語ｦ˘")
 end
+T["ISO-2022-JP switches between Roman, kana, JIS and ASCII"] = function()
+  local bytes = string.char(27, 40, 74, 92, 126, 27, 40, 73, 38, 27, 36, 66, 36, 34, 27, 40, 66, 65)
+  MiniTest.expect.equality(require("gin.encoding").decode(bytes, "iso-2022-jp"), "¥‾ｦあA")
+end
 return T

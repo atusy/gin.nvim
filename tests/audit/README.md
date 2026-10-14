@@ -222,14 +222,14 @@ vim-gin's locked HEAD and records the SHA256 of the vendored WHATWG
 `encodings.json` label registry. Generated Lua headers record the Deno version.
 
 The normal `tests/test_encoding.lua` suite compares strict decoding with actual
-Deno TextDecoder results for 36 Unicode/single-byte/Shift_JIS/Big5/EUC-KR/EUC-JP families. Each single-byte
+Deno TextDecoder results for 37 supported encoding families. Each single-byte
 family includes all 256 byte values; Unicode fixtures include BOMs, opposite
 byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
 include ASCII case and whitespace normalization. Separate cases cover ordered
 candidate selection, fallback UTF-8 replacement and BOM metadata.
 
-This is preparatory library coverage, not complete encoding parity. The three remaining
-multibyte families (GBK, gb18030 and ISO-2022-JP)
+This is preparatory library coverage, not complete encoding parity. The two remaining
+multibyte families (GBK and gb18030)
 are registered but have no decoder yet. The library is not connected to buffer
 encoding selection until those implementations are available. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
@@ -259,6 +259,15 @@ single byte, aliases, 200 deterministic longer inputs mixing planes/kana/ASCII,
 and explicit incomplete sequences. Separate candidate tests preserve supplementary
 characters and reject truncated triples. JIS0208 (7,336 mappings) and JIS0212
 (6,067 mappings) use independent generated codepoint tables. The generator also
-checks every mapped JIS0208 pair against ISO-2022-JP; that codec will reuse this
-table when its state machine is integrated. EUC-JP halfwidth kana is algorithmic.
+checks every mapped JIS0208 pair against ISO-2022-JP; the ISO-2022-JP decoder reuses this
+table. EUC-JP halfwidth kana is algorithmic.
 These additions do not yet change the view readers' encoding selection.
+
+ISO-2022-JP has full matrices for every byte pair in JIS mode and every pair
+following ESC. Its common fixture includes every byte in each of the five
+supported escape-designated modes, transitions with/without intervening output,
+and deterministic longer mixed input. `tests/test_iso_2022_jp.lua` also verifies
+adjacent-escape rejection, truncated escapes, state isolation and candidate order.
+The strict decoder fails immediately on malformed input; explicit nonfatal
+TextDecoder behavior remains a separate compatibility task. Runtime shares the
+JIS0208 table with EUC-JP and maintains all mode state within one decode call.

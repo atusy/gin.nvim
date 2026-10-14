@@ -3737,3 +3737,24 @@ check, `make check` and `git diff --check` pass. The full suite passes all 2,695
 cases across 54 groups (`/tmp/gin-euc-jp-full.log`).
 GBK, gb18030 and ISO-2022-JP remain unimplemented in production, and automatic
 view encoding selection remains unwired.
+
+## Strict ISO-2022-JP candidates
+
+The ISO-2022-JP decoder now handles ASCII, Roman, halfwidth katakana and JIS0208
+modes using per-call state and the shared JIS0208 table. Invalid escapes, adjacent
+escape designations without intervening output, incomplete pairs and invalid
+mode-specific bytes fail the candidate. A mixed Roman/kana/JIS/ASCII test first
+failed with the expected missing-decoder error before implementation.
+
+The normal mini.nvim suite checks all pairs following ESC and all pairs in JIS
+mode against Deno. The common fixture includes every byte in each designated
+mode, escape transitions and deterministic longer inputs. Separate cases ensure
+state does not survive a decode call (including failures), and preserve candidate
+order: UTF-8 first accepts the escape bytes literally, while ISO-2022-JP first
+interprets them. A temporary shared-table probe passed 153,716 Deno comparisons.
+
+All 600 encoding/ISO-2022-JP cases pass on current Neovim and Neovim 0.10.0.
+Oracle generation, `make check` and `git diff --check` pass. The full suite
+passes all 3,214 cases across 55 groups (`/tmp/gin-iso-2022-jp-full.log`).
+GBK/gb18030 and view-level automatic encoding selection remain;
+explicit nonfatal decoding still needs a separate compatibility audit.

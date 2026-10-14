@@ -28,6 +28,45 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     const bytes = Array.from({ length: 256 }, (_, byte) => decode(canonical, [byte]));
     single += `[${JSON.stringify(canonical)}] = {${bytes.slice(128).map(value => value.error ? 'false' : value.text.codePointAt(0)).join(',')}},\n`;
     records.push({ encoding: canonical, aliases: encoding.labels, cases: bytes.map((value, byte) => ({ bytes: [byte], ...value })) });
+  } else if (canonical === 'iso-2022-jp') {
+    const modes=[[27,40,66],[27,40,74],[27,40,73],[27,36,64],[27,36,66]];
+    const cases=[],rows=[],escapes=[],valid=[];
+    for(let first=0;first<256;first++) {
+      cases.push({bytes:[first],...decode(canonical,[first])});
+      for(const mode of modes) {
+        const bytes=[...mode,first];cases.push({bytes,...decode(canonical,bytes)});
+      }
+      const row=[],escapeRow=[];
+      for(let second=0;second<256;second++) {
+        const result=decode(canonical,[27,36,66,first,second]);
+        const escape=decode(canonical,[27,first,second]);
+        row.push(result.error?false:result.text);
+        escapeRow.push(escape.error?false:escape.text);
+        if(!result.error)valid.push([first,second]);
+      }
+      rows.push(row);escapes.push(escapeRow);
+    }
+    for(const one of modes)for(const two of modes)for(const middle of [[],[65],[36,34],[92]]) {
+      const bytes=[...one,...middle,...two];cases.push({bytes,...decode(canonical,bytes)});
+    }
+    let seed=0x12345678;
+    const randomByte=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed>>>24;};
+    for(let n=0;n<100;n++) {
+      const arbitrary=Array.from({length:3+n%62},randomByte);
+      cases.push({bytes:arbitrary,...decode(canonical,arbitrary)});
+      const bytes=[];
+      for(let i=0;i<20;i++) {
+        const mode=randomByte()%5;bytes.push(...modes[mode]);
+        if(mode===0)bytes.push(65);
+        else if(mode===1)bytes.push(92,126);
+        else if(mode===2)bytes.push(33+randomByte()%63);
+        else bytes.push(...valid[(randomByte()*256+randomByte())%valid.length]);
+      }
+      cases.push({bytes,...decode(canonical,bytes)});
+    }
+    for(const bytes of [[],[27],[27,40],[27,36],[27,40,66],[27,36,66],[27,38,64,27,36,66]])cases.push({bytes,...decode(canonical,bytes)});
+    additionalOutputs['tests/audit/iso-2022-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"escapes":[\n'+escapes.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
+    records.push({encoding:canonical,aliases:encoding.labels,cases});
   } else if (canonical === 'euc-jp') {
     const cases=Array.from({length:256},(_,byte)=>({bytes:[byte],...decode(canonical,[byte])}));
     const rows=[],triples=[],valid=[];
