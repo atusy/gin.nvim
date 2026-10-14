@@ -222,14 +222,14 @@ vim-gin's locked HEAD and records the SHA256 of the vendored WHATWG
 `encodings.json` label registry. Generated Lua headers record the Deno version.
 
 The normal `tests/test_encoding.lua` suite compares strict decoding with actual
-Deno TextDecoder results for 33 Unicode/single-byte/Shift_JIS families. Each single-byte
+Deno TextDecoder results for 35 Unicode/single-byte/Shift_JIS/Big5/EUC-KR families. Each single-byte
 family includes all 256 byte values; Unicode fixtures include BOMs, opposite
 byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
 include ASCII case and whitespace normalization. Separate cases cover ordered
 candidate selection, fallback UTF-8 replacement and BOM metadata.
 
-This is preparatory library coverage, not complete encoding parity. The six remaining
-multibyte families (GBK, gb18030, Big5, EUC-JP, ISO-2022-JP and EUC-KR)
+This is preparatory library coverage, not complete encoding parity. The four remaining
+multibyte families (GBK, gb18030, EUC-JP and ISO-2022-JP)
 are registered but have no decoder yet. The library is not connected to buffer
 encoding selection until those implementations are available. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
@@ -243,3 +243,12 @@ text, halfwidth kana, private-use mappings, truncation and 200 deterministic
 longer inputs. Candidate tests check successful selection and fallback after an
 incomplete lead byte. The production mapping contains 9,604 valid lead/trail
 pairs and is loaded only when Shift_JIS is requested. Runtime requires only Lua.
+
+Big5 and EUC-KR have separate full byte-pair matrices, checked by
+`tests/test_double_byte_encoding.lua`, and every single byte plus 200 deterministic
+longer inputs in the common encoding fixture. Big5's four two-codepoint mappings
+are preserved as strings, with an explicit concatenated regression. Big5 has
+18,594 mapped pairs; EUC-KR has 17,048. Both use lazily loaded tables indexed by
+lead and trail byte. Candidate tests cover Korean text, expanding Big5 output
+and fallback after incomplete leads. These decoders are still preparatory and
+are not yet used by the view readers.

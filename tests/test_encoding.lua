@@ -66,4 +66,7 @@ T["Shift_JIS decodes Japanese text and halfwidth kana"] = function()
     "日本語ｦ"
   )
 end
+T["Big5 preserves two-codepoint mappings"] = function()
+  MiniTest.expect.equality(require("gin.encoding").decode(string.char(136, 98), "big5"), "Ê̄")
+end
 return T

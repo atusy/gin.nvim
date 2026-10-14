@@ -21,6 +21,10 @@ function M.decode(data, label)
   if encoding == "shift_jis" then
     return require("gin.encoding.shift_jis")(data), false
   end
+  if encoding == "big5" or encoding == "euc-kr" then
+    local map = require("gin.encoding." .. encoding:gsub("-", "_") .. "_map")
+    return require("gin.encoding.double_byte")(data, map), false
+  end
   local map = assert(
     require("gin.encoding.single_byte")[encoding],
     "Encoding decoder not implemented: " .. encoding

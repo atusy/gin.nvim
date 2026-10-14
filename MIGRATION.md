@@ -3697,3 +3697,23 @@ Six multibyte families remain, and the new library is still not wired into views
 Full-suite validation passes all 1,657 mini.test cases across 52 groups
 (`/tmp/gin-shift-jis-full.log`). The oracle regeneration check, `make check`
 and `git diff --check` also pass.
+
+## Strict Big5 and EUC-KR candidates
+
+Big5 and EUC-KR now use a shared strict two-byte decoder with separate lazy
+mapping tables. ASCII and NUL remain single-byte text; invalid pairs and
+incomplete leads fail the candidate. Big5's four mappings that produce two
+Unicode code points retain both characters. The explicit Big5 expansion test
+first failed with the missing-decoder error before implementation.
+
+The generator records actual fatal Deno TextDecoder results for every single
+byte, all 65,536 byte pairs per encoding and 200 deterministic longer inputs per
+encoding. Production mappings are split into lead-byte rows, preserving exact
+UTF-8 strings and avoiding a single large flat constant table. Candidate tests
+cover Korean text, all four expanding Big5 pairs and incomplete-input fallback.
+
+All 594 encoding and Big5/EUC-KR cases pass on current Neovim and Neovim 0.10.0.
+The generation check, `make check` and `git diff --check` pass. The full suite
+passes 2,178 cases across 53 groups (`/tmp/gin-double-byte-full.log`).
+GBK, gb18030, EUC-JP and ISO-2022-JP remain unimplemented
+in the production library, and automatic view encoding selection is still unwired.
