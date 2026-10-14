@@ -69,4 +69,8 @@ end
 T["Big5 preserves two-codepoint mappings"] = function()
   MiniTest.expect.equality(require("gin.encoding").decode(string.char(136, 98), "big5"), "Ê̄")
 end
+T["EUC-JP decodes JIS text, halfwidth kana and supplementary characters"] = function()
+  local bytes = string.char(198, 252, 203, 220, 184, 236, 142, 166, 143, 162, 175)
+  MiniTest.expect.equality(require("gin.encoding").decode(bytes, "euc-jp"), "日本語ｦ˘")
+end
 return T

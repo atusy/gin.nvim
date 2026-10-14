@@ -222,14 +222,14 @@ vim-gin's locked HEAD and records the SHA256 of the vendored WHATWG
 `encodings.json` label registry. Generated Lua headers record the Deno version.
 
 The normal `tests/test_encoding.lua` suite compares strict decoding with actual
-Deno TextDecoder results for 35 Unicode/single-byte/Shift_JIS/Big5/EUC-KR families. Each single-byte
+Deno TextDecoder results for 36 Unicode/single-byte/Shift_JIS/Big5/EUC-KR/EUC-JP families. Each single-byte
 family includes all 256 byte values; Unicode fixtures include BOMs, opposite
 byte order, surrogate pairs, incomplete units and invalid UTF-8. Alias tests
 include ASCII case and whitespace normalization. Separate cases cover ordered
 candidate selection, fallback UTF-8 replacement and BOM metadata.
 
-This is preparatory library coverage, not complete encoding parity. The four remaining
-multibyte families (GBK, gb18030, EUC-JP and ISO-2022-JP)
+This is preparatory library coverage, not complete encoding parity. The three remaining
+multibyte families (GBK, gb18030 and ISO-2022-JP)
 are registered but have no decoder yet. The library is not connected to buffer
 encoding selection until those implementations are available. The Unicode corpus
 is finite; single-byte expected values and production mappings share the Deno
@@ -252,3 +252,13 @@ are preserved as strings, with an explicit concatenated regression. Big5 has
 lead and trail byte. Candidate tests cover Korean text, expanding Big5 output
 and fallback after incomplete leads. These decoders are still preparatory and
 are not yet used by the view readers.
+
+EUC-JP has matrices for all byte pairs and all triples starting with 0x8F,
+exercised by `tests/test_euc_jp.lua`. Its ordinary encoding fixture covers every
+single byte, aliases, 200 deterministic longer inputs mixing planes/kana/ASCII,
+and explicit incomplete sequences. Separate candidate tests preserve supplementary
+characters and reject truncated triples. JIS0208 (7,336 mappings) and JIS0212
+(6,067 mappings) use independent generated codepoint tables. The generator also
+checks every mapped JIS0208 pair against ISO-2022-JP; that codec will reuse this
+table when its state machine is integrated. EUC-JP halfwidth kana is algorithmic.
+These additions do not yet change the view readers' encoding selection.

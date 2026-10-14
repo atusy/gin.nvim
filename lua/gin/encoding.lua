@@ -18,6 +18,9 @@ function M.decode(data, label)
   elseif encoding == "utf-16le" or encoding == "utf-16be" then
     return remove_bom(require("gin.unicode").decode(data, encoding))
   end
+  if encoding == "euc-jp" then
+    return require("gin.encoding.euc_jp")(data), false
+  end
   if encoding == "shift_jis" then
     return require("gin.encoding.shift_jis")(data), false
   end

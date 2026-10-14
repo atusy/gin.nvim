@@ -3717,3 +3717,23 @@ The generation check, `make check` and `git diff --check` pass. The full suite
 passes 2,178 cases across 53 groups (`/tmp/gin-double-byte-full.log`).
 GBK, gb18030, EUC-JP and ISO-2022-JP remain unimplemented
 in the production library, and automatic view encoding selection is still unwired.
+
+## Strict EUC-JP candidates
+
+The EUC-JP decoder now handles ASCII/NUL, halfwidth kana, JIS0208 pairs and
+0x8F-prefixed JIS0212 triples. It checks byte ranges before computing mapping
+pointers and rejects unknown/incomplete sequences so later encoding candidates
+can be tried. The mixed Japanese/kana/supplementary regression failed with the
+expected missing-decoder error before implementation.
+
+Generated JIS0208 and JIS0212 tables contain 7,336 and 6,067 code points. JIS0208
+mappings are also checked against Deno ISO-2022-JP output, preparing a common
+table for the remaining stateful decoder. Every byte pair and all 0x8F-prefixed
+triples are compared with the Deno oracle; single bytes, aliases, mixed longer
+inputs and candidate selection are covered separately.
+
+All 595 encoding/EUC-JP cases pass on current Neovim and Neovim 0.10.0. The oracle
+check, `make check` and `git diff --check` pass. The full suite passes all 2,695
+cases across 54 groups (`/tmp/gin-euc-jp-full.log`).
+GBK, gb18030 and ISO-2022-JP remain unimplemented in production, and automatic
+view encoding selection remains unwired.

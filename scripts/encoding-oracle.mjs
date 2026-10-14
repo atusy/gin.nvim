@@ -28,6 +28,47 @@ for (const group of JSON.parse(labels)) for (const encoding of group.encodings) 
     const bytes = Array.from({ length: 256 }, (_, byte) => decode(canonical, [byte]));
     single += `[${JSON.stringify(canonical)}] = {${bytes.slice(128).map(value => value.error ? 'false' : value.text.codePointAt(0)).join(',')}},\n`;
     records.push({ encoding: canonical, aliases: encoding.labels, cases: bytes.map((value, byte) => ({ bytes: [byte], ...value })) });
+  } else if (canonical === 'euc-jp') {
+    const cases=Array.from({length:256},(_,byte)=>({bytes:[byte],...decode(canonical,[byte])}));
+    const rows=[],triples=[],valid=[];
+    let jis0208=header+'return {\n',jis0212=header+'return {\n';
+    for(let first=0;first<256;first++) {
+      const row=[],tripleRow=[];
+      for(let second=0;second<256;second++) {
+        const pair=decode(canonical,[first,second]);
+        const triple=decode(canonical,[143,first,second]);
+        row.push(pair.error?false:pair.text);
+        tripleRow.push(triple.error?false:triple.text);
+        if(first>=161&&second>=161&&first<=254&&second<=254) {
+          const pointer=(first-161)*94+second-161;
+          if(!pair.error) {
+            const iso=decode('iso-2022-jp',[27,36,66,first-128,second-128]);
+            if(iso.text!==pair.text)throw new Error('JIS0208 decoder mismatch');
+            jis0208+=`[${pointer}] = ${pair.text.codePointAt(0)},\n`;
+            valid.push([first,second]);
+          }
+          if(!triple.error) {
+            jis0212+=`[${pointer}] = ${triple.text.codePointAt(0)},\n`;
+            valid.push([143,first,second]);
+          }
+        }
+      }
+      rows.push(row);triples.push(tripleRow);
+    }
+    let seed=0x12345678;
+    const randomByte=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed>>>24;};
+    for(let n=0;n<100;n++) {
+      const arbitrary=Array.from({length:3+n%62},randomByte);
+      cases.push({bytes:arbitrary,...decode(canonical,arbitrary)});
+      const bytes=[];
+      for(let i=0;i<20;i++)bytes.push(...valid[(randomByte()*256+randomByte())%valid.length],142,161+randomByte()%63,randomByte()%128);
+      cases.push({bytes,...decode(canonical,bytes)});
+    }
+    for(const bytes of [[],[143],[143,162],[143,162,175],[142,166],[198,252,203,220,184,236],[143,162,175,0,142,166]])cases.push({bytes,...decode(canonical,bytes)});
+    additionalOutputs['lua/gin/encoding/jis0208_map.lua']=lua(jis0208+'}\n');
+    additionalOutputs['lua/gin/encoding/jis0212_map.lua']=lua(jis0212+'}\n');
+    additionalOutputs['tests/audit/euc-jp-oracle.json']='{"rows":[\n'+rows.map(row=>JSON.stringify(row)).join(',\n')+'],"triples":[\n'+triples.map(row=>JSON.stringify(row)).join(',\n')+']}\n';
+    records.push({encoding:canonical,aliases:encoding.labels,cases});
   } else if (canonical === 'big5' || canonical === 'euc-kr') {
     const cases = Array.from({length:256}, (_, byte) => ({bytes:[byte], ...decode(canonical, [byte])}));
     const rows = [], validPairs = [];
