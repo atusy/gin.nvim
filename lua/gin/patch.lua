@@ -24,7 +24,7 @@ function M.open(root, path, options)
   if not options["no-worktree"] then
     worktree = require("gin.buffer").open(
       root .. "/" .. path,
-      { opener = "vsplit", smods = { split = "botright" } }
+      { opener = "vsplit", smods = { split = "botright" }, enc = options.enc, ff = options.ff }
     )
     windows[#windows + 1] = vim.api.nvim_get_current_win()
   end

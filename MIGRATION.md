@@ -2835,3 +2835,20 @@ rename while reset remains destination-only; empty selections for Git mutation
 file actions are no-ops. This is not an exact display-byte or unrestricted URI interoperability
 claim. The broader command/URI audit and the independent Patch, Chaperon and
 other command checklists remain open.
+
+## Patch working-pane decoding
+
+The pinned patch/command.ts forwards cmdarg to index, HEAD and working-file
+opens. Lua previously forwarded encoding/fileformat only to the revision panes,
+and its shared buffer opener ignored these options for ordinary files. Patch
+now passes them to the working pane, and the opener lets Ex parse escaped
+++enc/++ff arguments because nvim_cmd does not parse those arguments itself.
+The structured opener route remains unchanged when neither option is present.
+
+A regression uses UTF-8 bytes with CRLF and explicitly requests latin1/unix.
+All three panes must then show the same Latin-1 interpretation and literal CR,
+with matching fileencoding/fileformat. The old implementation showed UTF-8/DOS
+in the working pane and failed this check. Writing an edited working pane is
+verified against raw file bytes while the index remains unchanged. A filename
+containing spaces and a bar also checks escaping through the Ex route. Existing
+revision/index and command-buffer decoding tests remain part of validation.

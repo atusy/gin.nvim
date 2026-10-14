@@ -5,10 +5,29 @@ function M.open(name, opts)
   if not vim.tbl_contains({ "edit", "split", "vsplit", "tabedit", "pedit" }, opener) then
     error("Unsupported Gin opener: " .. opener, 0)
   end
-  vim.api.nvim_cmd(
-    { cmd = opener, args = { vim.fn.fnameescape(name) }, bang = opts.bang, mods = opts.smods },
-    {}
-  )
+  local args = {}
+  for _, spec in ipairs({ { "enc", "encoding" }, { "ff", "fileformat" } }) do
+    local value = opts[spec[1]] or opts[spec[2]]
+    if value then
+      args[#args + 1] = "++" .. spec[1] .. "=" .. vim.fn.fnameescape(value)
+    end
+  end
+  if #args > 0 then
+    -- nvim_cmd does not parse ++opt arguments; let Ex parse the escaped command.
+    args[#args + 1] = vim.fn.fnameescape(name)
+    vim.api.nvim_cmd({
+      cmd = "execute",
+      args = {
+        vim.fn.string(opener .. (opts.bang and "!" or "") .. " " .. table.concat(args, " ")),
+      },
+      mods = opts.smods,
+    }, {})
+  else
+    vim.api.nvim_cmd(
+      { cmd = opener, args = { vim.fn.fnameescape(name) }, bang = opts.bang, mods = opts.smods },
+      {}
+    )
+  end
   return vim.fn.bufnr(name)
 end
 

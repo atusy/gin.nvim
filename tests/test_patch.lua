@@ -75,6 +75,31 @@ T["GinPatch stages only the chosen hunk from a subdirectory"] = function()
   MiniTest.expect.equality(index:find("changed last", 1, true), nil)
   MiniTest.expect.equality(vim.fn.readfile(root .. "/sub/file")[10], "changed last")
 end
+T["explicit encoding and fileformat apply to every patch pane"] = function()
+  local path = "sub/encoded | file"
+  vim.fn.writefile({ "café\r", "" }, root .. "/" .. path, "b")
+  H.git(root, "add", path)
+  H.git(root, "commit", "-m", "encoded")
+  local original_index = H.git(root, "show", ":" .. path)
+  vim.cmd("GinPatch ++enc=latin1 ++ff=unix " .. vim.fn.fnameescape("encoded | file"))
+  local expected = vim.fn.iconv("café", "latin1", "utf-8") .. "\r"
+  local working
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), { expected })
+    MiniTest.expect.equality(vim.bo[buf].fileencoding, "latin1")
+    MiniTest.expect.equality(vim.bo[buf].fileformat, "unix")
+    if vim.bo[buf].buftype == "" then
+      working = win
+    end
+  end
+  assert(working, "working pane exists")
+  vim.api.nvim_set_current_win(working)
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { expected .. "!" })
+  vim.cmd.write()
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/" .. path, "b"), { "café\r!", "" })
+  MiniTest.expect.equality(H.git(root, "show", ":" .. path), original_index)
+end
 T["status patch honors persistent pane settings and stages the chosen hunk"] = function()
   vim.cmd.GinStatus()
   local status = vim.api.nvim_get_current_buf()
