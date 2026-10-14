@@ -1463,3 +1463,9 @@ identity escapes as JavaScript does without flags. Class escapes and trailing
 digits retain their own parsing and quantifier boundaries. Twenty-two added
 Node-oracle cases bring the candidate corpus to 51; this remains bounded
 experimental coverage, with no production action integration.
+
+The experimental regex compiler also accepts no-flags class ranges involving
+class escapes: `[\d-a]` includes digits, a literal hyphen and `a`. Thirteen
+Node-oracle cases cover endpoint combinations, complements, negated classes,
+subsequent hyphens, ordinary ranges and reversed-range errors. The 64-case
+corpus passes without changing production action parsers.

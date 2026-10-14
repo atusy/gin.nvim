@@ -207,21 +207,29 @@ function M.compile(pattern)
         cursor = cursor + 1
         return literal(value)
       end
+      local function append(value)
+        if value.kind == "class" then
+          vim.list_extend(node.items, value.items)
+        else
+          node.items[#node.items + 1] = value
+        end
+      end
       while source[cursor] and peek() ~= "]" do
         local first = item()
         if peek() == "-" and ascii(source[cursor + 1]) ~= "]" and source[cursor + 1] then
           cursor = cursor + 1
           local last = item()
-          assert(
-            first.kind == "literal" and last.kind == "literal",
-            "Unsupported regular expression: class escape range"
-          )
-          assert(first.value <= last.value, "Invalid regular expression: reversed range")
-          node.items[#node.items + 1] = { kind = "range", first = first.value, last = last.value }
-        elseif first.kind == "class" then
-          vim.list_extend(node.items, first.items)
+          if first.kind == "literal" and last.kind == "literal" then
+            assert(first.value <= last.value, "Invalid regular expression: reversed range")
+            append({ kind = "range", first = first.value, last = last.value })
+          else
+            -- Without Unicode flags, class escapes turn the range into a union.
+            append(first)
+            append(literal(45))
+            append(last)
+          end
         else
-          node.items[#node.items + 1] = first
+          append(first)
         end
       end
       expect("]")

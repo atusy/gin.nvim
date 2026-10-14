@@ -984,5 +984,219 @@
         ]
       ]
     }
+  },
+  {
+    "name": "class-escape-range-left",
+    "pattern": "^([\\d-a]+)$",
+    "input": "1-a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          49,
+          45,
+          97
+        ],
+        [
+          49,
+          45,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-escape-range-right",
+    "pattern": "^([a-\\d]+)$",
+    "input": "a-9",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          45,
+          57
+        ],
+        [
+          97,
+          45,
+          57
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-escape-range-both",
+    "pattern": "^([\\s-\\d]+)$",
+    "input": " -9\t",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          32,
+          45,
+          57,
+          9
+        ],
+        [
+          32,
+          45,
+          57,
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-escape-range-complement",
+    "pattern": "^([\\D-a]+)$",
+    "input": "z-a",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          122,
+          45,
+          97
+        ],
+        [
+          122,
+          45,
+          97
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-escape-range-no-intermediate",
+    "pattern": "^([\\d-z]+)$",
+    "input": "m",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "class-escape-range-inverted",
+    "pattern": "^([^\\d-a]+)$",
+    "input": "xyz",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          120,
+          121,
+          122
+        ],
+        [
+          120,
+          121,
+          122
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-escape-range-inverted-hyphen",
+    "pattern": "^([^\\d-a]+)$",
+    "input": "-",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "class-escape-range-followed-by-range",
+    "pattern": "^([\\d-a-z]+)$",
+    "input": "m",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "class-escape-range-followed-by-hyphen",
+    "pattern": "^([\\d-a-z]+)$",
+    "input": "1-a-z",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          49,
+          45,
+          97,
+          45,
+          122
+        ],
+        [
+          49,
+          45,
+          97,
+          45,
+          122
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-literal-range",
+    "pattern": "^([a-c]+)$",
+    "input": "abc",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          97,
+          98,
+          99
+        ],
+        [
+          97,
+          98,
+          99
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-reversed-range",
+    "pattern": "[z-a]",
+    "input": "a",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "class-trailing-hyphen",
+    "pattern": "^([\\d-]+)$",
+    "input": "9-",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          57,
+          45
+        ],
+        [
+          57,
+          45
+        ]
+      ]
+    }
+  },
+  {
+    "name": "class-leading-hyphen",
+    "pattern": "^([-\\d]+)$",
+    "input": "-9",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          45,
+          57
+        ],
+        [
+          45,
+          57
+        ]
+      ]
+    }
   }
 ]

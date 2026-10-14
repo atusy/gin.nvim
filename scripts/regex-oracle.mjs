@@ -55,6 +55,19 @@ const cases = [
   ['noncapture-not-capture', String.raw`^\1(?:a)$`, '\x01a'],
   ['lookaround-not-capture', String.raw`^\1(?=a)a$`, '\x01a'],
   ['named-group-counted', String.raw`^\1(?<name>a)$`, 'a'],
+  ['class-escape-range-left', String.raw`^([\d-a]+)$`, '1-a'],
+  ['class-escape-range-right', String.raw`^([a-\d]+)$`, 'a-9'],
+  ['class-escape-range-both', String.raw`^([\s-\d]+)$`, ' -9\t'],
+  ['class-escape-range-complement', String.raw`^([\D-a]+)$`, 'z-a'],
+  ['class-escape-range-no-intermediate', String.raw`^([\d-z]+)$`, 'm'],
+  ['class-escape-range-inverted', String.raw`^([^\d-a]+)$`, 'xyz'],
+  ['class-escape-range-inverted-hyphen', String.raw`^([^\d-a]+)$`, '-'],
+  ['class-escape-range-followed-by-range', String.raw`^([\d-a-z]+)$`, 'm'],
+  ['class-escape-range-followed-by-hyphen', String.raw`^([\d-a-z]+)$`, '1-a-z'],
+  ['class-literal-range', String.raw`^([a-c]+)$`, 'abc'],
+  ['class-reversed-range', String.raw`[z-a]`, 'a'],
+  ['class-trailing-hyphen', String.raw`^([\d-]+)$`, '9-'],
+  ['class-leading-hyphen', String.raw`^([-\d]+)$`, '-9'],
 ];
 const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
 const records = cases.map(([name, pattern, input]) => {
