@@ -29,6 +29,18 @@ end
 
 function M.url(root, revision, options)
   options = options or {}
+  local aliases, setting = options.aliases, "browse aliases"
+  if aliases == nil then
+    aliases, setting = vim.g.gin_browse_aliases, "g:gin_browse_aliases"
+  end
+  if aliases == nil then
+    aliases = vim.empty_dict()
+  end
+  local message = setting .. " must be a dictionary of strings"
+  assert(type(aliases) == "table" and not vim.islist(aliases), message)
+  for host, provider in pairs(aliases) do
+    assert(type(host) == "string" and type(provider) == "string", message)
+  end
   revision = revision or "HEAD"
   local remote = options.remote
     or containing_remote(root, options.home and "HEAD" or revision)
@@ -43,7 +55,7 @@ function M.url(root, revision, options)
   end
   assert(host and repository, "Unsupported remote URL: " .. fetch)
   repository = repository:gsub("%.git$", ""):gsub("/$", "")
-  local provider = (options.aliases or vim.g.gin_browse_aliases or {})[host] or host
+  local provider = aliases[host] or host
   assert(
     vim.tbl_contains({ "github.com", "gitlab.com", "bitbucket.org" }, provider),
     "Unsupported hosting service: " .. provider

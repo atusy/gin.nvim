@@ -16,12 +16,79 @@ local T = MiniTest.new_set({
     end,
     post_case = function()
       vim.g.gin_browse_persistent_args = nil
+      vim.g.gin_browse_aliases = nil
       vim.cmd.enew({ bang = true })
       vim.cmd.cd(cwd)
       H.cleanup(root)
     end,
   },
 })
+for _, value in ipairs({
+  false,
+  vim.NIL,
+  0,
+  "github.com",
+  {},
+  { "github.com" },
+  { unused = false },
+  { unused = vim.NIL },
+  { unused = {} },
+}) do
+  T["browse rejects invalid aliases " .. vim.inspect(value) .. " before yanking or opening"] = function()
+    vim.g.gin_browse_aliases = value
+    local opened, open = {}, vim.ui.open
+    local register = vim.fn.getreginfo("a")
+    vim.fn.setreg("a", "keep me")
+    vim.ui.open = function(url)
+      opened[#opened + 1] = url
+    end
+    local ok, err = pcall(function()
+      MiniTest.expect.error(function()
+        vim.cmd("GinBrowse ++yank=a --home")
+      end, "g:gin_browse_aliases must be a dictionary of strings")
+      MiniTest.expect.equality(vim.fn.getreg("a"), "keep me")
+      MiniTest.expect.equality(opened, {})
+    end)
+    vim.ui.open = open
+    vim.fn.setreg("a", register)
+    assert(ok, err)
+  end
+end
+T["browse accepts an explicit empty alias dictionary"] = function()
+  vim.g.gin_browse_aliases = vim.empty_dict()
+  MiniTest.expect.equality(
+    require("gin.browse").url(root, "HEAD", { home = true }),
+    "https://github.com/owner/repo"
+  )
+end
+for _, case in ipairs({
+  { "github.com", "blob", "?plain=1#L1-L2" },
+  { "gitlab.com", "-/blob", "?plain=1#L1-2" },
+  { "bitbucket.org", "annotate", "#lines-1:2" },
+}) do
+  T[case[1] .. " aliases retain the custom host and select provider routes"] = function()
+    H.git(root, "remote", "set-url", "origin", "git@code.example.invalid:owner/repo.git")
+    vim.g.gin_browse_aliases = { ["code.example.invalid"] = case[1] }
+    MiniTest.expect.equality(
+      require("gin.browse").url(root, "HEAD", { home = true }),
+      "https://code.example.invalid/owner/repo"
+    )
+    local url = require("gin.browse").url(root, "HEAD", {
+      path = "sub/space # file.md",
+      range = { 1, 2 },
+      permalink = true,
+    })
+    MiniTest.expect.equality(
+      url,
+      "https://code.example.invalid/owner/repo/"
+        .. case[2]
+        .. "/"
+        .. hash
+        .. "/sub/space%20%23%20file.md"
+        .. case[3]
+    )
+  end
+end
 T["browse builds encoded file ranges and immutable permalinks"] = function()
   local url = require("gin.browse").url(
     root,

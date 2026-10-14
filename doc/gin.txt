@@ -254,7 +254,9 @@ Set g:gin_chaperon_supplement_disable = 1 to hide supporting commit logs.
 g:gin_chaperon_supplement_height controls their height (default 10).
 Both supplement settings require numbers. Invalid types are rejected before
 opening panes or changing the conflict buffer.
-g:gin_browse_aliases configures hosting aliases for browse URLs.
+g:gin_browse_aliases is a dictionary mapping custom hostnames to hosting services
+such as "github.com". All values must be strings. To set an explicit empty
+dictionary from Lua, use vim.empty_dict().
 
 ==============================================================================
 EDITOR AND PROMPTS                                                 *gin-proxy*

@@ -2134,3 +2134,16 @@ files and index entries. Eight valid-setting cases cover false, true, 0 and 1
 for both commands, checking the default key and executing the retained Plug
 action through real partial staging or conflict resolution. Existing numeric
 flags remain supported and the help now states the accepted setting types.
+
+## Browse alias dictionary validation
+
+`command/browse/command.ts` validates the complete `gin_browse_aliases` setting
+with `is.RecordOf(is.String)`. The cached unknownutil 4.3.0 predicate explicitly
+excludes null and arrays, then checks every own property value. Lua now validates
+a dictionary of strings before remote discovery, including entries for hosts
+that are not selected. Missing settings default to an empty dictionary; explicit
+Lua empty dictionaries use `vim.empty_dict()`, while lists are rejected.
+Nine invalid-setting regressions verify that no URL is opened and the requested
+register remains unchanged. Normal fixtures cover an explicit empty dictionary
+and custom domains aliased to all three supported providers, preserving the
+custom hostname and checking encoded paths, immutable refs and line ranges.
