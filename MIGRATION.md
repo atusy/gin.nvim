@@ -1920,3 +1920,9 @@ the name prompt is dismissed or accepted empty, matching tag.ts's helper.echo
 usage. The matrix covers the tag alias, lightweight, annotated and signed
 variants including force forms in both views (28 combinations). It checks that
 existing refs, staged changes and unstaged changes survive cancellation.
+
+Cancelling the command prompt for rebase:x or rebase:i:x now reports Cancelled
+with ErrorMsg, matching the pinned rebase action. A matrix exercises both
+actions in Branch, Log and Reflog with dismissal and empty input. It verifies
+unchanged refs, staged/unstaged diffs and absence of both rebase state
+directories, covering cancellation before synchronous or interactive execution.

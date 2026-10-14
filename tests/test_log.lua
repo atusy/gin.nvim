@@ -384,6 +384,40 @@ local function tag_action(action, value)
   assert(callback)
   callback(value)
 end
+T["cancelled rebase exec prompts report cancellation without starting rebase"] = function()
+  vim.fn.writefile({ "staged" }, root .. "/one")
+  H.git(root, "add", "one")
+  vim.fn.writefile({ "unstaged" }, root .. "/two")
+  local refs = H.git(root, "show-ref")
+  local staged, unstaged = H.git(root, "diff", "--cached"), H.git(root, "diff")
+  local input, echo = vim.ui.input, vim.api.nvim_echo
+  local ok, err = pcall(function()
+    for _, command in ipairs({ "GinBranch main", "GinLog --oneline", "GinReflog" }) do
+      vim.cmd(command)
+      for _, name in ipairs({ "rebase:x", "rebase:i:x" }) do
+        for _, empty in ipairs({ false, true }) do
+          local messages = {}
+          vim.ui.input = function(_, callback)
+            callback(empty and "" or nil)
+          end
+          vim.api.nvim_echo = function(chunks)
+            messages[#messages + 1] = chunks
+          end
+          require("gin.action").call(vim.api.nvim_get_current_buf(), name, { 1, 1 })
+          MiniTest.expect.equality(messages, { { { "Cancelled", "ErrorMsg" } } })
+          MiniTest.expect.equality(H.git(root, "show-ref"), refs)
+          MiniTest.expect.equality(H.git(root, "diff", "--cached"), staged)
+          MiniTest.expect.equality(H.git(root, "diff"), unstaged)
+          MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-merge"), 0)
+          MiniTest.expect.equality(vim.fn.isdirectory(root .. "/.git/rebase-apply"), 0)
+        end
+      end
+      vim.api.nvim_echo = echo
+    end
+  end)
+  vim.ui.input, vim.api.nvim_echo = input, echo
+  assert(ok, err)
+end
 T["cancelled tag actions report cancellation and preserve refs and edits"] = function()
   H.git(root, "tag", "existing", second)
   vim.fn.writefile({ "staged" }, root .. "/one")

@@ -205,6 +205,7 @@ function M.read(buf, name)
       if variant == "rebase:x" or variant == "rebase:i:x" then
         vim.ui.input({ prompt = "Execute command after rebase: " }, function(command)
           if not command or command == "" then
+            vim.api.nvim_echo({ { "Cancelled", "ErrorMsg" } }, true, {})
             return
           end
           vim.list_extend(args, { "-x", command })
