@@ -74,9 +74,15 @@ function M.url(root, revision, options)
   local hash =
     vim.trim(git.run({ "rev-parse", "--verify", revision .. "^{commit}" }, { cwd = root }).stdout)
   if options.pr then
-    assert(provider == "github.com", "Hosting service has no pull request URL: " .. provider)
-    local message = git.run({ "log", "-1", "--format=%s", hash }, { cwd = root }).stdout
-    local number = message:match("Merge pull request #(%d+)")
+    assert(provider ~= "bitbucket.org", "Hosting service has no pull request URL: " .. provider)
+    local function request_id(message)
+      local pattern = provider == "gitlab.com" and "See merge request [^\r\n]*!(%d+)"
+        or "Merge pull request #(%d+)"
+      local id = tonumber(message:match(pattern))
+      return id ~= 0 and id or nil
+    end
+    local message = git.run({ "log", "-1", "--format=%B", hash }, { cwd = root }).stdout
+    local number = request_id(message)
     if not number then
       local head = git.run(
         { "symbolic-ref", "--quiet", "refs/remotes/" .. remote .. "/HEAD" },
@@ -87,15 +93,15 @@ function M.url(root, revision, options)
       local merges = git.run({
         "log",
         "--merges",
-        "--format=%s",
+        "--format=%B",
         "--reverse",
         "--ancestry-path",
         hash .. "..." .. target,
       }, { cwd = root })
-      number = (merges.stdout:match("^[^\n]*") or ""):match("Merge pull request #(%d+)")
+      number = request_id(merges.stdout)
     end
     assert(number, "No pull request found for " .. revision)
-    return base .. "/pull/" .. number
+    return base .. (provider == "gitlab.com" and "/-/merge_requests/" or "/pull/") .. number
   end
   if options.commit then
     local route = provider == "bitbucket.org" and "/commits/"

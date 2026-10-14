@@ -336,10 +336,53 @@ T["browse PR finds a merge containing the selected commit"] = function()
   vim.cmd("GinBrowse --pr --no-browser ++repository ++yank=a HEAD")
   MiniTest.expect.equality(vim.fn.getreg("a"), "https://github.com/owner/repo/pull/42")
 end
-T["browse PR reports a missing merge instead of generating an unrelated URL"] = function()
-  H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+for _, case in ipairs({
+  { "github.com", "github.com", "Merge pull request #42 from owner/topic", "/pull/42" },
+  { "gitlab.com", "gitlab.com", "See merge request owner/repo!42", "/-/merge_requests/42" },
+  {
+    "code.example.invalid",
+    "gitlab.com",
+    "See merge request owner/repo!42",
+    "/-/merge_requests/42",
+  },
+}) do
+  T["browse finds request IDs in merge bodies and later ancestor merges for " .. case[1]] = function()
+    H.git(root, "remote", "set-url", "origin", "https://" .. case[1] .. "/owner/repo.git")
+    if case[1] ~= case[2] then
+      vim.g.gin_browse_aliases = { [case[1]] = case[2] }
+    end
+    H.git(root, "checkout", "-b", "topic")
+    H.git(root, "commit", "--allow-empty", "-m", "topic change")
+    local topic = vim.trim(H.git(root, "rev-parse", "HEAD"))
+    H.git(root, "checkout", "-b", "staging", "main")
+    H.git(root, "merge", "--no-ff", "-m", "Integrate topic locally", "topic")
+    H.git(root, "checkout", "main")
+    H.git(root, "merge", "--no-ff", "-m", "Merge staging", "-m", case[3], "staging")
+    H.git(root, "update-ref", "refs/remotes/origin/trunk", "HEAD")
+    H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk")
+    local expected = "https://" .. case[1] .. "/owner/repo" .. case[4]
+    MiniTest.expect.equality(require("gin.browse").url(root, topic, { pr = true }), expected)
+    vim.cmd("GinBrowse --pr --no-browser ++repository ++yank=a HEAD")
+    MiniTest.expect.equality(vim.fn.getreg("a"), expected)
+    vim.g.gin_browse_persistent_args = { "--no-browser" }
+    vim.cmd("GinLog --format=%H")
+    require("gin.action").call(vim.api.nvim_get_current_buf(), "browse:pr:yank", { 1, 1 })
+    MiniTest.expect.equality(vim.fn.getreg('"'), expected)
+  end
+end
+for _, provider in ipairs({ "github.com", "gitlab.com" }) do
+  T["browse PR reports a missing merge for " .. provider] = function()
+    H.git(root, "remote", "set-url", "origin", "https://" .. provider .. "/owner/repo.git")
+    H.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    MiniTest.expect.error(function()
+      require("gin.browse").url(root, "HEAD", { pr = true })
+    end, "No pull request found")
+  end
+end
+T["browse PR rejects providers without a request route"] = function()
+  H.git(root, "remote", "set-url", "origin", "https://bitbucket.org/owner/repo.git")
   MiniTest.expect.error(function()
     require("gin.browse").url(root, "HEAD", { pr = true })
-  end, "No pull request found")
+  end, "Hosting service has no pull request URL")
 end
 return T

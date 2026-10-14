@@ -2685,3 +2685,24 @@ and git+ssh. Real repositories now produce the expected home and commit URLs
 without rewriting their fetch configuration. The expectations were checked by
 executing the v1.0.1 URL-base formatter with native URL parsing. This covers the
 listed representations; full WHATWG URL canonicalization is not claimed.
+
+## Browse request lookup from complete merge messages
+
+Request lookup now inspects complete commit messages and the full ordered merge
+ancestry, rather than only subjects and the first merge. This fixes GitHub
+requests identified in a body or after an intermediate unlabeled merge. GitLab
+`See merge request project!N` messages produce `/-/merge_requests/N` URLs, including
+aliased GitLab hosts. Bitbucket continues to report that no request route exists.
+
+This request feature follows git-browse 1.1.6's `pull_request_url.ts` and provider
+extractors, inspected from the local Deno cache. That version satisfies pinned
+vim-gin's ^1.0.1 dependency and supplies the public --pr behavior; GitLab request
+support is not attributed to the minimum 1.0.1 provider inspected for basic URLs.
+Remote default-branch discovery retains the existing local remote-HEAD/main
+policy rather than adding a network query through `git remote show`.
+
+Real histories contain an intermediate unlabeled merge and a later request ID in
+the merge body, with remote HEAD pointing to trunk. Tests cover lookup from the
+topic commit, the GinBrowse command on the merge, and the history browse:pr:yank
+action for GitHub, GitLab and an aliased host. Missing-request errors are checked
+for both supported request providers and the unsupported Bitbucket route.
