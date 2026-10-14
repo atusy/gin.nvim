@@ -218,7 +218,7 @@ T["leaving a repository clears cached component values"] = function()
   MiniTest.expect.equality(require("gin.component.branch").ascii(), "")
   MiniTest.expect.equality(require("gin.component.traffic").ascii(), "")
 end
-T["component spawn failures retain cached values and allow a later refresh"] = function()
+T["component discovery spawn failures retain cached values and allow a later refresh"] = function()
   local component = require("gin.component")
   local branch = require("gin.component.branch")
   branch.ascii()
@@ -231,7 +231,8 @@ T["component spawn failures retain cached values and allow a later refresh"] = f
   )
   local git = require("gin.git")
   original_start = git.start
-  for _, stage in ipairs({ "--show-toplevel", "--abbrev-ref", "--left-right" }) do
+  do
+    local stage = "--show-toplevel"
     local failed = false
     git.start = function(args, opts, callback)
       if args[2] == stage then
@@ -263,81 +264,117 @@ T["component spawn failures retain cached values and allow a later refresh"] = f
   )
 end
 for _, failing in ipairs({ "branch", "traffic" }) do
-  for _, verbose in ipairs({ 0, 1 }) do
-    T["failed " .. failing .. " query retains its value with verbose=" .. verbose] = function()
-      local component = require("gin.component")
-      local branch = require("gin.component.branch")
-      local traffic = require("gin.component.traffic")
-      local worktree = require("gin.component.worktree")
-      worktree.full()
-      component.refresh()
-      MiniTest.expect.equality(
-        vim.wait(3000, function()
-          return worktree.full() == vim.uv.fs_realpath(root)
-        end, 10),
-        true
-      )
-      MiniTest.expect.equality(
-        { branch.ascii(), traffic.ascii() },
-        { "main -> origin/main", "^1v1" }
-      )
-      H.git(root, "branch", "-m", "renamed")
-      H.git(root, "commit", "--allow-empty", "-m", "another local commit")
-      local git = require("gin.git")
-      original_start = git.start
-      git.start = function(args, opts, callback)
-        return original_start(args, opts, function(result)
-          if
-            failing == "traffic" and args[1] == "rev-list"
-            or failing == "branch" and (args[2] == "--abbrev-ref" or args[2] == "--show-current")
-          then
-            result = { code = 128, stdout = "", stderr = "injected " .. failing .. " failure" }
-          end
-          callback(result)
-        end)
-      end
-      local notify, verbosity = vim.notify, vim.o.verbose
-      local errors = {}
-      vim.notify = function(message, level)
-        errors[#errors + 1] = { message, level }
-      end
-      local ok, err = pcall(function()
-        vim.o.verbose = verbose
+  for _, failure_mode in ipairs({ "exit", "spawn" }) do
+    for _, verbose in ipairs({ 0, 1 }) do
+      T["failed " .. failing .. " " .. failure_mode .. " retains its value with verbose=" .. verbose] = function()
+        local component = require("gin.component")
+        local branch = require("gin.component.branch")
+        local traffic = require("gin.component.traffic")
+        local worktree = require("gin.component.worktree")
+        worktree.full()
         component.refresh()
         MiniTest.expect.equality(
           vim.wait(3000, function()
-            return failing == "branch" and traffic.ascii() == "^2v1"
-              or failing == "traffic" and branch.ascii() == "renamed -> origin/main"
+            return worktree.full() == vim.uv.fs_realpath(root)
           end, 10),
           true
         )
         MiniTest.expect.equality(
-          branch.ascii(),
-          failing == "branch" and "main -> origin/main" or "renamed -> origin/main"
+          { branch.ascii(), traffic.ascii() },
+          { "main -> origin/main", "^1v1" }
         )
-        MiniTest.expect.equality(traffic.ascii(), failing == "traffic" and "^1v1" or "^2v1")
-        MiniTest.expect.equality(#errors, verbose)
-        if verbose == 1 then
+        H.git(root, "branch", "-m", "renamed")
+        H.git(root, "commit", "--allow-empty", "-m", "another local commit")
+        local git = require("gin.git")
+        original_start = git.start
+        git.start = function(args, opts, callback)
+          local fails = failing == "traffic" and args[1] == "rev-list"
+            or failing == "branch" and (args[2] == "--abbrev-ref" or args[2] == "--show-current")
+          if fails and failure_mode == "spawn" then
+            error("injected " .. failing .. " failure", 0)
+          end
+          return original_start(args, opts, function(result)
+            if fails then
+              result = { code = 128, stdout = "", stderr = "injected " .. failing .. " failure" }
+            end
+            callback(result)
+          end)
+        end
+        local notify, verbosity = vim.notify, vim.o.verbose
+        local errors = {}
+        vim.notify = function(message, level)
+          errors[#errors + 1] = { message, level }
+        end
+        local ok, err = pcall(function()
+          vim.o.verbose = verbose
+          component.refresh()
           MiniTest.expect.equality(
-            errors[1][1]:find("injected " .. failing .. " failure", 1, true) ~= nil,
+            vim.wait(3000, function()
+              return failing == "branch" and traffic.ascii() == "^2v1"
+                or failing == "traffic" and branch.ascii() == "renamed -> origin/main"
+            end, 10),
             true
           )
-          MiniTest.expect.equality(errors[1][2], vim.log.levels.ERROR)
-        end
-      end)
-      vim.notify, vim.o.verbose = notify, verbosity
-      git.start = original_start
-      original_start = nil
-      assert(ok, err)
-      component.refresh()
-      MiniTest.expect.equality(
-        vim.wait(3000, function()
-          return branch.ascii() == "renamed -> origin/main" and traffic.ascii() == "^2v1"
-        end, 10),
-        true
-      )
+          MiniTest.expect.equality(
+            branch.ascii(),
+            failing == "branch" and "main -> origin/main" or "renamed -> origin/main"
+          )
+          MiniTest.expect.equality(traffic.ascii(), failing == "traffic" and "^1v1" or "^2v1")
+          MiniTest.expect.equality(#errors, verbose)
+          if verbose == 1 then
+            MiniTest.expect.equality(
+              errors[1][1]:find("injected " .. failing .. " failure", 1, true) ~= nil,
+              true
+            )
+            MiniTest.expect.equality(errors[1][2], vim.log.levels.ERROR)
+          end
+        end)
+        vim.notify, vim.o.verbose = notify, verbosity
+        git.start = original_start
+        original_start = nil
+        assert(ok, err)
+        component.refresh()
+        MiniTest.expect.equality(
+          vim.wait(3000, function()
+            return branch.ascii() == "renamed -> origin/main" and traffic.ascii() == "^2v1"
+          end, 10),
+          true
+        )
+      end
     end
   end
+end
+T["branch fallback after a spawn failure still refreshes traffic"] = function()
+  local component = require("gin.component")
+  local branch = require("gin.component.branch")
+  local traffic = require("gin.component.traffic")
+  local worktree = require("gin.component.worktree")
+  worktree.full()
+  component.refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return worktree.full() == vim.uv.fs_realpath(root)
+    end, 10),
+    true
+  )
+  H.git(root, "branch", "-m", "fallback-branch")
+  H.git(root, "commit", "--allow-empty", "-m", "another local commit")
+  local git = require("gin.git")
+  original_start = git.start
+  git.start = function(args, opts, callback)
+    if args[2] == "--abbrev-ref" then
+      error("initial branch query could not start", 0)
+    end
+    return original_start(args, opts, callback)
+  end
+  component.refresh()
+  MiniTest.expect.equality(
+    vim.wait(3000, function()
+      return branch.ascii() == "fallback-branch"
+    end, 10),
+    true
+  )
+  MiniTest.expect.equality(traffic.ascii(), "^2v1")
 end
 T["late results from another repository cannot replace current components"] = function()
   local component = require("gin.component")

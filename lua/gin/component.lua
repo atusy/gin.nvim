@@ -25,15 +25,16 @@ local function report_error(message)
 end
 
 local function run(args, cwd, version, callback)
-  local ok, err = pcall(git.start, args, { cwd = cwd }, function(result)
+  local function complete(result)
     vim.schedule(function()
       if version == generation then
         callback(result)
       end
     end)
-  end)
+  end
+  local ok, err = pcall(git.start, args, { cwd = cwd }, complete)
   if not ok then
-    report_error(tostring(err))
+    complete({ code = -1, stdout = "", stderr = "", spawn_error = tostring(err) })
   end
 end
 
@@ -48,6 +49,10 @@ function M.refresh()
   end
   local function discover(index)
     run({ "rev-parse", "--show-toplevel" }, dirs[index], version, function(found)
+      if found.spawn_error then
+        report_error(found.spawn_error)
+        return
+      end
       if found.code ~= 0 then
         if dirs[index + 1] then
           discover(index + 1)
@@ -69,7 +74,7 @@ function M.refresh()
               local ahead, behind = counts.stdout:match("(%d+)%s+(%d+)")
               result.ahead, result.behind = tonumber(ahead) or 0, tonumber(behind) or 0
             else
-              report_error(git.error_message(counts, "git component traffic"))
+              report_error(counts.spawn_error or git.error_message(counts, "git component traffic"))
             end
             publish(result, version)
           end
@@ -89,9 +94,11 @@ function M.refresh()
               if current.code == 0 then
                 result.branch, result.upstream = vim.trim(current.stdout), ""
                 result.ahead, result.behind = 0, 0
-                publish(result, version)
+                traffic()
               else
-                report_error(git.error_message(current, "git component branch"))
+                report_error(
+                  current.spawn_error or git.error_message(current, "git component branch")
+                )
                 traffic()
               end
             end)
