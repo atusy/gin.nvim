@@ -30,6 +30,20 @@ T["tag view lists lightweight and annotated tags and yanks names"] = function()
   vim.api.nvim_feedkeys('"ayy', "mx", false)
   MiniTest.expect.equality(vim.fn.getreg("a"), "release")
 end
+T["tag echo exposes the selected annotated object"] = function()
+  vim.cmd("GinTag --format=display-only")
+  local echo, output = vim.api.nvim_echo, nil
+  vim.api.nvim_echo = function(chunks)
+    output = chunks[1][1]
+  end
+  local ok, err =
+    pcall(require("gin.action").call, vim.api.nvim_get_current_buf(), "echo", { 2, 2 })
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+  MiniTest.expect.equality(vim.json.decode(output), {
+    { tag = "release", commit = vim.trim(H.git(root, "rev-parse", "refs/tags/release")) },
+  })
+end
 T["tag groups repeated flags for display, insertion and deletion"] = function()
   for _, case in ipairs({
     { "--ignore-case --no-ignore-case --ignore-case", {} },

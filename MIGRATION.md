@@ -12,7 +12,7 @@ scope, not proof of complete upstream parity.
 - [ ] Gin: arbitrary commands, argument expansion, modifiers, wait, postprocessors, indicators, events.
 - [ ] GinBuffer: command output buffers, URI reads, reload and decorations.
 - [x] GinStatus: status display, path selection and all status actions (functional scope audited below).
-- [ ] GinBranch, GinTag: parsed views and ref actions.
+- [x] GinBranch, GinTag: parsed views and ref actions (functional scope audited below).
 - [ ] GinLog, GinReflog, GinStash: parsed views, navigation and commit/stash actions.
 - [x] GinEdit: revision and index buffers with write-back; working files via edit actions (functional scope audited below).
 - [x] GinDiff: revision selection, read and unified-diff navigation/folding (functional scope audited below).
@@ -168,8 +168,8 @@ before marking the migration complete.
 
 GinBranch now displays structured ref metadata and supports switch/delete/yank
 actions, plus branch/worktree creation and moves. Interactive rebase and merge
-editor integration have real Git tests below. Complete option/display compatibility
-and direct branch/tag browse-consumer verification remain pending. Branch views refresh after
+editor integration have real Git tests below. The ref-view functional audit is recorded below; complete option/display
+compatibility remains on the broader checklist. Branch views refresh after
 GinCommandPost while preserving the current view.
 
 Worktree creation supplies `-b` when the requested branch differs from the
@@ -180,8 +180,8 @@ editing through the editor proxy as well as cancellation and ff-only rejection.
 
 GinTag now provides listing, show/delete/switch/yank actions and command-driven
 refresh. Custom formats, parsing, decoding and emoji handling have dedicated
-regressions below. The remaining ref-view functional audit includes direct
-browse/echo consumer coverage and show variants.
+regressions below. Browse/echo consumers and show variants are included in the
+ref-view functional audit below.
 
 GinLog now displays history with revision/path filters, show/yank actions and
 command-driven refresh. Other commit actions, custom parsing, emoji/color and
@@ -3261,3 +3261,40 @@ the ref-action audit without completing the remaining browse/show consumer
 checks or the broad option/API compatibility checklist.
 
 Validation: `make check` and all 1,271 integrated full-suite cases pass.
+
+
+## Branch and tag functional completion audit
+
+The pinned `command/branch/edit.ts` and `command/tag/edit.ts` initialize the
+ref views and their action families. Lua equivalents are `lua/gin/branch.lua`
+and `lua/gin/tag.lua`, with shared choice/echo/browse behavior in `action.lua`
+and `browse.lua`. Tests cover the following functional routes with real Git
+state, rather than treating the registration oracle alone as proof of action
+behavior.
+
+| Functional scope | Evidence |
+| --- | --- |
+| Branch display and selection | `test_branch.lua`: local/remote/alias records, detached HEAD, linked worktrees, colors, abbreviation/verbosity, sorting, legacy URIs and custom multiline/NUL formats retain action targets. |
+| Tag display and selection | `test_tag.lua`: lightweight/annotated objects, ordering/patterns, legacy URIs, custom multiline/NUL formats, colors, encoding and emojify retain selected refs. |
+| Switch/new/move | Branch switching, forced replacement, orphan creation, branch rename, linked-worktree move and prompt cancellation have direct ref/cwd/file assertions. Tag switch rejection and explicit detach have separate cases. |
+| Deletion | Ordinary/forced local and remote branch deletion, dirty worktrees, current-branch protection, tag selection, command failures, continuing subsequent selections and successful refreshes are checked. |
+| Worktree creation | Selected starting refs, branch names, orphan empty indexes, default paths, cancellation and ordinary-versus-force duplicate checkouts are exercised. |
+| Merge/rebase | `test_branch.lua` verifies ff/no-ff/ff-only, message editing/cancellation, rebase replay/exec, interactive Apply and instant-drop against resulting history. |
+| Browse consumers | `test_browse.lua` now opens five ref view kinds with an opaque display format and HEAD advanced beyond the selected ref. Repository permalinks and commit URLs must resolve the selected commit, including peeling annotated tags. These tests use no-browser/yank and make no network request. |
+| Echo/yank | Branch echo checks pinned local/remote/alias record shapes; tag echo checks the selected annotated object independently of display. Named-register/ref and commit yanks have existing cases. |
+| Log/show | `test_log.lua` checks selected branch history and log filters. `test_tag.lua` checks annotated content and revision jumping; `test_show.lua` covers GinTag emojify with edit/split/vsplit/tabedit and the alias, including reload. |
+| Shared interaction/events | The branch registration oracle, per-view Visual choice/repeat tests and action completion-suppression fixtures supplement the functional cases. |
+
+This completion mark covers these functional ref-view routes, not every Git
+flag, byte-identical default output or all custom parser expressions. Structured
+metadata intentionally retains actionable refs when display formats change.
+The existing worktree creation `-b` correction and current-worktree protection
+are retained; multi-delete errors are propagated after processing the selection
+rather than reproducing Denops' normal-mode error-message handling exactly.
+Complete command/options/API compatibility remains open in the main checklist.
+
+Validation: all 105 browse/tag/show cases pass on minimum Neovim 0.10.0. The
+preceding worktree-boundary audit also verified all 68 branch/tag cases there.
+
+The integrated full suite passes all 1,277 cases in 48 groups; `make check`
+also passes.

@@ -375,6 +375,39 @@ T["status browse action uses the selected repository-relative path"] = function(
     "https://github.com/owner/repo/blob/" .. hash .. "/sub/space%20%23%20file.md"
   )
 end
+for _, case in ipairs({
+  { "local branch", "GinBranch --format=display-only topic" },
+  { "remote branch", "GinBranch --remotes --format=display-only origin/topic" },
+  { "remote alias", "GinBranch --remotes --format=display-only origin/HEAD" },
+  { "lightweight tag", "GinTag --format=display-only light" },
+  { "annotated tag", "GinTag --format=display-only annotated" },
+}) do
+  T["ref view browse uses the selected revision for " .. case[1]] = function()
+    H.git(root, "branch", "topic")
+    H.git(root, "update-ref", "refs/remotes/origin/topic", hash)
+    H.git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/topic")
+    H.git(root, "tag", "light")
+    H.git(root, "tag", "-a", "annotated", "-m", "tag object")
+    vim.fn.writefile({ "later" }, root .. "/later")
+    H.git(root, "add", "later")
+    H.git(root, "commit", "-m", "later HEAD")
+    MiniTest.expect.equality(vim.trim(H.git(root, "rev-parse", "HEAD")) ~= hash, true)
+    vim.g.gin_browse_persistent_args = { "--no-browser" }
+    vim.cmd(case[2])
+    local view = vim.api.nvim_get_current_buf()
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "display-only" })
+    for _, action in ipairs({ "browse:permalink:yank", "browse:commit:yank" }) do
+      require("gin.action").call(view, action, { 1, 1 })
+      local route = action == "browse:permalink:yank" and "/tree/" or "/commit/"
+      MiniTest.expect.equality(
+        vim.fn.getreg('"'),
+        "https://github.com/owner/repo" .. route .. hash .. (route == "/tree/" and "/" or "")
+      )
+      MiniTest.expect.equality(vim.api.nvim_get_current_buf(), view)
+    end
+    MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
+  end
+end
 T["history browse commit action uses the selected commit"] = function()
   vim.g.gin_browse_persistent_args = { "--no-browser", "++worktree=" .. root }
   vim.cmd("GinLog --oneline")
