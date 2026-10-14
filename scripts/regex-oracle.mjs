@@ -82,6 +82,15 @@ const cases = [
   ['control-uppercase', String.raw`^(\cA)$`, '\x01'],
   ['control-lowercase', String.raw`^(\cz)$`, '\x1a'],
   ['control-class-letter', String.raw`^([\cA-\cC]+)$`, '\x01\x02\x03'],
+  ['control-class-digit', String.raw`^([\c0])$`, '\x10'],
+  ['control-class-underscore', String.raw`^([\c_])$`, '\x1f'],
+  ['control-class-digits', String.raw`^([\c0-\c9]+)$`, '\x10\x11\x18\x19'],
+  ['control-class-digit-not-literal', String.raw`^([\c0])$`, '0'],
+  ['control-class-underscore-not-literal', String.raw`^([\c_])$`, '_'],
+  ['control-class-digit-negated', String.raw`^([^\c0])$`, '\x10'],
+  ['control-class-digit-range-reversed', String.raw`[\c9-\c0]`, '\x10'],
+  ['control-class-digit-following-number', String.raw`^([\c01]+)$`, '\x101'],
+  ['control-underscore-outside-class', String.raw`^(\c_)$`, String.raw`\c_`],
 ];
 const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
 const records = cases.map(([name, pattern, input]) => {

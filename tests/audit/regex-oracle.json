@@ -1435,5 +1435,129 @@
         ]
       ]
     }
+  },
+  {
+    "name": "control-class-digit",
+    "pattern": "^([\\c0])$",
+    "input": "\u0010",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          16
+        ],
+        [
+          16
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-underscore",
+    "pattern": "^([\\c_])$",
+    "input": "\u001f",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          31
+        ],
+        [
+          31
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-digits",
+    "pattern": "^([\\c0-\\c9]+)$",
+    "input": "\u0010\u0011\u0018\u0019",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          16,
+          17,
+          24,
+          25
+        ],
+        [
+          16,
+          17,
+          24,
+          25
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-class-digit-not-literal",
+    "pattern": "^([\\c0])$",
+    "input": "0",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-class-underscore-not-literal",
+    "pattern": "^([\\c_])$",
+    "input": "_",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-class-digit-negated",
+    "pattern": "^([^\\c0])$",
+    "input": "\u0010",
+    "expected": {
+      "status": "no-match"
+    }
+  },
+  {
+    "name": "control-class-digit-range-reversed",
+    "pattern": "[\\c9-\\c0]",
+    "input": "\u0010",
+    "expected": {
+      "status": "compile-error"
+    }
+  },
+  {
+    "name": "control-class-digit-following-number",
+    "pattern": "^([\\c01]+)$",
+    "input": "\u00101",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          16,
+          49
+        ],
+        [
+          16,
+          49
+        ]
+      ]
+    }
+  },
+  {
+    "name": "control-underscore-outside-class",
+    "pattern": "^(\\c_)$",
+    "input": "\\c_",
+    "expected": {
+      "status": "match",
+      "captures": [
+        [
+          92,
+          99,
+          95
+        ],
+        [
+          92,
+          99,
+          95
+        ]
+      ]
+    }
   }
 ]

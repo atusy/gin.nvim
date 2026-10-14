@@ -1476,3 +1476,9 @@ cover literal matching, quantifier binding, following capture groups, class
 unions and negation, and existing valid alphabetic controls. The corpus now
 contains 78 cases. Class digit/underscore controls and capture-name syntax still
 need work before production integration.
+
+Class control escapes now accept decimal digits and underscore, with the
+character code reduced modulo 32. Nine added Node-oracle cases cover those
+controls, negation, range ordering, following digits and the distinct outside-
+class fallback. All 87 candidate cases pass; this does not yet integrate the
+candidate into production parsers.

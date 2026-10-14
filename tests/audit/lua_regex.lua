@@ -144,7 +144,7 @@ function M.compile(pattern)
     end
     if char == "c" then
       local next_char = peek()
-      if next_char:match("^[A-Za-z]$") then
+      if next_char:match("^[A-Za-z]$") or in_class and next_char:match("^[0-9_]$") then
         cursor = cursor + 1
         return literal(string.byte(next_char:upper()) % 32)
       end

@@ -55,7 +55,7 @@ reported a whitespace mismatch because of this input corruption.
 `lua_regex.lua` is an experimental compiler and matcher, exercised by
 `tests/test_regex_candidate.lua` in the normal mini.nvim suite. It uses UTF-16
 code units, per-match capture state and continuation-based backtracking. The
-78-case corpus passes, including the initial cases that reject the C candidate
+87-case corpus passes, including the initial cases that reject the C candidate
 and numeric escapes, legacy character-class ranges and incomplete control
 escapes. Numeric escapes account for total capture count (including forward
 references), class context, octal digit limits and quantifier binding on
@@ -67,9 +67,8 @@ Run `node scripts/regex-oracle.mjs --check` to revalidate the reference fixture.
 This is not an adopted runtime backend and no Gin action calls it. Its output is
 a list of UTF-16 capture arrays (full match first, unmatched groups null), not
 the strings needed by action parsers. Known unimplemented areas include
-digit/underscore control escapes inside classes, non-ASCII/escaped capture names
-and duplicate-name rules. Some valid JavaScript patterns therefore raise an
-unsupported-syntax error. Input encoding edge cases, large patterns/inputs,
+non-ASCII/escaped capture names and duplicate-name rules. Some valid JavaScript
+patterns therefore raise an unsupported-syntax error. Input encoding edge cases, large patterns/inputs,
 recursion limits, resource bounds and a broader differential corpus must also be
 audited before integration. Passing the initial corpus does not establish full
 ECMAScript compatibility.
