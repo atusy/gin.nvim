@@ -63,6 +63,28 @@ T["progress decodes every byte boundary of multibyte characters"] = function()
     MiniTest.expect.equality(table.concat(output), text)
   end
 end
+T["progress replaces malformed UTF-8 without losing following text"] = function()
+  local cases = {
+    { { 0x80, 0xff, 0xc0, 0xaf }, "����" },
+    { { 0xe3, 0x81, 0x41 }, "�A" },
+    { { 0xe0, 0x80, 0x80 }, "���" },
+    { { 0xed, 0xa0, 0x80 }, "���" },
+    { { 0xf4, 0x90, 0x80, 0x80 }, "����" },
+    { { 0xf0, 0x90, 0x80 }, "�" },
+    { { 0xc2, 0xc2, 0xa2 }, "�¢" },
+  }
+  for _, case in ipairs(cases) do
+    local bytes = string.char(unpack(case[1]))
+    for split = 0, #bytes do
+      local output = capture(function(indicator)
+        indicator.write(nil, bytes:sub(1, split))
+        indicator.write(nil, bytes:sub(split + 1))
+        indicator.write(nil, nil)
+      end)
+      MiniTest.expect.equality(table.concat(output), case[2])
+    end
+  end
+end
 T["stdout and stderr keep independent partial sequences"] = function()
   local output = capture(function(indicator)
     indicator.write(nil, "\27[31mOK\27[0")

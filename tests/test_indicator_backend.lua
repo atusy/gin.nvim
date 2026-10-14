@@ -65,6 +65,24 @@ T["Git progress routes both channels through named indicators without changing o
   MiniTest.expect.equality(events[6], { "close", events[2][2] })
 end
 
+T["Git progress replaces invalid UTF-8 while preserving captured bytes"] = function()
+  local result = require("gin.git").run(
+    { "-c", [[alias.progress=!printf '\343\201A\355\240\200done']], "progress" },
+    { cwd = root, progress = "both", stdout_indicator = "gin_test", stderr_indicator = "null" }
+  )
+  MiniTest.expect.equality(
+    result.stdout,
+    string.char(0xe3, 0x81) .. "A" .. string.char(0xed, 0xa0, 0x80) .. "done"
+  )
+  local text = {}
+  for _, event in ipairs(vim.g.gin_test_indicator_events) do
+    if event[1] == "write" then
+      text[#text + 1] = table.concat(event[3], "\n")
+    end
+  end
+  MiniTest.expect.equality(table.concat(text), "�A���done")
+end
+
 T["custom indicators receive whitespace chunks as an empty line"] = function()
   local result = require("gin.git").run(
     { "-c", [[alias.progress=!printf '\n \t\n']], "progress" },

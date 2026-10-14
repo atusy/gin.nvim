@@ -1999,3 +1999,21 @@ current Neovim path, the hook error reaches the caller while the completed
 index write still produces GinCommandPost. The regression checks the exact
 saved index content, unchanged working file, cleared modified flag and one
 completion event. No production change was needed for this case.
+
+Progress indicators now replace malformed UTF-8 with U+FFFD, including lone
+continuation bytes, invalid leads, overlong encodings, surrogate encodings,
+values above U+10FFFF and truncated sequences. Invalid continuations are
+reprocessed so a following ASCII character or valid sequence is not lost.
+The indicator regression tries every split of seven malformed byte fixtures;
+a real Git alias also verifies that a custom indicator receives replacement
+text while captured stdout retains the original bytes. An independent local
+Node TextDecoder probe matched 24,126 split/flush comparisons over single-byte,
+boundary and deterministically generated inputs (excluding ESC to isolate the
+UTF-8 decoder from the CSI filter).
+
+This closes malformed-byte handling for the default progress decoder, not all
+TextDecoder behavior. In particular, the pinned indicator_stream.ts decodes
+each chunk without streaming; the Lua implementation deliberately retains its
+existing incomplete-sequence buffering across chunks. Chunk-level notification
+parity, BOM handling and non-default encoding behavior are not established by
+these tests.
