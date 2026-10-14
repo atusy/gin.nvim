@@ -212,6 +212,36 @@ T["asynchronous processor failures report errors without success events"] = func
   MiniTest.expect.equality(events, 0)
 end
 
+T["Unicode command display removes only the leading byte order mark"] = function()
+  local bom = "\239\187\191"
+  local text = bom .. "first" .. bom .. "second\n"
+  for _, encoding in ipairs({ "", "utf-8", "utf-16le", "utf-16be" }) do
+    local data = vim.fn.iconv(text, "utf-8", encoding == "" and "utf-8" or encoding)
+    local fd = assert(vim.uv.fs_open(root .. "/file", "w", 420))
+    assert(vim.uv.fs_write(fd, data, 0))
+    assert(vim.uv.fs_close(fd))
+    H.git(root, "add", "file")
+    local echo, displayed = vim.api.nvim_echo, nil
+    vim.api.nvim_echo = function(chunks, history)
+      if history then
+        displayed = chunks[1][1]
+      end
+    end
+    local args = { "++wait", "show", ":file" }
+    if encoding ~= "" then
+      table.insert(args, 1, "++enc=" .. encoding)
+    end
+    local ok, result = pcall(require("gin.command").execute, {
+      fargs = args,
+      smods = {},
+    })
+    vim.api.nvim_echo = echo
+    assert(ok, result)
+    MiniTest.expect.equality(displayed, "first" .. bom .. "second")
+    MiniTest.expect.equality(result.stdout, data)
+  end
+end
+
 for _, spec in ipairs({
   { option = "++ff=unix", expected = "first\r\nsecond\r" },
   { option = "++fileformat=unix", expected = "first\r\nsecond\r" },

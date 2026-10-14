@@ -201,6 +201,10 @@ function M.finish(result, options, mods)
   if encoding then
     output = vim.fn.iconv(output, encoding, "utf-8")
   end
+  local unicode = (encoding or "utf-8"):lower():gsub("-", "")
+  if unicode == "utf8" or unicode == "utf16" or unicode == "utf16le" or unicode == "utf16be" then
+    output = output:gsub("^\239\187\191", "")
+  end
   local ff = options.ff or options.fileformat
   if ff == "mac" then
     output = output:gsub("\r", "\n")

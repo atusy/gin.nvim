@@ -1857,3 +1857,10 @@ option name and remain Git arguments, even before `--`; the former parser
 incorrectly rejected them as unknown options. A real Git fixture stages those
 paths together with `++` and checks the exact NUL-delimited index listing.
 Recognized name prefixes still undergo the usual allowed-option validation.
+
+The final Gin command display now removes the leading Unicode byte order mark
+for UTF-8 and UTF-16 output, matching the pinned command's TextDecoder. A real
+Git fixture covers default UTF-8 and explicit UTF-8/UTF-16LE/UTF-16BE encodings,
+keeps an interior U+FEFF character, and checks that returned stdout retains the
+original bytes. This addresses final display, not incremental indicator decoding
+or the complete set of TextDecoder encoding aliases.
