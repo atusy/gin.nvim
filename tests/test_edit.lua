@@ -331,4 +331,23 @@ for _, format in ipairs({ "auto", "unix", "dos" }) do
     )
   end
 end
+T["Mac format preserves embedded LF through native-compatible index reads and writes"] = function()
+  local bytes = "one\ninside\rtwo\r"
+  vim.fn.writefile(vim.split(bytes, "\n", { plain = true }), root .. "/mac", "b")
+  H.git(root, "add", "mac")
+  vim.cmd("edit ++ff=mac " .. vim.fn.fnameescape(root .. "/mac"))
+  local expected = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  vim.cmd("write " .. vim.fn.fnameescape(root .. "/native-copy"))
+  local native_bytes = table.concat(vim.fn.readfile(root .. "/native-copy", "b"), "\n")
+  vim.cmd("GinEdit ++ff=mac mac")
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), expected)
+  MiniTest.expect.equality(vim.bo.fileformat, "mac")
+  vim.cmd.write()
+  MiniTest.expect.equality(
+    require("gin.git").run({ "show", ":mac" }, { cwd = root }).stdout,
+    native_bytes
+  )
+  MiniTest.expect.equality(native_bytes, bytes)
+  MiniTest.expect.equality(table.concat(vim.fn.readfile(root .. "/mac", "b"), "\n"), bytes)
+end
 return T

@@ -42,8 +42,14 @@ function M.decode(data, options)
   if eol then
     data = data:sub(1, -#separator - 1)
   end
-  return vim.split(data, separator, { plain = true }),
-    { bomb = bomb, endofline = eol, fileformat = ff, fileencoding = encoding }
+  local lines = vim.split(data, separator, { plain = true })
+  if ff == "mac" then
+    -- Native Mac reads represent literal LF bytes as CR inside buffer lines.
+    for i, line in ipairs(lines) do
+      lines[i] = line:gsub("\n", "\r")
+    end
+  end
+  return lines, { bomb = bomb, endofline = eol, fileformat = ff, fileencoding = encoding }
 end
 
 function M.read(buf, name)
@@ -68,7 +74,13 @@ end
 function M.encode(buf)
   local ff = vim.bo[buf].fileformat
   local separator = ff == "dos" and "\r\n" or ff == "mac" and "\r" or "\n"
-  local data = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), separator)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  if ff == "mac" then
+    for i, line in ipairs(lines) do
+      lines[i] = line:gsub("\r", "\n")
+    end
+  end
+  local data = table.concat(lines, separator)
   if
     vim.bo[buf].endofline or (data ~= "" and vim.bo[buf].fixendofline and not vim.bo[buf].binary)
   then

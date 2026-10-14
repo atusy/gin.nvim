@@ -3004,3 +3004,16 @@ the working file retains its original mixed endings. Both automatic and DOS
 cases failed before the change. The pinned edit reader delegates decoding to
 Denops buffer.decode; these tests use native Neovim behavior as the runtime
 reference rather than asserting an unexecuted Denops comparison.
+
+## Embedded LF in Mac-format index buffers
+
+Explicit Mac-format reads had a related failure: splitting on CR left literal
+LF bytes inside lines, which nvim_buf_set_lines rejects. Native Neovim instead
+represents those bytes as CR within the buffer and converts them back to LF
+when writing Mac format. GinEdit now performs those reversible conversions
+around its CR line splitting/joining.
+
+The regression reads the same blob through native edit and GinEdit, compares
+buffer contents, and compares the written index blob with a native file write.
+Both writes reproduce the original bytes, and the repository working file is
+unchanged. The original decoder failed before a buffer could be loaded.
