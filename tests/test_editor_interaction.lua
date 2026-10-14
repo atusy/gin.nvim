@@ -33,15 +33,41 @@ local T = MiniTest.new_set({
 for _, case in ipairs({
   { "Apply", ":Apply<CR>" },
   { "write and quit with confirmation", ":wq<CR>yes<CR>" },
+  { "Apply in the current window", ":Apply<CR>", "edit" },
+  { "Apply in a horizontal split", ":Apply<CR>", "split" },
+  { "Apply in a vertical split", ":Apply<CR>", "vsplit" },
+  { "Apply in a preview window", ":Apply<CR>", "pedit" },
 }) do
   T["keyboard input commits through " .. case[1]] = function()
+    child.g.gin_proxy_editor_opener = case[3] or "tabedit"
+    local original = child.api.nvim_get_current_win()
     child.type_keys(":silent Gin commit<CR>")
     MiniTest.expect.equality(
       vim.wait(5000, function()
-        return child.lua_get("vim.b.gin_editor_request ~= nil")
+        return child.lua_get([[(function()
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.b[buf].gin_editor_request then return true end
+          end
+          return false
+        end)()]])
       end, 10),
       true
     )
+    local opener = case[3] or "tabedit"
+    MiniTest.expect.equality(child.fn.tabpagenr("$"), opener == "tabedit" and 2 or 1)
+    MiniTest.expect.equality(
+      #child.api.nvim_tabpage_list_wins(0),
+      (opener == "tabedit" or opener == "edit") and 1 or 2
+    )
+    if opener == "pedit" then
+      MiniTest.expect.equality(child.api.nvim_get_current_win(), original)
+      child.type_keys("<C-w>P")
+      MiniTest.expect.equality(child.wo.previewwindow, true)
+    elseif opener == "split" or opener == "vsplit" then
+      MiniTest.expect.equality(child.fn.winlayout()[1], opener == "split" and "col" or "row")
+    elseif opener == "edit" then
+      MiniTest.expect.equality(child.api.nvim_get_current_win(), original)
+    end
     MiniTest.expect.equality(
       child.fn.fnamemodify(child.api.nvim_buf_get_name(0), ":t"),
       "COMMIT_EDITMSG"

@@ -1819,3 +1819,11 @@ proxy listener evaluates each value with `?? false`; Lua previously treated
 `vim.NIL` as truthy and disabled the corresponding proxy. A regression case sets
 both globals to `v:null` and checks that the editor command and executable
 askpass launcher are provided. Existing independent opt-out tests remain active.
+
+The keyboard-driven editor tests now cover every supported proxy opener:
+`edit`, `split`, `vsplit`, `tabedit` and `pedit`. They check tab/window counts,
+split orientation, retained focus for preview opening, and the preview-window
+flag before typing and applying the commit message. Preview focus is entered
+with `<C-w>P`; no RPC buffer edits replace keyboard editing. Each case verifies
+the resulting Git commit and file contents. This closes the supported-opener
+workflow check without changing the remaining synchronous-input limitation.
