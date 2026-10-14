@@ -1674,3 +1674,10 @@ comparison covers both blame ftplugins with defaults enabled and disabled,
 including RHS, mode, remapping, nowait and silent flags. Together with the
 existing list and diff/buffer comparisons this covers default mapping tables
 across all ten ftplugins, without claiming complete callback behavior parity.
+
+Legacy GinLog expansion now falls back to its literal path fragment when JSON
+parsing fails, following the locked util/expand.ts behavior. Previously the
+outer error handler returned the original URI. A public Vimscript API test and
+command-placeholder assertion cover a path with spaces and Japanese text. Native
+GinLog argv fragments keep their existing separator-based interpretation; this
+change does not reinterpret native malformed fragments as filesystem paths.

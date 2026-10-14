@@ -44,6 +44,15 @@ for _, case in ipairs({
     end)
   end
 end
+T["legacy log expansion accepts a plain path fragment"] = function()
+  local root = vim.fn.tempname()
+  local path = "sub/space 日本語.lua"
+  with_name("ginlog://" .. root .. ";commitish=HEAD#" .. path, function()
+    MiniTest.expect.equality(vim.fn["gin#util#expand"]("%"), root .. "/" .. path)
+    local _, args = require("gin.command").parse({ "%" }, {})
+    MiniTest.expect.equality(args, { root .. "/" .. path })
+  end)
+end
 T["expand leaves views without file paths unchanged"] = function()
   for _, case in ipairs({
     { "ginstatus", nil },

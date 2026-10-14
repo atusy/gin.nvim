@@ -84,10 +84,14 @@ function M.expand(expr)
       end
     elseif parsed.scheme == "ginlog" and parsed.fragment then
       -- Lua log URIs carry argv; file paths follow the explicit separator.
-      local args = vim.json.decode(parsed.fragment)
+      local decoded, args = pcall(vim.json.decode, parsed.fragment)
       if parsed.legacy then
-        path = args[1]
-      else
+        if decoded then
+          path = args[1]
+        else
+          path = parsed.fragment
+        end
+      elseif decoded then
         for i, value in ipairs(args) do
           if value == "--" then
             path = args[i + 1]
