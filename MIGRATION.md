@@ -2988,3 +2988,19 @@ matches the pinned seven-character markers followed by a space, not arbitrary
 custom marker sizes. Shared command modifiers/options and unrestricted URI/API
 compatibility remain part of the separate full command audit. Completing these
 functional items does not complete the overall migration.
+
+## Mixed line endings in GinEdit
+
+GinEdit's decoder previously inferred DOS format from any CRLF and split only
+on CRLF. A blob mixing CRLF and LF then left newline bytes inside a buffer line,
+causing nvim_buf_set_lines to fail. Explicit ++ff=dos had the same problem.
+
+Automatic detection now retains mixed input as UNIX text, preserving literal
+CR bytes, while explicit DOS decoding splits LF-only lines too and strips CR
+from CRLF pairs. Three real index fixtures compare automatic, UNIX and DOS reads
+with native Neovim file reads, including buffer text, fileformat and endofline.
+They then write the index and inspect raw Git blob bytes while verifying that
+the working file retains its original mixed endings. Both automatic and DOS
+cases failed before the change. The pinned edit reader delegates decoding to
+Denops buffer.decode; these tests use native Neovim behavior as the runtime
+reference rather than asserting an unexecuted Denops comparison.

@@ -28,8 +28,16 @@ function M.decode(data, options)
   if bomb then
     data = data:sub(4)
   end
-  local ff = options.ff or options.fileformat or (data:find("\r\n", 1, true) and "dos" or "unix")
-  local separator = ff == "dos" and "\r\n" or ff == "mac" and "\r" or "\n"
+  local ff = options.ff or options.fileformat
+  if not ff then
+    local without_crlf = data:gsub("\r\n", "")
+    ff = data:find("\r\n", 1, true) and not without_crlf:find("\n", 1, true) and "dos" or "unix"
+  end
+  if ff == "dos" then
+    -- Forced DOS reads still accept LF-only lines, as native file reads do.
+    data = data:gsub("\r\n", "\n")
+  end
+  local separator = ff == "mac" and "\r" or "\n"
   local eol = data:sub(-#separator) == separator
   if eol then
     data = data:sub(1, -#separator - 1)

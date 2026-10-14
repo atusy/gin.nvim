@@ -307,4 +307,28 @@ for _, command in ipairs({ "edit", "read" }) do
     MiniTest.expect.equality({ vim.o.more, vim.o.cmdheight }, { more, height })
   end
 end
+for _, format in ipairs({ "auto", "unix", "dos" }) do
+  T["mixed line endings match native reads with " .. format .. " format"] = function()
+    vim.fn.writefile({ "one\r", "two", "three\r", "" }, root .. "/mixed", "b")
+    H.git(root, "add", "mixed")
+    local option = format == "auto" and "" or "++ff=" .. format .. " "
+    vim.cmd("edit " .. option .. vim.fn.fnameescape(root .. "/mixed"))
+    local expected = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local expected_ff, expected_eol = vim.bo.fileformat, vim.bo.endofline
+    vim.cmd("GinEdit " .. option .. "mixed")
+    MiniTest.expect.equality(vim.api.nvim_buf_get_lines(0, 0, -1, false), expected)
+    MiniTest.expect.equality(vim.bo.fileformat, expected_ff)
+    MiniTest.expect.equality(vim.bo.endofline, expected_eol)
+    vim.cmd.write()
+    local separator = expected_ff == "dos" and "\r\n" or "\n"
+    MiniTest.expect.equality(
+      require("gin.git").run({ "show", ":mixed" }, { cwd = root }).stdout,
+      table.concat(expected, separator) .. separator
+    )
+    MiniTest.expect.equality(
+      vim.fn.readfile(root .. "/mixed", "b"),
+      { "one\r", "two", "three\r", "" }
+    )
+  end
+end
 return T
