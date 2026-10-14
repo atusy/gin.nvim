@@ -1914,3 +1914,9 @@ path, matching worktree_new.ts: feature/orphan defaults to
 slashes with underscores. A real Git test accepts the offered defaults in both
 paths and checks cwd, symbolic HEAD, regular branch ancestry and contents,
 and the orphan's empty index and absent tracked file.
+
+Log and Reflog tag actions now display Cancelled with normal highlighting when
+the name prompt is dismissed or accepted empty, matching tag.ts's helper.echo
+usage. The matrix covers the tag alias, lightweight, annotated and signed
+variants including force forms in both views (28 combinations). It checks that
+existing refs, staged changes and unstaged changes survive cancellation.

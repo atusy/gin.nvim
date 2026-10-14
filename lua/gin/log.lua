@@ -270,6 +270,7 @@ function M.read(buf, name)
         end
         vim.ui.input({ prompt = "Name: " }, function(name)
           if not name or name == "" then
+            vim.api.nvim_echo({ { "Cancelled", "None" } }, true, {})
             return
           end
           local args = { "tag" }
@@ -295,6 +296,7 @@ function M.read(buf, name)
         end
         vim.ui.input({ prompt = "Name: " }, function(name)
           if not name or name == "" then
+            vim.api.nvim_echo({ { "Cancelled", "None" } }, true, {})
             return
           end
           local args = { "++worktree=" .. parsed.root, "tag", "--" .. kind }

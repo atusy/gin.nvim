@@ -384,6 +384,45 @@ local function tag_action(action, value)
   assert(callback)
   callback(value)
 end
+T["cancelled tag actions report cancellation and preserve refs and edits"] = function()
+  H.git(root, "tag", "existing", second)
+  vim.fn.writefile({ "staged" }, root .. "/one")
+  H.git(root, "add", "one")
+  vim.fn.writefile({ "unstaged" }, root .. "/two")
+  local refs = H.git(root, "show-ref")
+  local staged = H.git(root, "diff", "--cached")
+  local unstaged = H.git(root, "diff")
+  local echo = vim.api.nvim_echo
+  local ok, err = pcall(function()
+    for _, command in ipairs({ "GinLog --oneline", "GinReflog" }) do
+      vim.cmd(command)
+      for _, name in ipairs({
+        "tag",
+        "tag:lightweight",
+        "tag:lightweight:force",
+        "tag:annotate",
+        "tag:annotate:force",
+        "tag:sign",
+        "tag:sign:force",
+      }) do
+        for _, empty in ipairs({ false, true }) do
+          local messages = {}
+          vim.api.nvim_echo = function(chunks)
+            messages[#messages + 1] = chunks
+          end
+          tag_action(name, empty and "" or nil)
+          MiniTest.expect.equality(messages, { { { "Cancelled", "None" } } })
+          MiniTest.expect.equality(H.git(root, "show-ref"), refs)
+          MiniTest.expect.equality(H.git(root, "diff", "--cached"), staged)
+          MiniTest.expect.equality(H.git(root, "diff"), unstaged)
+        end
+      end
+      vim.api.nvim_echo = echo
+    end
+  end)
+  vim.api.nvim_echo = echo
+  assert(ok, err)
+end
 T["lightweight tag points to the selected commit rather than HEAD"] = function()
   vim.cmd("GinLog --oneline")
   tag_action("tag:lightweight", "selected")
