@@ -419,6 +419,8 @@ function M.navigate_history(direction)
 end
 
 function M.read_nav(buf)
+  -- The navigation URI selects the revision even when the paired file name differs.
+  local read_name = vim.api.nvim_buf_get_name(buf):gsub("^ginblamenav:", "ginblame:")
   local file = vim.b[buf].gin_blame_file_bufnr
   if not file or not vim.api.nvim_buf_is_valid(file) then
     local name = vim.b[buf].gin_blame_file_bufname
@@ -442,7 +444,7 @@ function M.read_nav(buf)
           local restored = buffer.open(name, {})
           vim.api.nvim_set_current_win(win)
           -- BufReadCmd does not nest while the navigation buffer is reloading.
-          M.read(restored, name)
+          M.read(restored, read_name)
         end)
         if not ok then
           vim.wo[win].winfixbuf = fixed
@@ -456,7 +458,7 @@ function M.read_nav(buf)
   local win = vim.fn.bufwinid(file)
   assert(win ~= -1, "GinBlame file window is missing")
   vim.api.nvim_win_call(win, function()
-    M.read(file, vim.api.nvim_buf_get_name(file))
+    M.read(file, read_name)
   end)
 end
 

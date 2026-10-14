@@ -233,6 +233,35 @@ T["legacy navigation reload resolves its paired file by name"] = function()
   MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
   MiniTest.expect.equality(H.git(root, "status", "--porcelain"), "")
 end
+T["navigation reload uses its revision rather than the paired file URI"] = function()
+  local file_name = "ginblame://" .. root .. ";commitish=" .. first .. "#sub/file.lua"
+  local suffix = "://" .. root .. ";commitish=" .. second .. "#sub/file.lua"
+  vim.cmd.tabnew()
+  local file = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(file, file_name)
+  local filewin = vim.api.nvim_get_current_win()
+  vim.cmd("topleft new")
+  local detail = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(detail, "ginblamedetail" .. suffix)
+  vim.api.nvim_set_current_win(filewin)
+  vim.cmd("leftabove vnew")
+  local nav = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(nav, "ginblamenav" .. suffix)
+  vim.b[nav].gin_blame_file_bufname = file_name
+  vim.b[nav].gin_blame_file_fragment = "sub/file.lua"
+  local windows = vim.api.nvim_tabpage_list_wins(0)
+  vim.cmd.edit()
+  H.drain()
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), nav)
+  MiniTest.expect.equality(vim.api.nvim_tabpage_list_wins(0), windows)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_name(file), file_name)
+  MiniTest.expect.equality(
+    vim.api.nvim_buf_get_lines(file, 0, -1, false),
+    { "", "one", "", "changed", "", "three" }
+  )
+  MiniTest.expect.equality(vim.b[nav].gin_blame_line_map[4].commitSha, second)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(detail, 0, 1, false), { "commit " .. second })
+end
 T["legacy navigation recreates a missing file buffer"] = function()
   local suffix = "://" .. root .. ";commitish=" .. first .. "#sub/file.lua"
   vim.cmd.tabnew()

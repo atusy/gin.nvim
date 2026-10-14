@@ -1359,3 +1359,10 @@ revision fails seven cases, including a SIGSEGV on an unmatched group with a
 non-ASCII input. Other differences cover absent captures, Unicode, split
 surrogates and NUL. These are candidate rejection results, not passing migration
 tests; the backend and action integration remain unimplemented.
+
+Navigation-pane reloads now select the revision from the navigation URI rather
+than the paired file buffer's URI, matching the pinned editNav execution source.
+A real two-commit fixture with divergent legacy names verifies refreshed file
+content, attribution and commit details without duplicate windows or renaming
+the paired file buffer. This does not establish complete parity for divergent
+stored file fragments, hidden paired buffers or all option combinations.
