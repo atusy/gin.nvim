@@ -82,6 +82,8 @@ end
 local literal = "first\nstack traceback:\n\tuser.lua:42: diagnostic text"
 for _, case in ipairs({
   { "direct multiline diagnostic", literal, literal },
+  { "literal numeric diagnostic prefix", "revision:42: missing", "revision:42: missing" },
+  { "Lua chunk diagnostic", '[string "custom"]:2: bad input', "bad input" },
   { "callback text without API context", "Lua callback: " .. literal, "Lua callback: " .. literal },
   {
     "current callback context",

@@ -80,7 +80,8 @@ local function report_error(message, mods, result)
   if result then
     message = require("gin.csi").strip(require("gin.stream_text").utf8(result.stderr or ""))
   else
-    message = tostring(message):gsub("^[^\n]-:%d+: ", "")
+    message = tostring(message):gsub("^[^\n]-%.lua:%d+: ", "")
+    message = message:gsub('^%[string "[^\n]-"%]:%d+: ', "")
     if message:match("^nvim_%w+%(") then
       message = message:match("^[^\n]-[Ll]ua callback: (.*)\nstack traceback:\n\t") or message
     end

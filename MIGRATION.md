@@ -4438,3 +4438,14 @@ suite are owned by the foreground integrator. The previous full suite passed
 4,650 cases at 9302eeb; a new full suite will run on the integrated changes rather
 than on each small intermediate commit. This empty-output change currently has
 targeted validation, not a new full-suite result.
+
+
+### Preserve numeric diagnostic text at command boundaries
+
+The display wrapper no longer mistakes `revision:42: missing` for a Lua
+source location. It recognizes Lua file and chunk prefixes explicitly while
+retaining nested callback unwrapping. The regression failed before the change.
+Current Neovim passes 210 command, boundary and Browse cases; Neovim 0.10 passes
+145 command and boundary cases. Logs: `/tmp/gin-integrated-prefix-browse.log`
+and `/tmp/gin-prefix-nvim010.log`. Full integration validation follows the
+parallel batch.
