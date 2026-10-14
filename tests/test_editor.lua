@@ -1,10 +1,11 @@
 local H = require("tests.helpers")
 local cwd = vim.fn.getcwd()
-local root
+local root, hidden
 local input = vim.fn.input
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
+      hidden = vim.o.hidden
       vim.cmd("filetype plugin on")
       root = H.repo()
       H.git(root, "config", "user.name", "Gin Test")
@@ -16,6 +17,7 @@ local T = MiniTest.new_set({
       dofile(cwd .. "/plugin/gin.lua")
     end,
     post_case = function()
+      vim.o.hidden = hidden
       vim.g.gin_proxy_apply_without_confirm = nil
       vim.g.gin_proxy_editor_opener = nil
       vim.fn.input = input
@@ -55,6 +57,39 @@ for _, value in ipairs({ false, 0, vim.NIL, {}, "unsupported" }) do
     MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
     MiniTest.expect.equality(H.git(root, "diff", "--name-only", "--cached"), "file\n")
   end
+end
+T["edit opener failure preserves unsaved work and releases Git"] = function()
+  vim.g.gin_proxy_editor_opener = "edit"
+  vim.o.hidden = false
+  vim.cmd.edit(root .. "/file")
+  local buf = vim.api.nvim_get_current_buf()
+  local windows, tabs = vim.api.nvim_list_wins(), vim.api.nvim_list_tabpages()
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "unsaved work" })
+  local process = require("gin.command").execute({
+    fargs = { "commit" },
+    smods = { silent = true, emsg_silent = true },
+  })
+  local finished = vim.wait(3000, function()
+    return process:is_closing()
+  end, 10)
+  if not finished and vim.b.gin_editor_request then
+    vim.cmd.Cancel()
+    assert(vim.wait(3000, function()
+      return process:is_closing()
+    end, 10))
+  end
+  MiniTest.expect.equality(finished, true)
+  local result = process:wait(3000)
+  MiniTest.expect.equality(result.code ~= 0, true)
+  MiniTest.expect.equality(result.stderr:find("E37", 1, true) ~= nil, true)
+  MiniTest.expect.equality(vim.api.nvim_get_current_buf(), buf)
+  MiniTest.expect.equality(vim.api.nvim_list_wins(), windows)
+  MiniTest.expect.equality(vim.api.nvim_list_tabpages(), tabs)
+  MiniTest.expect.equality(vim.api.nvim_buf_get_lines(buf, 0, -1, false), { "unsaved work" })
+  MiniTest.expect.equality(vim.bo[buf].modified, true)
+  MiniTest.expect.equality(vim.fn.readfile(root .. "/file"), { "content" })
+  MiniTest.expect.equality(H.git(root, "show", ":file"), "content\n")
+  MiniTest.expect.equality(H.git(root, "diff", "--name-only", "--cached"), "file\n")
 end
 T["opening an editor request suppresses file-read messages"] = function()
   local path = root .. "/message"

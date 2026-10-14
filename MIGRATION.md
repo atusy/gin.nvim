@@ -2453,3 +2453,17 @@ the fix false opened an editor and left Git waiting; the other invalid types
 already failed but lacked the named type diagnostic. Test cleanup cancels an
 unexpectedly opened editor before reporting failure. Existing keyboard-driven
 fixtures still cover every supported opener and successful apply/cancel flows.
+
+## Editor opening failure with unsaved work
+
+A real Git commit test now uses the valid `edit` opener while the current file
+has unsaved changes and `hidden` is off. Opening the commit editor must fail with
+E37, release Git with a nonzero status, retain the original current buffer and
+window/tab IDs, and preserve both unsaved text and its modified flag. The working
+file and index must still contain the staged original content. This complements
+the invalid-opener tests by exercising a failure from Neovim's editing operation.
+
+The existing implementation passes without modification. Temporarily forcing
+`bang=true` for editor opening makes this new test fail while the other editor
+tests pass. The fixture cancels any unexpectedly opened editor before reporting
+the failed expectation, so a regression does not leave Git waiting indefinitely.
